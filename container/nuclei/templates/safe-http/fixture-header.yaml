@@ -1,0 +1,17 @@
+id: vibe-sec-fixture-header
+
+info:
+  name: Vibe Sec fixture exposure header
+  author: vibe-sec
+  severity: medium
+  description: Detects the synthetic header used by the controlled Nuclei integration fixture.
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/"
+    matchers:
+      - type: word
+        part: header
+        words:
+          - "X-Vibe-Sec-Fixture: exposed"

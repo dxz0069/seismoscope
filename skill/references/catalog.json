@@ -1,0 +1,247 @@
+{
+  "version": "1.0.0",
+  "description": "漏洞类别目录 — 定义所有支持的漏洞类型及其元数据",
+  "categories": {
+    "web": {
+      "name": "Web 漏洞",
+      "description": "传统 Web 应用安全漏洞，基于 OWASP Top 10",
+      "vulnerabilities": {
+        "sql_injection": {
+          "name": "SQL 注入",
+          "description": "用户输入被直接拼接到 SQL 查询中，导致数据库被恶意操作",
+          "severity": "high",
+          "cvss_range": "7.0-10.0",
+          "checklist": "checklists/web/sql_injection.md",
+          "patterns": "patterns/web_patterns.json#sql_injection",
+          "references": [
+            "https://owasp.org/www-community/attacks/SQL_Injection",
+            "https://cwe.mitre.org/data/definitions/89.html"
+          ]
+        },
+        "xss": {
+          "name": "跨站脚本攻击 (XSS)",
+          "description": "恶意脚本被注入到网页中，在用户浏览器中执行",
+          "severity": "medium",
+          "cvss_range": "4.0-8.0",
+          "checklist": "checklists/web/xss.md",
+          "patterns": "patterns/web_patterns.json#xss",
+          "references": [
+            "https://owasp.org/www-community/attacks/xss/",
+            "https://cwe.mitre.org/data/definitions/79.html"
+          ]
+        },
+        "csrf": {
+          "name": "跨站请求伪造 (CSRF)",
+          "description": "攻击者诱导用户执行非预期的操作",
+          "severity": "medium",
+          "cvss_range": "4.0-7.0",
+          "checklist": "checklists/web/csrf.md",
+          "patterns": "patterns/web_patterns.json#csrf",
+          "references": [
+            "https://owasp.org/www-community/attacks/csrf",
+            "https://cwe.mitre.org/data/definitions/352.html"
+          ]
+        },
+        "ssrf": {
+          "name": "服务器端请求伪造 (SSRF)",
+          "description": "攻击者让服务器发起对内部资源的请求",
+          "severity": "high",
+          "cvss_range": "6.0-9.0",
+          "checklist": "checklists/web/ssrf.md",
+          "patterns": "patterns/web_patterns.json#ssrf",
+          "references": [
+            "https://owasp.org/www-community/attacks/Server_Side_Request_Forgery",
+            "https://cwe.mitre.org/data/definitions/918.html"
+          ]
+        },
+        "command_injection": {
+          "name": "命令注入",
+          "description": "用户输入被拼接到系统命令中执行",
+          "severity": "critical",
+          "cvss_range": "8.0-10.0",
+          "checklist": "checklists/web/command_injection.md",
+          "patterns": "patterns/web_patterns.json#command_injection",
+          "references": [
+            "https://owasp.org/www-community/attacks/Command_Injection",
+            "https://cwe.mitre.org/data/definitions/78.html"
+          ]
+        },
+        "file_inclusion": {
+          "name": "文件包含",
+          "description": "攻击者可以包含本地或远程文件",
+          "severity": "high",
+          "cvss_range": "7.0-9.0",
+          "checklist": "checklists/web/file_inclusion.md",
+          "patterns": "patterns/web_patterns.json#file_inclusion",
+          "references": [
+            "https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/07-Input_Validation_Testing/11.1-Testing_for_Local_File_Inclusion",
+            "https://cwe.mitre.org/data/definitions/98.html"
+          ]
+        },
+        "path_traversal": {
+          "name": "路径遍历",
+          "description": "攻击者可以通过路径操纵访问受限文件",
+          "severity": "high",
+          "cvss_range": "6.0-8.0",
+          "checklist": "checklists/web/path_traversal.md",
+          "patterns": "patterns/web_patterns.json#path_traversal",
+          "references": [
+            "https://owasp.org/www-community/attacks/Path_Traversal",
+            "https://cwe.mitre.org/data/definitions/22.html"
+          ]
+        },
+        "authentication_bypass": {
+          "name": "身份认证绕过",
+          "description": "攻击者可以绕过身份认证机制",
+          "severity": "critical",
+          "cvss_range": "8.0-10.0",
+          "checklist": "checklists/web/authentication_bypass.md",
+          "patterns": "patterns/web_patterns.json#authentication_bypass",
+          "references": [
+            "https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/04-Authentication_Testing/",
+            "https://cwe.mitre.org/data/definitions/287.html"
+          ]
+        },
+        "authorization_bypass": {
+          "name": "授权绕过",
+          "description": "攻击者可以绕过权限检查，访问未授权资源",
+          "severity": "high",
+          "cvss_range": "7.0-9.0",
+          "checklist": "checklists/web/authorization_bypass.md",
+          "patterns": "patterns/web_patterns.json#authorization_bypass",
+          "references": [
+            "https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/05-Authorization_Testing/",
+            "https://cwe.mitre.org/data/definitions/862.html"
+          ]
+        }
+      }
+    },
+    "agent": {
+      "name": "智能体漏洞",
+      "description": "AI 智能体特有的安全漏洞",
+      "vulnerabilities": {
+        "prompt_injection": {
+          "name": "提示词注入",
+          "description": "攻击者通过恶意提示词操纵智能体行为",
+          "severity": "high",
+          "cvss_range": "6.0-9.0",
+          "checklist": "checklists/agent/prompt_injection.md",
+          "patterns": "patterns/agent_patterns.json#prompt_injection",
+          "references": [
+            "https://github.com/greshnik/prompt-injection-attacks"
+          ],
+          "subtypes": {
+            "direct_injection": "直接注入 — 用户在输入中直接注入恶意指令",
+            "indirect_injection": "间接注入 — 恶意内容隐藏在外部数据源中"
+          }
+        },
+        "jailbreak": {
+          "name": "越狱攻击",
+          "description": "攻击者绕过智能体的安全限制",
+          "severity": "high",
+          "cvss_range": "6.0-9.0",
+          "checklist": "checklists/agent/jailbreak.md",
+          "patterns": "patterns/agent_patterns.json#jailbreak",
+          "references": [
+            "https://github.com/verazuo/jailbreak_llms"
+          ]
+        },
+        "mcp_abuse": {
+          "name": "MCP 滥用",
+          "description": "不安全的 MCP Server 配置或工具权限过大",
+          "severity": "high",
+          "cvss_range": "7.0-9.0",
+          "checklist": "checklists/agent/mcp_abuse.md",
+          "patterns": "patterns/agent_patterns.json#mcp_abuse",
+          "references": [
+            "https://modelcontextprotocol.io/docs/security"
+          ],
+          "subtypes": {
+            "insecure_server": "不安全的 MCP Server 实现",
+            "excessive_permissions": "工具权限过大",
+            "data_leakage": "数据泄露风险",
+            "tool_chain_abuse": "工具链滥用"
+          }
+        },
+        "tool_permission_escalation": {
+          "name": "工具权限提升",
+          "description": "智能体使用的工具权限超出必要范围",
+          "severity": "medium",
+          "cvss_range": "5.0-8.0",
+          "checklist": "checklists/agent/tool_permissions.md",
+          "patterns": "patterns/agent_patterns.json#tool_permissions",
+          "references": []
+        },
+        "data_exfiltration": {
+          "name": "数据泄露",
+          "description": "智能体可能泄露敏感信息",
+          "severity": "high",
+          "cvss_range": "7.0-9.0",
+          "checklist": "checklists/agent/data_exfiltration.md",
+          "patterns": "patterns/agent_patterns.json#data_exfiltration",
+          "references": []
+        },
+        "unauthorized_access": {
+          "name": "越权访问",
+          "description": "智能体可以访问未授权的资源或执行未授权的操作",
+          "severity": "high",
+          "cvss_range": "7.0-9.0",
+          "checklist": "checklists/agent/unauthorized_access.md",
+          "patterns": "patterns/agent_patterns.json#unauthorized_access",
+          "references": []
+        }
+      }
+    },
+    "secrets": {
+      "name": "密钥与凭据泄露",
+      "description": "硬编码的密钥、API Key、凭据等",
+      "vulnerabilities": {
+        "hardcoded_credentials": {
+          "name": "硬编码凭据",
+          "description": "密码、Token 等凭据被硬编码在源代码中",
+          "severity": "high",
+          "cvss_range": "7.0-9.0",
+          "checklist": "checklists/secrets/hardcoded_credentials.md",
+          "patterns": "patterns/secret_patterns.json#hardcoded_credentials",
+          "references": [
+            "https://cwe.mitre.org/data/definitions/798.html"
+          ]
+        },
+        "api_key_leak": {
+          "name": "API Key 泄露",
+          "description": "API Key 被暴露在不安全的位置",
+          "severity": "high",
+          "cvss_range": "7.0-9.0",
+          "checklist": "checklists/secrets/api_key_leak.md",
+          "patterns": "patterns/secret_patterns.json#api_key_leak",
+          "references": []
+        },
+        "private_key_exposure": {
+          "name": "私钥暴露",
+          "description": "加密私钥被暴露",
+          "severity": "critical",
+          "cvss_range": "9.0-10.0",
+          "checklist": "checklists/secrets/private_key_exposure.md",
+          "patterns": "patterns/secret_patterns.json#private_key_exposure",
+          "references": []
+        },
+        "insecure_storage": {
+          "name": "不安全存储",
+          "description": "敏感信息以明文或不安全的方式存储",
+          "severity": "medium",
+          "cvss_range": "5.0-7.0",
+          "checklist": "checklists/secrets/insecure_storage.md",
+          "patterns": "patterns/secret_patterns.json#insecure_storage",
+          "references": []
+        }
+      }
+    }
+  },
+  "metadata": {
+    "total_vulnerabilities": 19,
+    "web_vulnerabilities": 9,
+    "agent_vulnerabilities": 6,
+    "secret_vulnerabilities": 4,
+    "last_updated": "2026-07-20"
+  }
+}

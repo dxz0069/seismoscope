@@ -1,0 +1,61 @@
+name: vibe-sec
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile
+      target: api
+    restart: unless-stopped
+    environment:
+      VIBE_SEC_CORS_ORIGINS: ${VIBE_SEC_CORS_ORIGINS:-http://localhost:${VIBE_SEC_HTTP_PORT:-8000}}
+    volumes:
+      - vibe-sec-state:/var/lib/vibe-sec
+      - type: bind
+        source: ${VIBE_SEC_PROJECTS_PATH:-./projects}
+        target: /workspace
+        read_only: true
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - >-
+          from urllib.request import urlopen;
+          response = urlopen('http://127.0.0.1:8000/api/health', timeout=3);
+          raise SystemExit(0 if response.status == 200 else 1)
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  web:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile
+      target: web
+    restart: unless-stopped
+    ports:
+      - "${VIBE_SEC_HTTP_PORT:-8000}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+
+  audit:
+    profiles: ["audit"]
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile
+      target: api
+    environment:
+      VIBE_SEC_CORS_ORIGINS: ""
+    volumes:
+      - vibe-sec-state:/var/lib/vibe-sec
+      - type: bind
+        source: ${VIBE_SEC_PROJECTS_PATH:-./projects}
+        target: /workspace
+        read_only: true
+    entrypoint: ["/app/deploy/entrypoint.sh"]
+
+volumes:
+  vibe-sec-state:

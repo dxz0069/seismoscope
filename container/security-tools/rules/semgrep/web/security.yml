@@ -1,0 +1,27 @@
+rules:
+  - id: vibe-sec.python.command-injection-shell
+    languages: [python]
+    severity: ERROR
+    message: Shell execution can become command injection when arguments contain untrusted input.
+    patterns:
+      - pattern-either:
+          - pattern: os.system(...)
+          - pattern: subprocess.$FUNC(..., shell=True, ...)
+
+  - id: vibe-sec.python.dynamic-sql
+    languages: [python]
+    severity: WARNING
+    message: Dynamically constructed SQL requires source-to-sink review and parameterization.
+    patterns:
+      - pattern-either:
+          - pattern: $DB.execute(f"...")
+          - pattern: $DB.execute($QUERY + $VALUE)
+          - pattern: $DB.execute($QUERY % $VALUE)
+
+  - id: vibe-sec.javascript.unsafe-html
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: HTML is assigned to a browser sink and requires trust-boundary review.
+    pattern-either:
+      - pattern: $ELEMENT.innerHTML = $VALUE
+      - pattern: document.write($VALUE)

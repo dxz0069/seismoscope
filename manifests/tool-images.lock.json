@@ -1,0 +1,63 @@
+{
+  "schema_version": "vibe-sec.tool-images.v1",
+  "release": "0.5.0",
+  "images": [
+    {
+      "id": "focused-tools",
+      "image": "vibe-sec-tools:latest",
+      "image_version": "2026.07.22",
+      "default_install": true,
+      "build_context": "container/security-tools",
+      "capabilities": ["semgrep", "gitleaks", "bandit"],
+      "tool_versions": {
+        "semgrep": "1.99.0",
+        "gitleaks": "8.21.2",
+        "bandit": "1.8.0"
+      },
+      "artifacts": []
+    },
+    {
+      "id": "trivy",
+      "image": "vibe-sec-trivy:latest",
+      "image_version": "0.58.2",
+      "default_install": true,
+      "depends_on": ["focused-tools"],
+      "build_context": "container/trivy",
+      "capabilities": ["trivy-fs-vuln", "trivy-fs-misconfig", "trivy-fs-secret"],
+      "tool_versions": {},
+      "artifacts": []
+    },
+    {
+      "id": "nuclei",
+      "image": "vibe-sec-nuclei:latest",
+      "image_version": "3.11.0",
+      "default_install": true,
+      "build_context": "container/nuclei",
+      "capabilities": ["nuclei-curated-http"],
+      "tool_versions": {},
+      "artifacts": [
+        {
+          "url": "https://github.com/projectdiscovery/nuclei/releases/download/v3.11.0/nuclei_3.11.0_linux_amd64.zip",
+          "path": "container/nuclei/.build-cache/nuclei.zip",
+          "sha256": "dc238d6040813e14fc30514dac5a2eb1b430c694f3ca99eee2a5097e55076283"
+        }
+      ]
+    },
+    {
+      "id": "codeql",
+      "image": "vibe-sec-codeql:latest",
+      "image_version": "2.26.1",
+      "default_install": false,
+      "build_context": "container/codeql",
+      "capabilities": ["codeql-database-analyze"],
+      "tool_versions": {},
+      "artifacts": [
+        {
+          "url": "https://github.com/github/codeql-cli-binaries/releases/download/v2.26.1/codeql-linux64.zip",
+          "path": "container/codeql/.build-cache/codeql.zip",
+          "sha256": "15480dda6e20336a9c7ddcb6171e0e9155f1fe73a1d31baeac153821cb89aeab"
+        }
+      ]
+    }
+  ]
+}

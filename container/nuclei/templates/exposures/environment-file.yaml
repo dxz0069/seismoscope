@@ -1,0 +1,19 @@
+id: vibe-sec-environment-file
+
+info:
+  name: Exposed environment file
+  author: vibe-sec
+  severity: high
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/.env"
+    matchers-condition: and
+    matchers:
+      - type: status
+        status: [200]
+      - type: regex
+        part: body
+        regex:
+          - "(?m)^[A-Z][A-Z0-9_]*(?:SECRET|TOKEN|PASSWORD|KEY)[A-Z0-9_]*="

@@ -1,0 +1,27 @@
+<template>
+  <section class="foundation-panel">
+    <header class="foundation-toolbar"><div><span class="toolbar-kicker">ATTACK LIBRARY</span><strong>可复用的攻击场景与判定标准</strong></div><div class="head-actions"><button class="button" type="button" @click="platform.seedScenarios"><Sparkles :size="14" />注入默认模板</button><button class="button primary" type="button" @click="openCreate"><Plus :size="14" />新增场景</button></div></header>
+    <div class="scenario-list"><article v-for="item in platform.scenarios" :key="item.id" class="scenario-row"><span class="scenario-index">{{ String(item.id).padStart(2, '0') }}</span><div class="scenario-copy"><span><strong>{{ item.title }}</strong><span class="severity-chip" :class="item.severity">{{ severityLabel(item.severity) }}</span><span class="status-chip" :class="item.is_active ? 'active' : 'draft'">{{ item.is_active ? '启用' : '停用' }}</span></span><p>{{ item.description || '未填写场景描述。' }}</p><div class="tag-line"><span>{{ item.category }}</span><code v-for="tag in item.tags || []" :key="tag">#{{ tag }}</code></div></div><div class="scenario-criterion"><span>成功判定</span><p>{{ item.success_criteria || '由评估器根据默认规则判断。' }}</p></div><div class="inline-actions"><button class="icon-button" title="编辑" @click="openEdit(item)"><Pencil :size="14" /></button><button class="icon-button" :title="item.is_active ? '停用' : '启用'" @click="platform.toggleScenario(item)"><Power :size="14" /></button><button class="icon-button danger-icon" title="删除" @click="remove(item)"><Trash2 :size="14" /></button></div></article><div v-if="!platform.scenarios.length" class="empty-panel"><div><Sparkles :size="28" /><strong>暂无攻击场景</strong><span>注入默认模板，或创建带前置条件和成功判定的自定义场景。</span><button class="button" type="button" @click="platform.seedScenarios"><Sparkles :size="14" />注入默认模板</button></div></div></div>
+
+    <div v-if="editorOpen" class="modal-backdrop" @click.self="editorOpen = false"><section class="modal-panel scenario-editor"><header class="modal-head"><div><span class="page-kicker">ATTACK SCENARIO</span><h2>{{ form.id ? '编辑攻击场景' : '新增攻击场景' }}</h2></div><button class="icon-button" @click="editorOpen = false"><X :size="16" /></button></header><form @submit.prevent="save"><div class="modal-body form-grid"><label class="form-field full"><span>场景名称</span><input v-model="form.title" class="input" required /></label><label class="form-field"><span>分类</span><input v-model="form.category" class="input" required placeholder="prompt_injection" /></label><label class="form-field"><span>风险等级</span><select v-model="form.severity" class="select"><option value="critical">严重</option><option value="high">高危</option><option value="medium">中危</option><option value="low">低危</option></select></label><label class="form-field full"><span>场景说明</span><textarea v-model="form.description" class="textarea"></textarea></label><label class="form-field full"><span>攻击者提示</span><textarea v-model="form.attacker_prompt" class="textarea tall-textarea"></textarea></label><label class="form-field"><span>测试前置条件</span><textarea v-model="form.setup_instructions" class="textarea"></textarea></label><label class="form-field"><span>成功判定标准</span><textarea v-model="form.success_criteria" class="textarea"></textarea></label><label class="form-field"><span>评估提示</span><textarea v-model="form.evaluation_hints" class="textarea"></textarea></label><label class="form-field"><span>预期失败点（逗号分隔）</span><input v-model="failuresInput" class="input" /></label><label class="form-field"><span>标签（逗号分隔）</span><input v-model="tagsInput" class="input" /></label><label class="form-field"><span>状态</span><select v-model.number="form.is_active" class="select"><option :value="1">启用</option><option :value="0">停用</option></select></label></div><footer class="modal-foot"><button class="button" type="button" @click="editorOpen = false">取消</button><button class="button primary" type="submit"><Save :size="14" />保存场景</button></footer></form></section></div>
+  </section>
+</template>
+
+<script setup>
+import { reactive, ref } from 'vue'
+import { Pencil, Plus, Power, Save, Sparkles, Trash2, X } from 'lucide-vue-next'
+import { usePlatformStore } from '../stores/platform'
+
+const platform = usePlatformStore()
+const editorOpen = ref(false)
+const tagsInput = ref('')
+const failuresInput = ref('')
+const fresh = () => ({ title: '', category: 'prompt_injection', severity: 'high', description: '', attacker_prompt: '', setup_instructions: '', success_criteria: '', evaluation_hints: '', expected_failures: [], tags: [], is_active: 1, reference_count: 0 })
+const form = reactive(fresh())
+const reset = item => { Object.keys(form).forEach(key => delete form[key]); Object.assign(form, item); tagsInput.value = (item.tags || []).join(', '); failuresInput.value = (item.expected_failures || []).join(', ') }
+const openCreate = () => { reset(fresh()); editorOpen.value = true }
+const openEdit = item => { reset({ ...item }); editorOpen.value = true }
+const save = async () => { await platform.saveScenario({ ...form, tags: tagsInput.value.split(',').map(v => v.trim()).filter(Boolean), expected_failures: failuresInput.value.split(',').map(v => v.trim()).filter(Boolean) }); editorOpen.value = false }
+const remove = async item => { if (window.confirm(`删除攻击场景“${item.title}”？`)) await platform.deleteScenario(item.id) }
+const severityLabel = value => ({ critical: '严重', high: '高危', medium: '中危', low: '低危' }[value] || value)
+</script>

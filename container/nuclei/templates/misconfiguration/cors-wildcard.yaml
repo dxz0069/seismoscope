@@ -1,0 +1,23 @@
+id: vibe-sec-cors-wildcard-credentials
+
+info:
+  name: Wildcard CORS with credentials
+  author: vibe-sec
+  severity: high
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/"
+    headers:
+      Origin: https://vibe-sec.invalid
+    matchers-condition: and
+    matchers:
+      - type: word
+        part: header
+        words:
+          - "Access-Control-Allow-Origin: *"
+      - type: word
+        part: header
+        words:
+          - "Access-Control-Allow-Credentials: true"
