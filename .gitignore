@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+container/**/.build-cache/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Packaging
+build/
+dist/
+*.egg-info/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Local runtime data
+.cache/
+.vibe-sec/
+.tmp-session/
+memory/
+pytest-cache-files-*/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Editor and OS files
+.idea/
+.vscode/
+Thumbs.db
+.DS_Store

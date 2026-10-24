@@ -1,0 +1,18 @@
+rules:
+  - id: vibe-sec.default.python-dangerous-execution
+    languages: [python]
+    severity: ERROR
+    message: Dangerous execution primitive requires source, permission, and reachability analysis.
+    pattern-either:
+      - pattern: os.system(...)
+      - pattern: eval(...)
+      - pattern: exec(...)
+      - pattern: subprocess.$FUNC(..., shell=True, ...)
+
+  - id: vibe-sec.default.javascript-unsafe-html
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: Browser HTML sink requires untrusted-input tracing.
+    pattern-either:
+      - pattern: $ELEMENT.innerHTML = $VALUE
+      - pattern: document.write($VALUE)

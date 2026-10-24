@@ -1,0 +1,73 @@
+{
+  "name": "vibe-sec",
+  "version": "0.5.0",
+  "description": "Evidence-driven security audit, verification, and remediation return for Vibe Coding workflows.",
+  "entry_point": "SKILL.md",
+  "category": "security",
+  "capabilities": [
+    "changed_file_trigger_suggestion",
+    "multi_lane_source_audit",
+    "python_and_javascript_semantic_flow",
+    "runtime_surface_modeling",
+    "composite_runtime_threat_graph",
+    "controlled_verification",
+    "mcp_and_workflow_analysis",
+    "container_scanner_integration",
+    "explicit_osv_dependency_matching",
+    "framework_security_semantics",
+    "controlled_poc_protocol",
+    "isolated_multi_service_reproduction",
+    "remediation_return",
+    "post_fix_retest"
+  ],
+  "command_contract": "vibe-sec.skill-audit.v1",
+  "supported_entry_points": [
+    "setup",
+    "doctor",
+    "update-tools",
+    "skill-audit",
+    "audit",
+    "retest"
+  ],
+  "semantic_flow_languages": [
+    "python",
+    "javascript",
+    "jsx",
+    "typescript",
+    "tsx"
+  ],
+  "best_effort_source_languages": [
+    "java",
+    "go",
+    "php",
+    "ruby",
+    "rust",
+    "csharp",
+    "c",
+    "cpp"
+  ],
+  "framework_semantics": [
+    "django",
+    "fastapi",
+    "flask",
+    "express",
+    "nest",
+    "next",
+    "spring",
+    "go-http",
+    "gin",
+    "echo",
+    "chi"
+  ],
+  "configuration": {
+    "default_trigger": "explicit",
+    "automatic_trigger_mode": "suggest_only",
+    "default_output_format": "json",
+    "dependency_network_default": "disabled",
+    "dependency_network_flag": "--osv",
+    "llm_key_environment": [
+      "VIBE_SEC_DEEPSEEK_API_KEY",
+      "DEEPSEEK_API_KEY"
+    ]
+  }
+}

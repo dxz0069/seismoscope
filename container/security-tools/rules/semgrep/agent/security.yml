@@ -1,0 +1,21 @@
+rules:
+  - id: vibe-sec.agent.prompt-concatenation-python
+    languages: [python]
+    severity: WARNING
+    message: External data is concatenated into model context and requires prompt-injection review.
+    patterns:
+      - pattern-either:
+          - pattern: $PROMPT = $BASE + $INPUT
+          - pattern: $PROMPT += $INPUT
+
+  - id: vibe-sec.agent.unbounded-shell-tool-python
+    languages: [python]
+    severity: ERROR
+    message: A model-callable path appears to expose shell execution and requires permission analysis.
+    patterns:
+      - pattern-inside: |
+          def $TOOL(...):
+            ...
+      - pattern-either:
+          - pattern: os.system(...)
+          - pattern: subprocess.$FUNC(..., shell=True, ...)

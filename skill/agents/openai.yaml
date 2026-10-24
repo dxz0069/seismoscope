@@ -1,0 +1,4 @@
+interface:
+  display_name: "Vibe Sec"
+  short_description: "Audit and verify Vibe Coding security"
+  default_prompt: "Use $vibe-sec to audit this project and return evidence-backed remediation packages."
