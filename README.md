@@ -400,5 +400,5 @@ MIT License
 
 ## 联系方式
 
-- 项目主页: https://github.com/yourusername/vibe-sec-platform
-- 问题反馈: https://github.com/yourusername/vibe-sec-platform/issues
+- 项目主页: https://github.com/dxz0069/vibe-guard
+- 问题反馈: https://github.com/dxz0069/vibe-guard/issues
