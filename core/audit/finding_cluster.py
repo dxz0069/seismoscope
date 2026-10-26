@@ -296,8 +296,17 @@ def _evidence_fingerprint(finding: dict[str, Any]) -> str:
             None,
         )
         if value:
-            values.append(_normal_text(value))
+            normalized = _normal_text(value)
+            # 密钥类证据内容统一脱敏为 "[REDACTED]"，若参与指纹会让同文件内
+            # 任意两个相邻密钥互相"指纹匹配"而被错误合并——不同密钥是不同
+            # 漏洞（各自的轮换与整改互不替代），脱敏占位不构成匹配证据。
+            if normalized in _REDACTED_PLACEHOLDER_VALUES:
+                continue
+            values.append(normalized)
     return values[0][:180] if values else ""
+
+
+_REDACTED_PLACEHOLDER_VALUES = {"[redacted]", "redacted"}
 
 
 def _member_id(finding: dict[str, Any]) -> str:

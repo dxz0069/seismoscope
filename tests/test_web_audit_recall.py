@@ -141,3 +141,33 @@ def test_safe_end_to_end_no_new_false_positives(tmp_path):
     assert "sql_injection" not in types
     assert "mass_assignment" not in types
     assert "plaintext_password_comparison" not in types
+
+
+def test_adjacent_distinct_secrets_not_merged():
+    """相邻两行的不同密钥是不同漏洞，不得因脱敏证据相同而合并。"""
+    from core.audit.finding_cluster import cluster_findings
+
+    password = {
+        "vulnerability_type": "hardcoded_password", "file_path": "config.py",
+        "line_start": 15, "line_end": 15, "severity": "high",
+        "evidence": [{"type": "code_snippet", "content": "[REDACTED]", "secret_redacted": True}],
+    }
+    key = dict(password, vulnerability_type="api_key", line_start=16, line_end=16)
+    clusters = cluster_findings([password, key])
+    assert len(clusters) == 2, "相邻不同密钥必须保留为独立 finding（各自需要独立轮换）"
+    assert {item["vulnerability_type"] for item in clusters} == {"hardcoded_password", "api_key"}
+
+
+def test_identical_real_evidence_still_merges_across_lines():
+    """相同真实证据（非脱敏）的相邻 finding 仍应合并——回归保护。"""
+    from core.audit.finding_cluster import cluster_findings
+
+    first = {
+        "vulnerability_type": "sql_injection", "file_path": "svc.py",
+        "line_start": 20, "line_end": 20, "severity": "high",
+        "evidence": [{"type": "code_snippet", "content": "db.execute(query)"}],
+    }
+    duplicate = dict(first, line_start=21, line_end=21)
+    clusters = cluster_findings([first, duplicate])
+    assert len(clusters) == 1
+    assert clusters[0]["duplicate_count"] == 2

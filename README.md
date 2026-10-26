@@ -1,16 +1,16 @@
-# Vibe Guard (Vibe Sec Platform)
+# 候风 Seismoscope
 
-[![CI](https://github.com/dxz0069/vibe-guard/actions/workflows/ci.yml/badge.svg)](https://github.com/dxz0069/vibe-guard/actions/workflows/ci.yml)
+[![CI](https://github.com/dxz0069/seismoscope/actions/workflows/ci.yml/badge.svg)](https://github.com/dxz0069/seismoscope/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](pyproject.toml)
 
-面向 Vibe Coding 范式的安全审查验证平台，以 Claude Code Skill 形式嵌入 AI 辅助开发全流程。
+**候风——AI 编码时代的候风地动仪。** 面向 Vibe Coding 范式的安全审查验证平台，以 Claude Code Skill 形式嵌入 AI 辅助开发全流程，在 AI 生成的代码里感知安全"地动"：确定性多智能体审查 + 三态验证，修复指令直达 AI 编码上下文。
 
-> **English** — Vibe Guard is a security audit & verification platform for the Vibe Coding era. It embeds into AI-assisted development as a Claude Code Skill / CLI, models the compound runtime surface (code · prompts · tools · permissions) with a four-plane graph (VRTM), runs deterministic multi-agent review with tri-state verification (vulnerable / fixed / legitimate-control), and returns AI-consumable remediation bundles instead of PDF reports.
+> **English** — Seismoscope (候风, after Zhang Heng's earthquake-detecting instrument) is a security audit & verification platform for the AI coding era. It embeds into AI-assisted development as a Claude Code Skill / CLI, models the compound runtime surface (code · prompts · tools · permissions) with a four-plane graph (VRTM), runs deterministic multi-agent review with tri-state verification (vulnerable / fixed / legitimate-control), and returns AI-consumable remediation bundles instead of PDF reports — sensing the tremors in AI-generated code before they quake.
 
-> 仓库名为 **vibe-guard**，代码包名与文档中沿用 **vibe-sec-platform**（安装后 CLI 为 `vibe-sec`），二者指同一项目。
+> 仓库名为 **seismoscope**，项目名 **候风 Seismoscope**（曾用名 vibe-guard）；代码包名沿用 **vibe-sec-platform**（安装后 CLI 为 `vibe-sec`），三者指同一项目。
 
-**版本**: v0.6.0 | **状态**: ✅ 所有阶段完成（Phase 1-5），工程验证版（本地单人 Beta），成熟度自评见 [docs/CURRENT_PROJECT_STATUS_2026-08-01.md](docs/CURRENT_PROJECT_STATUS_2026-08-01.md)
+**版本**: v0.7.0 | **状态**: ✅ 所有阶段完成（Phase 1-5），工程验证版（本地单人 Beta），成熟度自评见 [docs/CURRENT_PROJECT_STATUS_2026-08-01.md](docs/CURRENT_PROJECT_STATUS_2026-08-01.md)
 
 ## 项目定位
 
@@ -135,6 +135,18 @@ AST 审计通道依赖 tree-sitter 解析器，首次使用会从 GitHub 下载�
 
 - 设置 `VIBE_SEC_TREE_SITTER_CACHE` 指向预置解析器缓存目录，可直接拷贝已下载缓存（当前缓存位置见 `doctor --json` 输出的 `tree_sitter.cache_dir` 字段）；
 - 或设置 `VIBE_SEC_DISABLE_TREE_SITTER=1` 跳过全部 AST 通道，平台自动降级到文本/正则分析，不会中断审计。
+
+### 召回/误报基线
+
+`scripts/benchmark_recall.py` 在固定靶场集上度量确定性审计能力（无 LLM），当前基线为**平均召回 100%、safe 集零误报**（详见 `note/report/baseline/`）：
+
+```bash
+python scripts/benchmark_recall.py                          # 运行四个内置靶场集
+python scripts/benchmark_recall.py --compare note/report/baseline/2026-10-26-v0.7.0.json
+python scripts/benchmark_recall.py --project /path/to/VAmPI --label vampi --expect sql_injection,api_key
+```
+
+`--compare` 在召回下降或误报出现时以退出码 1 失败，用于防止能力回退；外部靶场（真实 VAmPI、Juice Shop 等）通过 `--project/--expect` 接入。
 
 ### Docker 一键部署
 
@@ -413,5 +425,5 @@ MIT License
 
 ## 联系方式
 
-- 项目主页: https://github.com/dxz0069/vibe-guard
-- 问题反馈: https://github.com/dxz0069/vibe-guard/issues
+- 项目主页: https://github.com/dxz0069/seismoscope
+- 问题反馈: https://github.com/dxz0069/seismoscope/issues

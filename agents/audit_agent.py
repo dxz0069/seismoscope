@@ -195,6 +195,8 @@ class AuditAgent(BaseAgent):
                     r'dangerouslySetInnerHTML',
                     r'\.html\(.*?\+',
                     r'\.html\(\$\(.*?\)',
+                    # f-string 拼 HTML 并插入变量（服务端反射型 XSS）
+                    r'f["\'][^"\n]*<[a-zA-Z][^>\n]*>[^"\n]*\{',
                 ],
                 "severity": Severity.MEDIUM,
                 "description": "可能的 XSS：未转义的内容渲染",
@@ -256,8 +258,8 @@ class AuditAgent(BaseAgent):
                     r'(tool|function)\s*=.*\{.*?["\']description["\'].*?(ignore|override|forget|disregard)',
                     # 缺少确认机制的工具
                     r'(tool|function).*(execute|delete|remove|drop|update).*?(?!confirm)',
-                    # 过度权限
-                    r'(permissions|access)\s*=\s*["\'].*\*.*["\']',
+                    # 过度权限（= 赋值与字典/JSON 的 ": 键值两种形态，键名可带引号）
+                    r'["\']?(?:permissions|access)["\']?\s*[:=]\s*["\'][^"\']*\*[^"\']*["\']',
                     # 无限制的工具调用
                     r'tool.*\(\s*\)\s*.*(?:while\s+True|for\s+\w+\s+in\s+range\(.*\))',
                 ],
@@ -321,9 +323,10 @@ class AuditAgent(BaseAgent):
             },
             "api_key": {
                 "patterns": [
-                    r'api_key\s*=\s*["\'][a-zA-Z0-9]{20,}["\']',
-                    r'API_KEY\s*=\s*["\'][a-zA-Z0-9]{20,}["\']',
-                    r'secret_key\s*=\s*["\'][^"\']+["\']',
+                    # 值形约束：16+ 位字母数字及 sk-/AKIA- 等常见前缀符号，
+                    # 兼容 = 与字典/配置的 : 赋值（扫描整体 IGNORECASE）。
+                    r'api_key\s*[=:]\s*["\'][A-Za-z0-9+/_-]{16,}["\']',
+                    r'secret_key\s*[=:]\s*["\'][^"\']+["\']',
                 ],
                 "severity": Severity.HIGH,
                 "description": "硬编码的 API Key 或密钥",
