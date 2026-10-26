@@ -13,6 +13,16 @@ from typing import Any, Dict
 from datetime import datetime
 
 
+def _tool_version() -> str:
+    """读取安装版本号（开发环境未安装时返回 dev）。"""
+    try:
+        from importlib.metadata import version
+
+        return version("vibe-sec-platform")
+    except Exception:  # pragma: no cover - 未安装场景
+        return "dev"
+
+
 class OutputFormatter:
     """
     多格式输出格式化器
@@ -26,6 +36,7 @@ class OutputFormatter:
             "json": self.format_json,
             "claude_code": self.format_claude_code,
             "html": self.format_html,
+            "sarif": self.format_sarif,
         }
 
     def format(self, result: Dict[str, Any], format_type: str = "markdown") -> str:
@@ -137,6 +148,73 @@ class OutputFormatter:
     def format_json(self, result: Dict[str, Any]) -> str:
         """格式化为 JSON"""
         return json.dumps(result, indent=2, ensure_ascii=False, default=str)
+
+    def format_sarif(self, result: Dict[str, Any]) -> str:
+        """格式化为 SARIF 2.1.0（OASIS 标准，GitHub Code Scanning 原生支持）。
+
+        映射约定：漏洞类型 -> ruleId，severity -> level（critical/high -> error，
+        medium -> warning，其余 -> note），三态验证状态放入 result.properties，
+        finding id 作为 partialFingerprints 供 Code Scanning 去重。
+        """
+        level_map = {"critical": "error", "high": "error", "medium": "warning", "low": "note"}
+        rules: Dict[str, Dict[str, Any]] = {}
+        results = []
+        for finding in result.get("findings", []):
+            vuln_type = str(finding.get("vulnerability_type", "unknown"))
+            description = str(finding.get("description") or finding.get("title") or vuln_type)
+            if vuln_type not in rules:
+                rules[vuln_type] = {
+                    "id": vuln_type,
+                    "shortDescription": {"text": description},
+                    "properties": {"tags": ["security", "vibe-coding"]},
+                }
+            message = description
+            verification = finding.get("verification_status")
+            if verification:
+                message += f" [verification: {verification}]"
+            file_path = str(finding.get("file_path") or "").replace("\\", "/")
+            location = {
+                "physicalLocation": {
+                    "artifactLocation": {"uri": file_path, "uriBaseId": "%SRCROOT%"},
+                    "region": {
+                        "startLine": int(finding.get("line_start") or 1),
+                        "endLine": int(finding.get("line_end") or finding.get("line_start") or 1),
+                    },
+                }
+            }
+            sarif_result: Dict[str, Any] = {
+                "ruleId": vuln_type,
+                "level": level_map.get(str(finding.get("severity", "medium")).lower(), "note"),
+                "message": {"text": message},
+                "locations": [{"physicalLocation": location["physicalLocation"]}],
+            }
+            properties = {
+                key: finding[key]
+                for key in ("verification_status", "verification_level", "lane", "confidence")
+                if finding.get(key) is not None
+            }
+            if properties:
+                sarif_result["properties"] = properties
+            if finding.get("id"):
+                sarif_result["partialFingerprints"] = {"seismoscopeFindingId/v1": str(finding["id"])}
+            results.append(sarif_result)
+
+        sarif = {
+            "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+            "version": "2.1.0",
+            "runs": [{
+                "tool": {
+                    "driver": {
+                        "name": "Seismoscope (vibe-sec)",
+                        "informationUri": "https://github.com/dxz0069/seismoscope",
+                        "semanticVersion": _tool_version(),
+                        "rules": list(rules.values()),
+                    }
+                },
+                "results": results,
+            }],
+        }
+        return json.dumps(sarif, indent=2, ensure_ascii=False, default=str)
 
     def format_claude_code(self, result: Dict[str, Any]) -> str:
         """

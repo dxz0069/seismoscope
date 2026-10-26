@@ -1092,7 +1092,7 @@ def main():
     # audit 命令
     audit_parser = subparsers.add_parser("audit", help="执行安全审查")
     audit_parser.add_argument("project_path", help="项目路径")
-    audit_parser.add_argument("--format", default="markdown", choices=["markdown", "json", "claude_code", "html"], help="输出格式")
+    audit_parser.add_argument("--format", default="markdown", choices=["markdown", "json", "claude_code", "html", "sarif"], help="输出格式")
     audit_parser.add_argument("--output", "-o", help="输出文件路径")
     audit_parser.add_argument("--use-llm", action="store_true", help="使用 LLM 增强分析")
     audit_parser.add_argument("--api-key", help="LLM API Key")
@@ -1314,6 +1314,8 @@ def main():
             output = format_result(result, "claude_code")
         elif args.format == "html":
             output = format_result(result, "html")
+        elif args.format == "sarif":
+            output = format_result(result, "sarif")
         else:
             output = format_result(result, "markdown")
 
