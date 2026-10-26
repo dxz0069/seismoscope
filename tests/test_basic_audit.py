@@ -139,10 +139,13 @@ def test_audit_lanes_are_parallel_child_tasks(tmp_path):
     )
 
     assert result["audit_summary"]["execution_mode"] == "parallel_lanes"
+    # 计数与 tests/fixtures 植入漏洞对齐：api_key 不再被相邻 password 合并、
+    # MCP 字典语法通配权限与 f-string XSS 为 v0.7.0 新增检出。
     assert result["audit_lanes"] == {
-        "web_audit": 5,
+        "web_audit": 6,
         "agent_audit": 8,
-        "secrets_audit": 3,
+        "secrets_audit": 4,
+        "mcp_audit": 2,
     }
     assert len(result["audit_task_ids"]) == 5
     assert len(result["audit_task_ids"]) == len(set(result["audit_task_ids"]))
