@@ -138,11 +138,12 @@ AST 审计通道依赖 tree-sitter 解析器，首次使用会从 GitHub 下载�
 
 ### 召回/误报基线
 
-`scripts/benchmark_recall.py` 在固定靶场集上度量确定性审计能力（无 LLM），当前基线为**平均召回 100%、safe 集零误报**（详见 `note/report/baseline/`）。对真实 [VAmPI](https://github.com/erev0s/VAmPI) 靶场（11 个 Python 文件），6 个已知漏洞中 4 个静态可映射类型**全部命中且零误报**，IDOR/debug 端点等语义类由 LLM 审计通道负责：
+`scripts/benchmark_recall.py` 在固定靶场集上度量确定性审计能力（无 LLM），当前基线为**平均召回 100%、safe 集零误报**。对真实 [VAmPI](https://github.com/erev0s/VAmPI) 靶场（11 个 Python 文件），6 个已知漏洞中 4 个静态可映射类型**全部命中且零误报**，IDOR/debug 端点等语义类由 LLM 审计通道负责：
 
 ```bash
 python scripts/benchmark_recall.py                          # 运行四个内置靶场集
-python scripts/benchmark_recall.py --compare note/report/baseline/2026-10-26-v0.7.0.json
+python scripts/benchmark_recall.py --json baseline.json     # 保存基线
+python scripts/benchmark_recall.py --compare baseline.json  # 对比基线，回退则退出码 1
 python scripts/benchmark_recall.py --project /path/to/VAmPI --label vampi --expect sql_injection,api_key
 ```
 
