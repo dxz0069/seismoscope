@@ -4,6 +4,16 @@
 
 ## [Unreleased]
 
+## [0.13.0] — 2026-10-26
+
+### 新增
+
+- **真实 CVE 回放基线翻牌 0/3 → 2/3**：
+  - mistune（CWE-22）：路径遍历门控新增第三形态——非请求污点（文档/模板/配置参数）经 `join(dirname(源), 变量)` 进入文件读取且窗口内无包含性校验（commonpath/is_relative_to/relative_to/startswith），校验缺失本身即信号
+  - launch-editor（CWE-78）：命令注入新增 JS `child_process.exec` 汇点与 Windows CMD `^` 转义白名单缺 `%` 的绕过形态
+  - serialize-javascript（CWE-79）保留 strict xfail：转义正则的语义绕过静态原理性不可见——"看着已修复实则可绕过"的 false positivity 标本，归 LLM 语义审查通道职责
+- 两类新模式经基准门禁验证零误报引入（safe 集仍 0 误报，内置靶场 100% 召回无漂移）
+
 ## [0.12.0] — 2026-10-26
 
 ### 新增（感谢 @shangjian2023 的五项贡献）
