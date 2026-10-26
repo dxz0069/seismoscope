@@ -25,9 +25,9 @@ jobs:
 
       - name: Install Seismoscope and run audit
         run: |
-          pip install git+https://github.com/dxz0069/seismoscope.git
+          pip install seismoscope  # 或 git+https://github.com/dxz0069/seismoscope.git
           # 审查整个仓库；确定性无 LLM 模式，CI 内零凭据
-          vibe-sec audit . --format sarif -o seismoscope.sarif
+          seismoscope audit . --format sarif -o seismoscope.sarif
 
       - name: Upload SARIF to GitHub Code Scanning
         if: hashFiles('seismoscope.sarif') != ''

@@ -20,7 +20,7 @@ def _tool_version() -> str:
     try:
         from importlib.metadata import version
 
-        return version("vibe-sec-platform")
+        return version("seismoscope")
     except Exception:  # pragma: no cover - 未安装场景
         return "dev"
 

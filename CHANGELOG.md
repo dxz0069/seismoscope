@@ -4,6 +4,14 @@
 
 ## [Unreleased]
 
+## [0.9.1] — 2026-10-26
+
+### 变更
+
+- PyPI 分发名定为 **seismoscope**（首个 PyPI 发布版本；曾用分发名 vibe-sec-platform 未发布过）
+- CLI 新增 `seismoscope` 等价命令（`vibe-sec` 保持不变）
+- SARIF tool driver 版本号读取改为新分发名
+
 ## [0.9.0] — 2026-10-26
 
 ### 新增
