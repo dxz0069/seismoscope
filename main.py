@@ -1030,6 +1030,76 @@ def format_result(result: Dict[str, Any], format_type: str = "markdown") -> str:
     return formatter.format(result, format_type)
 
 
+def _persist_full_audit_result(result: Dict[str, Any]):
+    """把完整审计结果归档到本地 ArtifactStore，供瘦身报告回读。"""
+    from core.tool_fabric import ArtifactStore
+
+    state_root = Path(os.getenv("VIBE_SEC_STATE_HOME", str(Path.home() / ".vibe-sec"))).resolve()
+    run_id = str(dict(result.get("session") or {}).get("session_id") or f"run-{uuid.uuid4().hex}")
+    store = ArtifactStore(str(state_root / "artifacts"), session_id=run_id)
+    return store.put_json(
+        result,
+        producer="cli-audit",
+        artifact_type="full_audit_result",
+        file_name="audit-result.json",
+    )
+
+
+def _slim_audit_payload(result: Dict[str, Any], full_artifact: Any) -> Dict[str, Any]:
+    """紧凑版 JSON 报告：只保留摘要与 finding 概要，完整结果经 ref 引用。
+
+    真实仓库的全量 JSON 可达数百 MB（bundle/VRTM 全部内联），默认报告文件
+    只保留可读摘要；retest 输入会经 full_result_ref 自动回读完整整改包。
+    """
+    findings = result.get("merged_findings", []) or []
+    finding_fields = (
+        "id", "vulnerability_type", "severity", "file_path", "line_start", "line_end",
+        "description", "verification_status", "confidence", "cwe_id", "risk_hypothesis_ids",
+    )
+    return {
+        "contract_version": "vibe-sec.audit-report.v1",
+        "summary": result.get("summary"),
+        "audit_summary": result.get("audit_summary"),
+        "verification_summary": result.get("verification_summary"),
+        "audit_lanes": result.get("audit_lanes"),
+        "finding_count": len(findings),
+        "findings": [
+            {key: finding.get(key) for key in finding_fields if key in finding}
+            for finding in findings
+        ],
+        "remediation_package_ids": [
+            bundle.get("package_id") for bundle in result.get("remediation_bundles", []) or []
+        ],
+        "needs_evidence_finding_count": len(result.get("needs_evidence_findings", []) or []),
+        "full_result_ref": {
+            "artifact_id": full_artifact.artifact_id,
+            "path": full_artifact.path,
+            "sha256": full_artifact.sha256,
+            "size_bytes": full_artifact.size_bytes,
+        },
+        "retest_usage": "vibe-sec retest <project> --input <本文件> 会经 full_result_ref 自动回读完整整改包",
+    }
+
+
+def _extract_retest_packages(payload: Any) -> list:
+    """兼容三种 retest 输入：完整审计结果、瘦身报告（含 full_result_ref）、裸包列表。"""
+    if isinstance(payload, list):
+        return payload
+    if not isinstance(payload, dict):
+        return []
+    packages = payload.get("remediation_bundles")
+    if isinstance(packages, list) and packages:
+        return packages
+    ref = dict(payload.get("full_result_ref") or {})
+    ref_path = Path(str(ref.get("path") or ""))
+    if ref_path.is_file():
+        hydrated = json.loads(ref_path.read_text(encoding="utf-8-sig"))
+        packages = hydrated.get("remediation_bundles", []) if isinstance(hydrated, dict) else []
+        if isinstance(packages, list) and packages:
+            return packages
+    return []
+
+
 def _print_deployment_report(report: Dict[str, Any], *, as_json: bool) -> None:
     if as_json:
         print(json.dumps(report, ensure_ascii=False, indent=2, default=str))
@@ -1110,6 +1180,10 @@ def main():
     audit_parser.add_argument(
         "--no-model-store", action="store_true",
         help="Do not persist the evidence-enriched VRTM model after audit",
+    )
+    audit_parser.add_argument(
+        "--full-result", action="store_true",
+        help="Write the full JSON result inline (default: compact report with a full_result_ref)",
     )
     audit_parser.add_argument("--verbose", "-v", action="store_true", help="输出详细信息")
     audit_parser.add_argument("--authorization", help="Trusted verification authorization envelope")
@@ -1309,7 +1383,13 @@ def main():
         if args.format == "markdown":
             output = format_result(result, "markdown")
         elif args.format == "json":
-            output = format_result(result, "json")
+            if args.full_result:
+                output = format_result(result, "json")
+            else:
+                artifact = _persist_full_audit_result(result)
+                output = json.dumps(
+                    _slim_audit_payload(result, artifact), ensure_ascii=False, indent=2, default=str
+                )
         elif args.format == "claude_code":
             output = format_result(result, "claude_code")
         elif args.format == "html":
@@ -1335,7 +1415,7 @@ def main():
             # the CLI boundary while keeping the parsed payload unchanged.
             with open(args.input, "r", encoding="utf-8-sig") as handle:
                 payload = json.load(handle)
-            packages = payload.get("remediation_bundles", []) if isinstance(payload, dict) else payload
+            packages = _extract_retest_packages(payload)
             if not isinstance(packages, list):
                 raise ValueError("input must contain a remediation_bundles list or be a package list")
             result = asyncio.run(run_retest(
