@@ -238,6 +238,12 @@ def _render(report: dict) -> str:
 
 
 def main() -> int:
+    # Windows 传统控制台默认 cp1252/gbk，直接 print 中文表格会
+    # UnicodeEncodeError；统一重配为 UTF-8（不可编码字符降级为替换符）。
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="replace")
+
     parser = argparse.ArgumentParser(description="靶场召回/误报基准")
     parser.add_argument("--json", help="结果写入的 JSON 文件路径")
     parser.add_argument("--compare", help="对比的历史基线 JSON，回归则退出码 1")
