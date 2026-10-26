@@ -212,6 +212,11 @@ class AuditAgent(BaseAgent):
                     r'os\.system\(',
                     r'subprocess\.call\(.*shell=True',
                     r'subprocess\.Popen\(.*shell=True',
+                    # JS：child_process.exec 单串参数经 shell 解释（真实 CVE 形态：launch-editor）
+                    r'childProcess\.exec(?:Sync)?\(',
+                    r'child_process\.exec(?:Sync)?\(',
+                    # Windows CMD ^ 转义白名单缺 %/引号处理（launch-editor 系 CVE 的绕过形态）
+                    r'replace\(/\(\[&\|<>,;=\^\]\)/g,\s*[\'"]\^\$1[\'"]\)',
                 ],
                 "severity": Severity.CRITICAL,
                 "description": "可能的命令注入：用户输入被用于系统命令执行",
@@ -1187,6 +1192,28 @@ class AuditAgent(BaseAgent):
                 path_reference = rf"\b{re.escape(path_variable)}\b"
                 if re.search(rf"{sink}{path_reference}", window, re.IGNORECASE):
                     return True
+
+        # 无请求源时的第三形态（真实 CVE：mistune include 指令）——非请求污点
+        # （文档/模板/配置参数）经 join(dirname(源文件), 变量) 进入文件读取，且
+        # 窗口内没有任何包含性校验（commonpath / is_relative_to / relative_to /
+        # startswith）。校验缺失本身是信号：修复即补上其中之一。
+        tainted_rel_paths = re.findall(
+            r"\b([A-Za-z_$][\w$]*)\s*=\s*(?:(?:os\.path|path)\.)?(?:join|dirname)\s*\("
+            r"[^)\n]*\)\s*,\s*([A-Za-z_$][\w$]*)\s*\)",
+            window,
+            re.IGNORECASE,
+        )
+        for path_variable, rel_variable in tainted_rel_paths:
+            if re.search(rf"\b{re.escape(rel_variable)}\b\s*=\s*['\"]", window):
+                continue  # 相对路径是字面量，无外部控制面
+            if re.search(
+                rf"{sink}\b{re.escape(path_variable)}\b", window, re.IGNORECASE
+            ) and not re.search(
+                r"commonpath|is_relative_to|relative_to|\.startswith\(|realpath\s*\(\s*\.\.\s*\)",
+                window,
+                re.IGNORECASE,
+            ):
+                return True
         return False
 
     @staticmethod
