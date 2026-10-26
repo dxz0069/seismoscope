@@ -203,6 +203,10 @@ class AuditTask(BaseModel):
     remediation_count: int = 0
     result: Optional[Dict[str, Any]] = None
     error: Optional[str] = None
+    # 创建参数随任务持久化：进程重启把运行中任务标记为 FAILED 后，
+    # retry 端点据此按原参数重建任务（llm_config 不持久化，重试时重新解析）。
+    use_llm: bool = False
+    output_format: str = "markdown"
 
 
 class AuditTaskSummary(BaseModel):
@@ -730,6 +734,29 @@ def _legacy_llm_key_is_configured() -> bool:
     )
 
 
+def _resolve_llm_config_or_raise(use_llm: bool) -> Optional[Dict[str, Any]]:
+    """创建/重试任务共用的 LLM 配置解析：未就绪时以 422 拒绝。"""
+    if not use_llm:
+        return None
+    active_config = _active_chat_model_config()
+    if active_config:
+        if active_config.provider in {"openai_compatible", "auto"} and not active_config.api_base:
+            raise HTTPException(
+                status_code=422,
+                detail="The active OpenAI-compatible model needs an API Base URL",
+            )
+        return active_config.runtime_options()
+    if not _legacy_llm_key_is_configured():
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                "LLM review needs an active Chat model with an API key. "
+                "Configure one in Settings > Models, then retry."
+            ),
+        )
+    return None
+
+
 def _execute_audit(
     project: Project,
     use_llm: bool,
@@ -863,30 +890,15 @@ async def create_audit_task(
 
     task_id = str(uuid.uuid4())
     project = projects_db[task.project_id]
-    llm_config: Optional[Dict[str, Any]] = None
-    if task.use_llm:
-        active_config = _active_chat_model_config()
-        if active_config:
-            if active_config.provider in {"openai_compatible", "auto"} and not active_config.api_base:
-                raise HTTPException(
-                    status_code=422,
-                    detail="The active OpenAI-compatible model needs an API Base URL",
-                )
-            llm_config = active_config.runtime_options()
-        elif not _legacy_llm_key_is_configured():
-            raise HTTPException(
-                status_code=422,
-                detail=(
-                    "LLM review needs an active Chat model with an API key. "
-                    "Configure one in Settings > Models, then retry."
-                ),
-            )
+    llm_config = _resolve_llm_config_or_raise(task.use_llm)
 
     new_task = AuditTask(
         id=task_id,
         project_id=task.project_id,
         status=AuditTaskStatus.PENDING,
         created_at=datetime.now(),
+        use_llm=task.use_llm,
+        output_format=task.output_format,
     )
 
     audit_tasks_db[task_id] = new_task
@@ -902,6 +914,46 @@ async def create_audit_task(
         llm_config,
     )
 
+    return new_task
+
+
+@app.post("/api/audit-tasks/{task_id}/retry", response_model=AuditTask)
+async def retry_audit_task(task_id: str, background_tasks: BackgroundTasks):
+    """按原参数重试失败/被重启中断的审计任务，返回新的 PENDING 任务。
+
+    进程重启会把运行中任务标记为 FAILED（见状态加载逻辑）；本端点把
+    "手动新建任务"缩短为一键重试，llm_config 按当前激活模型重新解析。
+    """
+    original = audit_tasks_db.get(task_id)
+    if original is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+    if original.status != AuditTaskStatus.FAILED:
+        raise HTTPException(
+            status_code=409,
+            detail="Only failed or restart-interrupted audit tasks can be retried",
+        )
+    if original.project_id not in projects_db:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    llm_config = _resolve_llm_config_or_raise(original.use_llm)
+    new_task = AuditTask(
+        id=str(uuid.uuid4()),
+        project_id=original.project_id,
+        status=AuditTaskStatus.PENDING,
+        created_at=datetime.now(),
+        use_llm=original.use_llm,
+        output_format=original.output_format,
+    )
+    audit_tasks_db[new_task.id] = new_task
+    api_state_store.save_audit_task(new_task)
+    background_tasks.add_task(
+        run_audit_task,
+        new_task.id,
+        projects_db[original.project_id],
+        new_task.use_llm,
+        new_task.output_format,
+        llm_config,
+    )
     return new_task
 
 
