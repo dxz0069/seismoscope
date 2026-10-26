@@ -39,6 +39,7 @@ from ..agent_runtime.task import AgentTask
 from ..agent_runtime.completion import FinalizeTaskContract
 from ..audit.finding_cluster import cluster_findings
 from ..audit.lanes import group_findings_by_lane
+from ..audit.suppression import apply_suppressions
 from ..audit.models import normalize_finding
 from ..harness.return_protocol import build_return_packages
 from ..harness.models import ProjectProfile, RuntimeSurfaceGraph
@@ -1094,7 +1095,13 @@ class OrchestratorAgent(BaseAgent):
             if not matched_node_ids:
                 finding["surface_attachment_reason"] = "No runtime-surface node matched the source file and line"
 
-        self.state.merged_findings = unique_findings
+        project_path_for_suppression = (
+            self.state.session.project_path if self.state.session else ""
+        )
+        merged_findings, self._suppressed_findings = apply_suppressions(
+            unique_findings, project_path_for_suppression
+        )
+        self.state.merged_findings = merged_findings
         self.state.lane_findings = group_findings_by_lane(self.state.merged_findings)
         if self.state.session:
             self.state.session.phases_completed.append(OrchestrationPhase.MERGE.value)
@@ -1428,6 +1435,7 @@ class OrchestratorAgent(BaseAgent):
                 "orchestration_completed": True,
                 "phases_completed": self.state.session.phases_completed if self.state.session else [],
                 "merged_findings": self.state.merged_findings,
+                "suppressed_findings": getattr(self, "_suppressed_findings", []),
                 "raw_findings": self.state.raw_findings,
                 "verified_findings": self.state.verified_findings,
                 "rejected_findings": self.state.rejected_findings,

@@ -1133,6 +1133,18 @@ def main():
         help="Signed local remediation approval; repeat for each high-impact package",
     )
 
+    suppress_parser = subparsers.add_parser(
+        "suppress", help="Record a local finding suppression for one project",
+    )
+    suppress_parser.add_argument("project_path", help="Audited project directory")
+    suppress_parser.add_argument("--type", required=True, dest="vulnerability_type")
+    suppress_parser.add_argument("--file", required=True)
+    suppress_parser.add_argument("--line", type=int, default=None)
+    suppress_parser.add_argument("--reason", required=True)
+    suppress_parser.add_argument(
+        "--list", action="store_true", dest="list_entries", help="List suppressions for the project",
+    )
+
     approval_parser = subparsers.add_parser(
         "approve-remediation", help="Issue a signed local confirmation for one high-impact remediation package",
     )
@@ -1364,6 +1376,24 @@ def main():
             for item in result.get("regression_reports", [])
         ):
             sys.exit(2)
+
+    elif args.command == "suppress":
+        from core.audit.suppression import add_suppression, load_suppressions
+
+        if not os.path.isdir(args.project_path):
+            print(f"Error: project directory does not exist: {args.project_path}")
+            sys.exit(1)
+        if args.list_entries:
+            print(json.dumps(load_suppressions(args.project_path), ensure_ascii=False, indent=2))
+        else:
+            entry = add_suppression(
+                args.project_path,
+                vulnerability_type=args.vulnerability_type,
+                file_path=args.file,
+                line=args.line,
+                reason=args.reason,
+            )
+            print(json.dumps({"suppressed": entry}, ensure_ascii=False, indent=2))
 
     elif args.command == "approve-remediation":
         from core.remediation import issue_remediation_approval
