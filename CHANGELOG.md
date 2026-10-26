@@ -4,6 +4,16 @@
 
 ## [Unreleased]
 
+## [0.12.0] — 2026-10-26
+
+### 新增（感谢 @shangjian2023 的五项贡献）
+
+- **tree-sitter 段错误修复**：原生 `start_point/end_point` 在部分语法树上崩溃（Windows 实测 SIGSEGV），统一改为字节偏移换算行号；附最小崩溃样本回归测试。修复后 mem0 全库审计从 2/2 崩溃到 109s/403 findings，TS 泳道真正跑通
+- **CVE 回放召回基线**：vendor 三个真实漏洞版本快照（mistune/serialize-javascript/launch-editor，保留上游许可），行级命中标准 = 修复 hunk ±8 行；当前基线 0/3 以 strict xfail 锁定——检测器补上召回即翻 XPASS 强制更新基线
+- **审计 JSON 报告默认瘦身**：真实仓库全量 JSON 可达数百 MB，默认输出紧凑报告，完整结果归档本地 ArtifactStore 并以 full_result_ref（sha256）引用；`--full-result` 恢复旧行为，retest 自动经 ref 回读
+- **项目路径排除**：默认排除 `*.min.js`/`*.map`/`dist`，项目内 `.vibe-secignore` 与 CLI `--exclude` 可叠加；生效模式与 ignore 文件存在性随结果回显（维护者补全——恶意仓库携带全排除文件时对使用者可见）
+- **Finding 级误报抑制**：本地抑制库（类型+路径±5 行），合并阶段过滤且 `suppressed_findings` 回显留痕；抑制只认工具侧存储，被审计源码永不参与
+
 ## [0.11.0] — 2026-10-26
 
 ### 新增

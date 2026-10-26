@@ -74,3 +74,20 @@ def test_audit_respects_vibe_secignore(tmp_path):
     files = {str(f.get("file_path", "")).replace("\\", "/") for f in result["merged_findings"]}
     assert not any("legacy/" in f for f in files), ".vibe-secignore 应排除 legacy/"
     assert any(f.endswith("app.py") and "legacy" not in f for f in files)
+
+
+def test_audit_result_echoes_effective_exclusions(tmp_path):
+    """恶意仓库可携带全排除 .vibe-secignore——生效模式必须随结果回显。"""
+    import asyncio
+    from main import run_audit
+
+    (tmp_path / ".vibe-secignore").write_text("vendor/**\n", encoding="utf-8")
+    (tmp_path / "app.py").write_text(
+        'q = "SELECT * FROM t WHERE x = " + user_input\ndb.execute(q)\n', encoding="utf-8"
+    )
+    result = asyncio.run(run_audit(project_path=str(tmp_path), use_llm=False))
+    exclusion = result.get("exclusion")
+    assert exclusion is not None, "结果必须携带 exclusion 回显"
+    assert exclusion["ignore_file_present"] is True
+    assert any("vendor" in pattern for pattern in exclusion["patterns"])
+    assert ".vibe-secignore" in exclusion["warning"]
