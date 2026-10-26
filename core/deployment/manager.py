@@ -41,10 +41,6 @@ class DeploymentManager:
     def doctor(self) -> Dict[str, Any]:
         docker = self._docker_status()
         image_results = [self._inspect_image(item) for item in self.manifest["images"]]
-        required = [item for item in image_results if item["default_install"]]
-        required_ready = bool(docker["daemon_available"]) and all(
-            bool(item["available"]) for item in required
-        )
         required_gaps = [
             item["id"] for item in image_results
             if item["default_install"] and not item["available"]
@@ -54,16 +50,44 @@ class DeploymentManager:
             if not item["default_install"] and not item["available"]
         ]
         llm_variables = ["VIBE_SEC_DEEPSEEK_API_KEY", "DEEPSEEK_API_KEY"]
+        platform_block = {
+            "system": platform.system(),
+            "machine": platform.machine(),
+            "python": platform.python_version(),
+            "python_supported": sys.version_info >= (3, 11),
+        }
+        ts = tree_sitter_status()
+        capabilities = self._capabilities(
+            docker=docker,
+            required_gaps=required_gaps,
+            optional_gaps=optional_gaps,
+            python_supported=platform_block["python_supported"],
+            ts=ts,
+            llm_configured=any(os.getenv(name) for name in llm_variables),
+        )
+        # 三态判定：静态核心（纯 Python 泳道）是硬门槛；AST 与容器验证
+        # 各有降级路径，缺失只降级不阻断。可选能力（LLM/CodeQL）不参与
+        # 状态判定——未配置是默认形态而非故障。
+        static_ok = capabilities["static_audit"]["available"]
+        full_ok = all(
+            info["available"] for info in capabilities.values() if not info["optional"]
+        )
+        if not static_ok:
+            status = "not_ready"
+        elif full_ok:
+            status = "ready"
+        else:
+            status = "degraded_ready"
         return {
-            "contract_version": "vibe-sec.doctor.v1",
-            "status": "ready" if required_ready else "not_ready",
+            "contract_version": "vibe-sec.doctor.v2",
+            "status": status,
+            "degraded_capabilities": [
+                name for name, info in capabilities.items()
+                if not info["optional"] and not info["available"]
+            ],
+            "capabilities": capabilities,
             "release": self.manifest.get("release"),
-            "platform": {
-                "system": platform.system(),
-                "machine": platform.machine(),
-                "python": platform.python_version(),
-                "python_supported": sys.version_info >= (3, 11),
-            },
+            "platform": platform_block,
             "docker": docker,
             "images": image_results,
             "llm": {
@@ -71,12 +95,82 @@ class DeploymentManager:
                 "accepted_environment_variables": llm_variables,
                 "credential_values_exposed": False,
             },
-            "tree_sitter": tree_sitter_status(),
+            "tree_sitter": ts,
             "required_gaps": required_gaps,
             "optional_gaps": optional_gaps,
             "workspace": {
                 "root": str(self.root),
                 "free_bytes": shutil.disk_usage(self.root).free,
+            },
+        }
+
+    @staticmethod
+    def _capabilities(
+        *,
+        docker: dict[str, Any],
+        required_gaps: list[str],
+        optional_gaps: list[str],
+        python_supported: bool,
+        ts: dict[str, Any],
+        llm_configured: bool,
+    ) -> dict[str, dict[str, Any]]:
+        """能力矩阵：每项给 available/blocking/fallback，让用户知道“现在能跑什么”。
+
+        optional=True 的能力未配置属默认形态，不参与 ready 判定；
+        optional=False 的能力缺失会把状态压到 degraded_ready（有降级路径）
+        或 not_ready（静态核心不可用）。
+        """
+        container_blocking: list[str] = []
+        if not docker.get("daemon_available"):
+            container_blocking.append("docker daemon unavailable")
+        if required_gaps:
+            container_blocking.append(f"missing images: {', '.join(required_gaps)}")
+        ts_missing = [name for name, ok in ts.get("languages", {}).items() if not ok]
+        ast_blocking: list[str] = []
+        if not ts.get("pack_installed"):
+            ast_blocking.append("tree-sitter-language-pack not installed")
+        elif not ts.get("enabled"):
+            ast_blocking.append("AST lane disabled by env")
+        elif ts_missing:
+            ast_blocking.append(f"parsers not cached: {', '.join(ts_missing)}")
+        core_blocking = [] if python_supported else ["python>=3.11 required"]
+        return {
+            "static_audit": {
+                "available": python_supported,
+                "optional": False,
+                "blocking": core_blocking,
+                "fallback": None,
+            },
+            "secret_leak_scan": {
+                "available": python_supported,
+                "optional": False,
+                "blocking": list(core_blocking),
+                "fallback": None,
+            },
+            "mcp_ast_analysis": {
+                "available": not ast_blocking,
+                "optional": False,
+                "blocking": ast_blocking,
+                "fallback": "regex protocol lane (lower precision)" if ast_blocking else None,
+            },
+            "container_verification": {
+                "available": not container_blocking,
+                "optional": False,
+                "blocking": container_blocking,
+                "fallback": "static verification only (no tool sandbox)" if container_blocking else None,
+                "next_step": "vibe-sec setup" if container_blocking else None,
+            },
+            "llm_deep_analysis": {
+                "available": llm_configured,
+                "optional": True,
+                "blocking": [] if llm_configured else ["VIBE_SEC_DEEPSEEK_API_KEY / DEEPSEEK_API_KEY not set"],
+                "fallback": "deterministic pipeline without LLM enrichment",
+            },
+            "codeql_scan": {
+                "available": docker.get("daemon_available") and "codeql" not in optional_gaps,
+                "optional": True,
+                "blocking": [] if (docker.get("daemon_available") and "codeql" not in optional_gaps) else ["codeql image not installed"],
+                "next_step": "vibe-sec setup --include-codeql",
             },
         }
 
