@@ -4,6 +4,12 @@
 
 ## [Unreleased]
 
+## [0.15.1] — 2026-10-26
+
+### 修复
+
+- LLM 语义验收工具：systeminformation 归入对照组（此前误计为语义目标，语义命中虚高）；reject 结论的提示语修正。首次实测（deepseek-v4-flash）：对照组 3/3 全过、serialize-javascript 语义绕过未命中——诚实结论 reject，语义绕过连 LLM 通道在当前预算下也未捕获（46 个发现全部落在测试文件，sink 零命中）
+
 ## [0.15.0] — 2026-10-26
 
 ### 新增
