@@ -1,0 +1,48 @@
+# PyPI 发布（Trusted Publishing，OIDC 短期凭证，无长期 Token）
+#
+# 一次性配置（维护者）：PyPI → Manage → Publishing → Add a new pending publisher
+#   owner: dxz0069  repo: seismoscope
+#   workflow filename: publish.yml   environment name: pypi
+# 详细步骤：https://docs.pypi.org/trusted-publishers/
+name: Publish to PyPI
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Build sdist and wheel
+        run: |
+          python -m pip install --upgrade pip build twine
+          python -m build
+          twine check dist/*
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write  # Trusted Publishing 必需，仅此权限
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1

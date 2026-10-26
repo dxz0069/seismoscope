@@ -12,6 +12,8 @@ import json
 from typing import Any, Dict
 from datetime import datetime
 
+from ..audit.standards_map import standards_for
+
 
 def _tool_version() -> str:
     """读取安装版本号（开发环境未安装时返回 dev）。"""
@@ -163,11 +165,16 @@ class OutputFormatter:
             vuln_type = str(finding.get("vulnerability_type", "unknown"))
             description = str(finding.get("description") or finding.get("title") or vuln_type)
             if vuln_type not in rules:
-                rules[vuln_type] = {
+                standards = standards_for(vuln_type)
+                rule: Dict[str, Any] = {
                     "id": vuln_type,
                     "shortDescription": {"text": description},
                     "properties": {"tags": ["security", "vibe-coding"]},
                 }
+                if standards:
+                    rule["helpUri"] = standards["help_uri"]
+                    rule["properties"]["tags"].extend(standards["tags"])
+                rules[vuln_type] = rule
             message = description
             verification = finding.get("verification_status")
             if verification:

@@ -95,7 +95,7 @@ Vite 生产构建通过，转换 2,232 个模块。正在运行的 API 健康检
 
 ### 4.2 已修复并受回归保护的问题
 
-`docs/ISSUES_FOUND.md` 与 `docs/TEST_FINDINGS_COMPLETE.md` 记录的问题，当前已有对应回归测试或实现保护，主要包括：
+`docs/progress/ISSUES_FOUND.md` 与 `docs/TEST_FINDINGS_COMPLETE.md` 记录的问题，当前已有对应回归测试或实现保护，主要包括：
 
 | 历史问题 | 当前处理 | 当前判断 |
 |---|---|---|
@@ -159,7 +159,7 @@ Vite 生产构建通过，转换 2,232 个模块。正在运行的 API 健康检
 
 ### 5.4 历史靶场结果如何解读
 
-`docs/VAMPI_TEST_REPORT.md` 是 2026-07-29 的历史 no-LLM 基线：当时仅召回 6 个已知漏洞中的 1 个（17%），原因包括 OpenAPI/Connexion 路由未提取、弱密钥/业务逻辑/IDOR 检测不足。之后代码和回归测试已加入 OpenAPI 路由提取，当前 VAmPI VRTM 也已产生 14 个风险假设；但是**尚未对这份更新后的代码重新执行并人工标注 VAmPI 六个已知漏洞的完整召回率复测**。因此，17% 是历史问题证据，不应被说成当前准确率；当前提升也不能在复测前被说成已证实。
+`docs/progress/VAMPI_TEST_REPORT.md` 是 2026-07-29 的历史 no-LLM 基线：当时仅召回 6 个已知漏洞中的 1 个（17%），原因包括 OpenAPI/Connexion 路由未提取、弱密钥/业务逻辑/IDOR 检测不足。之后代码和回归测试已加入 OpenAPI 路由提取，当前 VAmPI VRTM 也已产生 14 个风险假设；但是**尚未对这份更新后的代码重新执行并人工标注 VAmPI 六个已知漏洞的完整召回率复测**。因此，17% 是历史问题证据，不应被说成当前准确率；当前提升也不能在复测前被说成已证实。
 
 Juice Shop 已经跑通本地源码审计，但没有完成对 CVE/官方挑战的人工 ground truth 标注。一次较早任务产生 1,076 个发现，后续结果降为 131 个，说明去噪已有进展；在没有精确率、召回率和每条已验证证据复核前，仍只能把这些结果视为审查队列。
 
@@ -271,8 +271,8 @@ LLM 配置已经存在一个启用的本地 `openai_compatible` 聊天模型。K
 | 主题 | 依据 |
 |---|---|
 | 产品设计与边界 | `docs/PRODUCT_ARCHITECTURE_V2.md`、`docs/ARCHITECTURE.md` |
-| 已记录测试问题与修复方向 | `docs/ISSUES_FOUND.md`、`docs/TEST_FINDINGS_COMPLETE.md` |
-| VAmPI 历史基准 | `docs/VAMPI_TEST_REPORT.md` |
+| 已记录测试问题与修复方向 | `docs/progress/ISSUES_FOUND.md`、`docs/TEST_FINDINGS_COMPLETE.md` |
+| VAmPI 历史基准 | `docs/progress/VAMPI_TEST_REPORT.md` |
 | VRTM 方法 | `docs/VRTM_METHOD.md`、`docs/VRTM_PRODUCT_IMPLEMENTATION.md` |
 | API 契约 | `docs/API.md`、`api/server.py` |
 | 本地持久化实现 | `api/state_store.py` |

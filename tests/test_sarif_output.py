@@ -69,3 +69,30 @@ def test_sarif_empty_findings_still_valid():
     document = json.loads(OutputFormatter().format({"findings": []}, "sarif"))
     assert document["runs"][0]["results"] == []
     assert document["runs"][0]["tool"]["driver"]["rules"] == []
+
+
+def test_sarif_rules_carry_cwe_and_owasp_standards():
+    result = _sample_result()
+    result["findings"].append({
+        "id": "pi-1",
+        "vulnerability_type": "prompt_injection",
+        "severity": "high",
+        "description": "可能的提示词注入",
+        "file_path": "agent/chat.py",
+        "line_start": 8,
+    })
+    document = json.loads(OutputFormatter().format(result, "sarif"))
+    rules = {rule["id"]: rule for rule in document["runs"][0]["tool"]["driver"]["rules"]}
+
+    sql_rule = rules["sql_injection"]
+    assert sql_rule["helpUri"] == "https://cwe.mitre.org/data/definitions/89.html"
+    assert "cwe-89" in sql_rule["properties"]["tags"]
+
+    pwd_rule = rules["plaintext_password_comparison"]
+    assert pwd_rule["helpUri"] == "https://cwe.mitre.org/data/definitions/256.html"
+    assert "owasp-api2-broken-authentication" in pwd_rule["properties"]["tags"]
+
+    # 提示词注入无权威 CWE，落位 OWASP LLM Top 10
+    injection_rule = rules["prompt_injection"]
+    assert injection_rule["helpUri"].startswith("https://owasp.org/")
+    assert "owasp-llm01-prompt-injection" in injection_rule["properties"]["tags"]
