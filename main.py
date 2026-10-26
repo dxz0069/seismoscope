@@ -152,6 +152,7 @@ async def run_audit(
     enable_react_audit: bool = False,
     enable_react_verification: bool = False,
     session_metadata: Optional[Dict[str, Any]] = None,
+    exclude_patterns: Optional[list[str]] = None,
 ) -> Dict[str, Any]:
     """
     执行安全审查
@@ -270,6 +271,7 @@ async def run_audit(
         "changed_files": list(changed_files or []),
         "verification_authorization": dict(verification_authorization or {}),
         "session_metadata": dict(session_metadata or {}),
+        "exclude_patterns": list(exclude_patterns or []),
     })
 
     if not result.success:
@@ -1185,6 +1187,11 @@ def main():
         "--full-result", action="store_true",
         help="Write the full JSON result inline (default: compact report with a full_result_ref)",
     )
+    audit_parser.add_argument(
+        "--exclude", action="append", default=[],
+        help="Project-relative exclude pattern (gitignore-like, repeatable); "
+        "combined with .vibe-secignore and built-in defaults (*.min.js, *.map, dist/)",
+    )
     audit_parser.add_argument("--verbose", "-v", action="store_true", help="输出详细信息")
     audit_parser.add_argument("--authorization", help="Trusted verification authorization envelope")
 
@@ -1386,6 +1393,7 @@ def main():
                     allow_dependency_network=args.osv,
                     persist_vrtm=not args.no_model_store,
                     verification_authorization=verification_authorization,
+                    exclude_patterns=args.exclude,
                 )
             )
         except (OSError, RuntimeError, ValueError) as exc:

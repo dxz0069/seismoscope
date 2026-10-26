@@ -20,6 +20,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 
+from core.audit.path_exclusion import is_excluded, resolve_excludes
 from core.agents.base import (
     AgentConfig,
     AgentPattern,
@@ -122,6 +123,8 @@ class AuditAgent(BaseAgent):
             "surface_handoff": "...",
         })
     """
+
+    _exclude_patterns: List[str] = []
 
     def __init__(
         self,
@@ -366,6 +369,10 @@ class AuditAgent(BaseAgent):
 
         logger.info(f"Starting audit for project: {project_path}")
         logger.info(f"Audit scope: {audit_scope}")
+
+        self._exclude_patterns = resolve_excludes(
+            project_path, payload.get("exclude_patterns")
+        )
 
         try:
             # 1. 静态分析：模式匹配
@@ -902,6 +909,9 @@ class AuditAgent(BaseAgent):
             return "dependency_vulnerability"
         return "secret_leak" if kind == "secret_finding" else "scanner_finding"
 
+    def _is_path_excluded(self, file_path: str, project_path: str) -> bool:
+        return is_excluded(os.path.relpath(file_path, project_path), self._exclude_patterns)
+
     async def _scan_web_vulnerabilities(self, project_path: str) -> None:
         """扫描 Web 漏洞"""
         logger.info("Scanning web vulnerabilities")
@@ -917,6 +927,8 @@ class AuditAgent(BaseAgent):
                     continue
 
                 file_path = os.path.join(root, file)
+                if self._is_path_excluded(file_path, project_path):
+                    continue
                 files_scanned += 1
                 logger.debug(f"Scanning file: {file_path}")
 
@@ -987,6 +999,8 @@ class AuditAgent(BaseAgent):
                 if file.endswith(('.env', '.secret', '.key', '.pem')):
                     # 直接标记敏感文件
                     file_path = os.path.join(root, file)
+                    if self._is_path_excluded(file_path, project_path):
+                        continue
                     candidate = CandidateCase(
                         id=f"secret_file-{len(self.audit_state.candidates)}",
                         vulnerability_type="sensitive_file",
@@ -1004,6 +1018,8 @@ class AuditAgent(BaseAgent):
                     continue
 
                 file_path = os.path.join(root, file)
+                if self._is_path_excluded(file_path, project_path):
+                    continue
 
                 try:
                     with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
@@ -1070,6 +1086,8 @@ class AuditAgent(BaseAgent):
                 file_path = os.path.join(root, file)
                 relative_path = Path(os.path.relpath(file_path, project_path)).as_posix()
                 if self._is_ignored_agent_path(relative_path):
+                    continue
+                if self._is_path_excluded(file_path, project_path):
                     continue
 
                 try:
@@ -1255,6 +1273,8 @@ class AuditAgent(BaseAgent):
                 if not file.endswith((".py", ".js", ".ts", ".java", ".yaml", ".yml")):
                     continue
                 file_path = os.path.join(root, file)
+                if self._is_path_excluded(file_path, project_path):
+                    continue
                 try:
                     content = Path(file_path).read_text(encoding="utf-8", errors="ignore")
                 except OSError as exc:
