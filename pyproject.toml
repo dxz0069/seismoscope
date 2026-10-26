@@ -48,9 +48,9 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/dxz0069/vibe-guard"
-Repository = "https://github.com/dxz0069/vibe-guard"
-Documentation = "https://github.com/dxz0069/vibe-guard#readme"
+Homepage = "https://github.com/dxz0069/seismoscope"
+Repository = "https://github.com/dxz0069/seismoscope"
+Documentation = "https://github.com/dxz0069/seismoscope#readme"
 
 [tool.setuptools]
 py-modules = ["main"]
