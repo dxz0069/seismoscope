@@ -13,7 +13,7 @@ Named after Zhang Heng's Houfeng Seismoscope (候风地动仪, 132 AD), the firs
 
 > Distribution name `seismoscope` (`pip install seismoscope`). Formerly known as vibe-guard / vibe-sec-platform. CLI provides both `vibe-sec` and `seismoscope` commands.
 
-**Version**: v0.12.0 | **Status**: engineering-validation release (local single-user beta). For an honest maturity self-assessment see [docs/progress/CURRENT_PROJECT_STATUS_2026-08-01.md](docs/progress/CURRENT_PROJECT_STATUS_2026-08-01.md).
+**Version**: v0.13.0 | **Status**: engineering-validation release (local single-user beta). For an honest maturity self-assessment see [docs/progress/CURRENT_PROJECT_STATUS_2026-08-01.md](docs/progress/CURRENT_PROJECT_STATUS_2026-08-01.md).
 
 ## Why
 
@@ -78,7 +78,7 @@ python scripts/benchmark_recall.py --compare baseline.json  # exit 1 on recall r
 python scripts/benchmark_recall.py --project /path/to/VAmPI --label vampi --expect sql_injection,api_key
 ```
 
-Current baseline: **100% recall on all built-in fixture sets, zero false positives on the safe fixture**. On the real [VAmPI](https://github.com/erev0s/VAmPI) benchmark (11 Python files), all 4 statically-mappable vulnerability types are detected with zero false positives; semantic types (IDOR, debug-endpoint exposure) are the LLM lane's responsibility. CI re-runs the gate on every PR.
+Current baseline: **100% recall on all built-in fixture sets, zero false positives on the safe fixture**. A real-CVE replay baseline (`tests/test_cve_replay.py`) additionally pins line-level hits on mistune (CWE-22) and launch-editor (CWE-78); serialize-javascript's escaping-semantic bypass stays xfail — statically invisible by design, owned by the LLM semantic lane. On the real [VAmPI](https://github.com/erev0s/VAmPI) benchmark (11 Python files), all 4 statically-mappable vulnerability types are detected with zero false positives; semantic types (IDOR, debug-endpoint exposure) are the LLM lane's responsibility. CI re-runs the gate on every PR.
 
 ## Audit Scope
 
