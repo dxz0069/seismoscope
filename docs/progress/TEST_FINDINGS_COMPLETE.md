@@ -363,7 +363,7 @@ def _build_boundary_path(self, finding):
 
 ### 状态
 
-已在 `docs/ISSUES_FOUND.md` 记录的修复中解决：找不到边界时标记 `boundary_gap: true` 而非虚构路径。
+已在 `docs/progress/ISSUES_FOUND.md` 记录的修复中解决：找不到边界时标记 `boundary_gap: true` 而非虚构路径。
 
 ---
 
@@ -393,7 +393,7 @@ def evaluate(self, changed_paths, *, explicit=False):
 
 ### 状态
 
-已在 `docs/ISSUES_FOUND.md` 记录的修复中解决：支持 diff 内容分析、代码文件过滤、风险权重和 `.vibe-sec/trigger-policy.yaml` 自定义。
+已在 `docs/progress/ISSUES_FOUND.md` 记录的修复中解决：支持 diff 内容分析、代码文件过滤、风险权重和 `.vibe-sec/trigger-policy.yaml` 自定义。
 
 ---
 
@@ -449,7 +449,7 @@ Found 53 errors.
 
 ### 状态
 
-已在 `docs/ISSUES_FOUND.md` 记录的修复中全部解决。
+已在 `docs/progress/ISSUES_FOUND.md` 记录的修复中全部解决。
 
 ---
 
