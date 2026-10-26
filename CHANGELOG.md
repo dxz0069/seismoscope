@@ -4,6 +4,15 @@
 
 ## [Unreleased]
 
+## [0.15.0] — 2026-10-26
+
+### 新增
+
+- **CVE 回放靶场扩充 3 → 4 目标并翻牌至 3/4**：vendor systeminformation 父提交快照（CVE-2023-42810 / GHSA-gx6r-qc2v-3p3v，SSID 命令注入，MIT 许可保留），与上游逐字节一致
+- **泛化 JS exec/execSync 汇点 + 模板插值污点门控**：直接执行带 `${}` 插值的模板字面量，或调用点前 800 字符内存在 `V = \`cmd ...${...}\`` 命令字符串赋值才保留候选（`_is_js_exec_taint`）；精确模式（launch-editor 系）不受门控影响
+- manifest 方法论补充："修复在调用处、sink 在被调函数内"的目标，hunk_lines 同时记录被修复保护的 sink 行（与修复 diff 上下文一一对应，manifest note 注明）
+- serialize-javascript（CWE-79）继续保留语义 xfail，基线 4 目标中 3 命中
+
 ## [0.14.0] — 2026-10-26
 
 ### 修复
