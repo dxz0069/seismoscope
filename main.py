@@ -279,6 +279,22 @@ async def run_audit(
             str(result.metadata.get("error") or result.data.get("error") or "Audit orchestration failed")
         )
 
+    # 排除可见性回显：.vibe-secignore 来自被审计项目，恶意仓库可携带全排除
+    # 文件静默压制检出——生效模式与来源必须随结果对使用者可见（对抗边界）。
+    from core.audit.path_exclusion import load_ignore_file, resolve_excludes
+
+    ignore_file_present = bool(load_ignore_file(project_path))
+    effective_patterns = resolve_excludes(project_path, exclude_patterns)
+    result.data["exclusion"] = {
+        "patterns": effective_patterns,
+        "pattern_count": len(effective_patterns),
+        "ignore_file_present": ignore_file_present,
+        "warning": (
+            ".vibe-secignore 来自被审计项目，可能压制检出——请人工核认其内容"
+            if ignore_file_present else ""
+        ),
+    }
+
     if persist_vrtm:
         from core.vrtm import VRTMService
 
