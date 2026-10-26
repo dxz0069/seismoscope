@@ -19,7 +19,7 @@ try:
 except ImportError:  # pragma: no cover - dependency is declared, but failures stay explicit.
     get_parser = None
 
-from ..languages.tree_sitter_gateway import parser_for
+from ..languages.tree_sitter_gateway import node_line_span, parser_for
 
 try:
     import yaml
@@ -354,8 +354,7 @@ def _analyze_mcp_typescript(file_path: str, content: str) -> List[ProtocolSignal
         arguments_node = node.child_by_field_name("arguments")
         arguments = list(arguments_node.named_children) if arguments_node is not None else []
         tool_name = _tree_sitter_string(source, arguments[0]) if arguments else ""
-        line_start = int(node.start_point.row) + 1
-        line_end = int(node.end_point.row) + 1
+        line_start, line_end = node_line_span(source, node)
         dynamic_registration = not bool(tool_name)
         descriptions = [
             value for argument in arguments

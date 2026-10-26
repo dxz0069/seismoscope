@@ -162,3 +162,19 @@ def _effective_cache_dir() -> Optional[str]:
         return cache_dir()
     except Exception:
         return os.getenv(ENV_CACHE_DIR)
+
+
+def node_line_span(content: bytes, node: Any) -> tuple[int, int]:
+    """1 起始的起止行号，从字节偏移换算。
+
+    原生绑定的 start_point/end_point 访问在部分语法树上会段错误
+    （Windows + tree_sitter_language_pack 1.13.3 实测），而字节偏移
+    访问稳定；行号统一从这里换算。
+    """
+    start = content.count(b"\n", 0, node.start_byte) + 1
+    end = content.count(b"\n", 0, node.end_byte) + 1
+    return start, end
+
+
+def node_line(content: bytes, node: Any) -> int:
+    return node_line_span(content, node)[0]
