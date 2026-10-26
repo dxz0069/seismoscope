@@ -1,6 +1,7 @@
 # 候风 Seismoscope
 
 [![CI](https://github.com/dxz0069/seismoscope/actions/workflows/ci.yml/badge.svg)](https://github.com/dxz0069/seismoscope/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/seismoscope.svg)](https://pypi.org/project/seismoscope/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](pyproject.toml)
 
@@ -8,9 +9,9 @@
 
 > **English** — Seismoscope (候风, after Zhang Heng's earthquake-detecting instrument) is a security audit & verification platform for the AI coding era. It embeds into AI-assisted development as a Claude Code Skill / CLI, models the compound runtime surface (code · prompts · tools · permissions) with a four-plane graph (VRTM), runs deterministic multi-agent review with tri-state verification (vulnerable / fixed / legitimate-control), and returns AI-consumable remediation bundles instead of PDF reports — sensing the tremors in AI-generated code before they quake.
 
-> 仓库名为 **seismoscope**，项目名 **候风 Seismoscope**（曾用名 vibe-guard）；代码包名沿用 **vibe-sec-platform**（安装后 CLI 为 `vibe-sec`），三者指同一项目。
+> 分发名 **seismoscope**（`pip install seismoscope`），项目名 **候风 Seismoscope**（曾用名 vibe-guard / vibe-sec-platform）；CLI 提供 `vibe-sec` 与 `seismoscope` 两个等价命令，均指同一项目。
 
-**版本**: v0.9.0 | **状态**: ✅ 所有阶段完成（Phase 1-5），工程验证版（本地单人 Beta），成熟度自评见 [docs/progress/CURRENT_PROJECT_STATUS_2026-08-01.md](docs/progress/CURRENT_PROJECT_STATUS_2026-08-01.md)
+**版本**: v0.9.1 | **状态**: ✅ 所有阶段完成（Phase 1-5），工程验证版（本地单人 Beta），成熟度自评见 [docs/progress/CURRENT_PROJECT_STATUS_2026-08-01.md](docs/progress/CURRENT_PROJECT_STATUS_2026-08-01.md)
 
 ## 项目定位
 
