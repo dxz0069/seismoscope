@@ -13,7 +13,7 @@ Named after Zhang Heng's Houfeng Seismoscope (候风地动仪, 132 AD), the firs
 
 > Distribution name `seismoscope` (`pip install seismoscope`). Formerly known as vibe-guard / vibe-sec-platform. CLI provides both `vibe-sec` and `seismoscope` commands.
 
-**Version**: v0.13.0 | **Status**: engineering-validation release (local single-user beta). For an honest maturity self-assessment see [docs/progress/CURRENT_PROJECT_STATUS_2026-08-01.md](docs/progress/CURRENT_PROJECT_STATUS_2026-08-01.md).
+**Version**: v0.14.0 | **Status**: engineering-validation release (local single-user beta). For an honest maturity self-assessment see [docs/progress/CURRENT_PROJECT_STATUS_2026-08-01.md](docs/progress/CURRENT_PROJECT_STATUS_2026-08-01.md).
 
 ## Why
 
