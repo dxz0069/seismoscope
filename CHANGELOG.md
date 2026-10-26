@@ -4,6 +4,12 @@
 
 ## [Unreleased]
 
+## [0.10.0] — 2026-10-26
+
+### 新增
+
+- **自动修复 PR 执行器** `scripts/open_remediation_pr.py`：把审计产出的 RemediationBundle 组装成 GitHub PR（正文即 ai_patch_prompt + 修改约束 + 验收清单 + 复测计划，附 CWE 直链；Bundle 落盘 `.seismoscope/remediation/`），`--split` 每漏洞单独成 PR，`--dry-run` 无副作用预览；修复指令由此进入标准 GitHub 协作流，可被 AI 编码助手直接消费
+
 ## [0.9.1] — 2026-10-26
 
 ### 变更

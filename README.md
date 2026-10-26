@@ -11,7 +11,7 @@
 
 > 分发名 **seismoscope**（`pip install seismoscope`），项目名 **候风 Seismoscope**（曾用名 vibe-guard / vibe-sec-platform）；CLI 提供 `vibe-sec` 与 `seismoscope` 两个等价命令，均指同一项目。
 
-**版本**: v0.9.1 | **状态**: ✅ 所有阶段完成（Phase 1-5），工程验证版（本地单人 Beta），成熟度自评见 [docs/progress/CURRENT_PROJECT_STATUS_2026-08-01.md](docs/progress/CURRENT_PROJECT_STATUS_2026-08-01.md)
+**版本**: v0.10.0 | **状态**: ✅ 所有阶段完成（Phase 1-5），工程验证版（本地单人 Beta），成熟度自评见 [docs/progress/CURRENT_PROJECT_STATUS_2026-08-01.md](docs/progress/CURRENT_PROJECT_STATUS_2026-08-01.md)
 
 ## 项目定位
 
@@ -62,6 +62,13 @@ Recon → Surface → Audit(并行) → Merge → Verify → Remediate → Retes
 - 提供 ai_patch_prompt（AI 修复指令）
 - Skill Relay 状态机追踪整改包流转
 - 自动复测验证修复效果
+- **一键回送 GitHub PR**：修复指令（含 CWE 直链、修改约束、验收清单、复测计划）组装成 AI 编码助手可直接消费的 PR
+
+```bash
+vibe-sec audit . --format json -o results.json
+python scripts/open_remediation_pr.py results.json --dry-run   # 预览
+python scripts/open_remediation_pr.py results.json --repo owner/name --split  # 开 PR（--split 每漏洞一个）
+```
 
 ## 系统架构
 
