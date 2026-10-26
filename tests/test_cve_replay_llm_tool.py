@@ -53,6 +53,7 @@ def test_summarize_conclusion_matrix():
         {"target": "serialize-javascript", "hit": False},
     ])
     assert summary["conclusion"] == "reject" and summary["semantic_hits"] == 0
+    assert "未通过本次验收" in summary["note"]
     # 对照组未全过 => inconclusive（LLM 运行不足以背书）
     summary = module.summarize([
         {"target": "mistune", "hit": False},

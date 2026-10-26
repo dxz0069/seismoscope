@@ -108,6 +108,8 @@ def summarize(report: List[Dict[str, Any]]) -> Dict[str, Any]:
             "对照组（静态可命中目标）未全部命中，本次 LLM 运行不足以为语义结论背书"
             if not controls_ok else
             "语义目标命中 = LLM 通道通过验收"
+            if semantic_hits else
+            "对照组可信但语义目标未命中：LLM 通道未通过本次验收（reject）"
         ),
     }
 
