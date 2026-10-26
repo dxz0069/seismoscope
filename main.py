@@ -1089,6 +1089,19 @@ def _slim_audit_payload(result: Dict[str, Any], full_artifact: Any) -> Dict[str,
             bundle.get("package_id") for bundle in result.get("remediation_bundles", []) or []
         ],
         "needs_evidence_finding_count": len(result.get("needs_evidence_findings", []) or []),
+        # 可见性/可审计性贯穿瘦身形态：排除回显（对抗边界：ignore 文件来自
+        # 被审计项目）与抑制条目概要不得因瘦身而丢失。
+        "exclusion": result.get("exclusion"),
+        "suppressed_finding_count": len(result.get("suppressed_findings", []) or []),
+        "suppressed_findings": [
+            {
+                "vulnerability_type": (item.get("finding") or {}).get("vulnerability_type"),
+                "file_path": (item.get("finding") or {}).get("file_path"),
+                "line_start": (item.get("finding") or {}).get("line_start"),
+                "suppression_reason": (item.get("suppression") or {}).get("reason"),
+            }
+            for item in result.get("suppressed_findings", []) or []
+        ],
         "full_result_ref": {
             "artifact_id": full_artifact.artifact_id,
             "path": full_artifact.path,
