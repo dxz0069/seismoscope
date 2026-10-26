@@ -1,7 +1,7 @@
 """CVE 回放回归：以外部真值（GHSA/CVE 修复 commit 的父提交快照）为基线。
 
 vendored 目标来自真实开源仓库的漏洞版本快照（许可见各目录内 LICENSE），
-行级命中标准：expected_types 中的漏洞类型出现在修复文件 diff hunk ±8 行内。
+行级命中标准：expected_types 中的漏洞类型出现在修复文件 diff hunk ±8 行内（systeminformation 一类"修复在调用处、sink 在被调函数内"的目标，hunk_lines 同时记录被修复保护的 sink 行，见 manifest note）。
 
 当前基线 2/3 已命中（v0.13.0：mistune CWE-22、launch-editor CWE-78）。
 serialize-javascript 保持 strict xfail：其漏洞形态是转义正则的语义绕过
