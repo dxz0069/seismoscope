@@ -13,7 +13,7 @@
 
 > 分发名 **seismoscope**（`pip install seismoscope`），项目名 **候风 Seismoscope**（曾用名 vibe-guard / vibe-sec-platform）；CLI 提供 `vibe-sec` 与 `seismoscope` 两个等价命令，均指同一项目。
 
-**版本**: v0.12.0 | **状态**: ✅ 所有阶段完成（Phase 1-5），工程验证版（本地单人 Beta），成熟度自评见 [docs/progress/CURRENT_PROJECT_STATUS_2026-08-01.md](docs/progress/CURRENT_PROJECT_STATUS_2026-08-01.md)
+**版本**: v0.13.0 | **状态**: ✅ 所有阶段完成（Phase 1-5），工程验证版（本地单人 Beta），成熟度自评见 [docs/progress/CURRENT_PROJECT_STATUS_2026-08-01.md](docs/progress/CURRENT_PROJECT_STATUS_2026-08-01.md)
 
 ## 项目定位
 
@@ -148,7 +148,7 @@ AST 审计通道依赖 tree-sitter 解析器，首次使用会从 GitHub 下载�
 
 ### 召回/误报基线
 
-`scripts/benchmark_recall.py` 在固定靶场集上度量确定性审计能力（无 LLM），当前基线为**平均召回 100%、safe 集零误报**。对真实 [VAmPI](https://github.com/erev0s/VAmPI) 靶场（11 个 Python 文件），6 个已知漏洞中 4 个静态可映射类型**全部命中且零误报**，IDOR/debug 端点等语义类由 LLM 审计通道负责：
+`scripts/benchmark_recall.py` 在固定靶场集上度量确定性审计能力（无 LLM），当前基线为**平均召回 100%、safe 集零误报**。另设真实 CVE 回放基线（`tests/test_cve_replay.py`）：mistune（CWE-22）、launch-editor（CWE-78）已行级命中，serialize-javascript 的转义语义绕过保留 xfail（静态模式原理性不可见，归 LLM 语义通道）。对真实 [VAmPI](https://github.com/erev0s/VAmPI) 靶场（11 个 Python 文件），6 个已知漏洞中 4 个静态可映射类型**全部命中且零误报**，IDOR/debug 端点等语义类由 LLM 审计通道负责：
 
 ```bash
 python scripts/benchmark_recall.py                          # 运行四个内置靶场集
