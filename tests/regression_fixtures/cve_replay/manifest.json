@@ -1,0 +1,66 @@
+{
+ "schema": "vibe-sec.cve-replay.v1",
+ "note": "行级命中 = expected_types 中的类型出现在 fix_files 的 hunk_lines ±8 行内",
+ "source": "GHSA/CVE 修复 commit 的父提交快照（Apache-2.0/MIT 源仓库）",
+ "targets": [
+  {
+   "target": "mistune",
+   "cwe": "CWE-22",
+   "expected_types": [
+    "path_traversal"
+   ],
+   "parent_commit": "c7101fcbb6e8",
+   "fix_files": [
+    {
+     "file": "src/mistune/directives/include.py",
+     "hunk_lines": [
+      1,
+      27
+     ]
+    }
+   ]
+  },
+  {
+   "target": "serialize-javascript",
+   "cwe": "CWE-79",
+   "expected_types": [
+    "xss",
+    "code_injection"
+   ],
+   "parent_commit": "6a73fa1ddcbe",
+   "fix_files": [
+    {
+     "file": "index.js",
+     "hunk_lines": [
+      26,
+      38
+     ]
+    }
+   ]
+  },
+  {
+   "target": "launch-editor",
+   "cwe": "CWE-78",
+   "expected_types": [
+    "command_injection"
+   ],
+   "parent_commit": "ecdfce1f9ec5",
+   "fix_files": [
+    {
+     "file": "packages/launch-editor/construct-windows-launch-command.js",
+     "hunk_lines": [
+      19,
+      41
+     ]
+    },
+    {
+     "file": "packages/launch-editor/index.js",
+     "hunk_lines": [
+      93,
+      101
+     ]
+    }
+   ]
+  }
+ ]
+}

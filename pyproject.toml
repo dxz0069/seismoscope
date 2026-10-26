@@ -73,6 +73,8 @@ target-version = ["py311"]
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+# vendor 的第三方回归快照不参与本仓 lint
+extend-exclude = ["tests/regression_fixtures"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "N", "UP", "B", "A", "C4", "SIM"]
