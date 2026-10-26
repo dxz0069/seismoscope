@@ -91,6 +91,15 @@ def language_ready(language: str) -> bool:
         return False
 
 
+def degraded_languages() -> list:
+    """本进程内获取解析器失败（含下载失败）并被降级处理的语言列表。
+
+    供审计完成后回填结果契约：AST 泳道静默降级会让消费者误以为
+    跑的是全精度分析，必须显式暴露。
+    """
+    return sorted(_failed_languages)
+
+
 def warmup(languages: Optional[Iterable[str]] = None) -> Dict[str, Any]:
     """预下载解析器到本地缓存。失败不抛出，逐语言返回结构化状态。"""
     names = [str(name) for name in (languages or DEFAULT_LANGUAGES)]

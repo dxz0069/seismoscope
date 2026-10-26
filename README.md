@@ -146,6 +146,8 @@ AST 审计通道依赖 tree-sitter 解析器，首次使用会从 GitHub 下载�
 - 设置 `VIBE_SEC_TREE_SITTER_CACHE` 指向预置解析器缓存目录，可直接拷贝已下载缓存（当前缓存位置见 `doctor --json` 输出的 `tree_sitter.cache_dir` 字段）；
 - 或设置 `VIBE_SEC_DISABLE_TREE_SITTER=1` 跳过全部 AST 通道，平台自动降级到文本/正则分析，不会中断审计。
 
+降级不再静默：审计开始时若 AST 通道未就绪会输出双分支指引日志；解析器获取失败的语言会在结果的 `ast_degradation` 字段（`languages` / `impact` / `hint`）中显式标注，JSON 消费方可据此区分全精度与降级结果。
+
 ### 召回/误报基线
 
 `scripts/benchmark_recall.py` 在固定靶场集上度量确定性审计能力（无 LLM），当前基线为**平均召回 100%、safe 集零误报**。对真实 [VAmPI](https://github.com/erev0s/VAmPI) 靶场（11 个 Python 文件），6 个已知漏洞中 4 个静态可映射类型**全部命中且零误报**，IDOR/debug 端点等语义类由 LLM 审计通道负责：
