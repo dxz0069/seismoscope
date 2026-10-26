@@ -10,7 +10,7 @@
 
 > 仓库名为 **seismoscope**，项目名 **候风 Seismoscope**（曾用名 vibe-guard）；代码包名沿用 **vibe-sec-platform**（安装后 CLI 为 `vibe-sec`），三者指同一项目。
 
-**版本**: v0.7.0 | **状态**: ✅ 所有阶段完成（Phase 1-5），工程验证版（本地单人 Beta），成熟度自评见 [docs/CURRENT_PROJECT_STATUS_2026-08-01.md](docs/CURRENT_PROJECT_STATUS_2026-08-01.md)
+**版本**: v0.8.0 | **状态**: ✅ 所有阶段完成（Phase 1-5），工程验证版（本地单人 Beta），成熟度自评见 [docs/CURRENT_PROJECT_STATUS_2026-08-01.md](docs/CURRENT_PROJECT_STATUS_2026-08-01.md)
 
 ## 项目定位
 
@@ -18,7 +18,7 @@
 - **核心接入方式**: Claude Code Skill 优先
 - **审查范围**: 传统 Web 漏洞 + 智能体特有漏洞（提示词注入、MCP 风险、越权、密钥泄露）
 - **验证深度**: AI 驱动验证（静态 + 动态 + Fuzzing + 浏览器证据）
-- **输出格式**: 可配置多格式（Claude Code 原生、Markdown、JSON）
+- **输出格式**: 可配置多格式（Claude Code 原生、Markdown、JSON、HTML、SARIF 2.1.0）——SARIF 可直接上传 GitHub Code Scanning（示例：[docs/examples/seismoscope-code-scanning.yml](docs/examples/seismoscope-code-scanning.yml)）
 
 ## 核心特性
 
@@ -138,7 +138,7 @@ AST 审计通道依赖 tree-sitter 解析器，首次使用会从 GitHub 下载�
 
 ### 召回/误报基线
 
-`scripts/benchmark_recall.py` 在固定靶场集上度量确定性审计能力（无 LLM），当前基线为**平均召回 100%、safe 集零误报**（详见 `note/report/baseline/`）：
+`scripts/benchmark_recall.py` 在固定靶场集上度量确定性审计能力（无 LLM），当前基线为**平均召回 100%、safe 集零误报**（详见 `note/report/baseline/`）。对真实 [VAmPI](https://github.com/erev0s/VAmPI) 靶场（11 个 Python 文件），6 个已知漏洞中 4 个静态可映射类型**全部命中且零误报**，IDOR/debug 端点等语义类由 LLM 审计通道负责：
 
 ```bash
 python scripts/benchmark_recall.py                          # 运行四个内置靶场集

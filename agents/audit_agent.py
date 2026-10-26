@@ -173,6 +173,9 @@ class AuditAgent(BaseAgent):
                     # 特权字段（admin/role 等）从请求数据取值：User(..., admin=data.get('admin'))
                     r'\b(?:admin|is_admin|is_superuser|is_staff|role)\s*=\s*[\w.]*\.get\(',
                     r'\b(?:admin|is_admin|is_superuser|is_staff|role)\s*=\s*(?:request|payload|body|form|args|params|json|data)\b',
+                    # 真实靶场形态（VAmPI）：请求数据按键取特权字段（成员检查或下标）
+                    r'["\'](?:admin|is_admin|is_superuser|is_staff|role)["\']\s+in\s+[\w.]*(?:request|payload|body|form|args|params|json|data)\b',
+                    r'\b(?:request|payload|body|form|args|params|json|data)[\w.]*\[[\'"](?:admin|is_admin|is_superuser|is_staff|role)[\'"]\]',
                 ],
                 "severity": Severity.HIGH,
                 "description": "可能的特权字段自赋值：请求数据未经允许清单直接写入 admin/role 等特权字段",
@@ -327,6 +330,8 @@ class AuditAgent(BaseAgent):
                     # 兼容 = 与字典/配置的 : 赋值（扫描整体 IGNORECASE）。
                     r'api_key\s*[=:]\s*["\'][A-Za-z0-9+/_-]{16,}["\']',
                     r'secret_key\s*[=:]\s*["\'][^"\']+["\']',
+                    # 字典下标带引号键赋值（真实靶场形态：app.config['SECRET_KEY'] = 'random'）
+                    r'["\'](?:api_key|secret_key)["\']\]\s*=\s*["\'][^"\']+["\']',
                 ],
                 "severity": Severity.HIGH,
                 "description": "硬编码的 API Key 或密钥",

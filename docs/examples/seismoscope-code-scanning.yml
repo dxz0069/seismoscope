@@ -1,0 +1,36 @@
+# 候风 Seismoscope → GitHub Code Scanning 示例工作流
+#
+# 用法：把本文件复制到你的仓库 .github/workflows/seismoscope-audit.yml，
+# 审查结果将以 SARIF 2.1.0 上传到 GitHub Security 标签页，与 CodeQL 告警并列展示。
+name: Seismoscope security audit
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    permissions:
+      # 上传 SARIF 到 Code Scanning 必需
+      security-events: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Seismoscope and run audit
+        run: |
+          pip install git+https://github.com/dxz0069/seismoscope.git
+          # 审查整个仓库；确定性无 LLM 模式，CI 内零凭据
+          vibe-sec audit . --format sarif -o seismoscope.sarif
+
+      - name: Upload SARIF to GitHub Code Scanning
+        if: hashFiles('seismoscope.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: seismoscope.sarif
