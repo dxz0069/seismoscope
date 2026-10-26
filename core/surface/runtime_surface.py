@@ -25,7 +25,7 @@ try:
 except ImportError:  # pragma: no cover - declared dependency, failure is recorded in coverage.
     get_parser = None
 
-from ..languages.tree_sitter_gateway import parser_for
+from ..languages.tree_sitter_gateway import node_line, node_line_span, parser_for
 
 try:
     import yaml
@@ -674,9 +674,10 @@ class RuntimeSurfaceBuilder:
                 if name:
                     text = _ts_text(source, node)
                     calls = sorted(set(_ts_calls(source, node)))
+                    cb_line_start, cb_line_end = node_line_span(source, node)
                     self.surface.code_blocks.append(CodeBlock(
                         block_type="function", name=name, file_path=file_path,
-                        line_start=node.start_point.row + 1, line_end=node.end_point.row + 1,
+                        line_start=cb_line_start, line_end=cb_line_end,
                         contains_user_input=_contains_any(text, ("req.", "request.", "event.", "location.")),
                         contains_dangerous_operations=bool(_dangerous_names(calls)), calls=calls[:50],
                     ))
@@ -688,7 +689,7 @@ class RuntimeSurfaceBuilder:
                 if literal and any(marker in name.lower() for marker in ("prompt", "systemmessage", "instructions")):
                     self.surface.prompt_configs.append(PromptConfig(
                         name=name, type="system" if "system" in name.lower() else "template",
-                        content=literal, file_path=file_path, line_start=node.start_point.row + 1,
+                        content=literal, file_path=file_path, line_start=node_line(source, node),
                         has_injection_protection=_contains_any(literal.lower(), ("do not follow", "untrusted content", "ignore instructions in")),
                     ))
                 if value_node is not None:
@@ -699,8 +700,9 @@ class RuntimeSurfaceBuilder:
                     if source_type:
                         self.surface.external_content_inputs.append(ExternalContentInput(
                             name=name, source_type=source_type, expression=value_text[:300],
-                            file_path=file_path, line_start=node.start_point.row + 1,
-                            line_end=node.end_point.row + 1,
+                            file_path=file_path,
+                            line_start=node_line(source, node),
+                            line_end=node_line_span(source, node)[1],
                             target_refs=_prompt_refs(value_text),
                         ))
             if node.type == "call_expression":
@@ -713,8 +715,9 @@ class RuntimeSurfaceBuilder:
                 if source_type:
                     self.surface.external_content_inputs.append(ExternalContentInput(
                         name=expression, source_type=source_type, expression=expression,
-                        file_path=file_path, line_start=node.start_point.row + 1,
-                        line_end=node.end_point.row + 1,
+                        file_path=file_path,
+                        line_start=node_line(source, node),
+                        line_end=node_line_span(source, node)[1],
                     ))
 
     def _record_javascript_fallback(self, file_path: str, error: str) -> None:
@@ -881,7 +884,7 @@ class RuntimeSurfaceBuilder:
         short = name.rsplit(".", 1)[-1]
         args_node = node.child_by_field_name("arguments")
         args = list(args_node.named_children) if args_node is not None else []
-        line_start, line_end = node.start_point.row + 1, node.end_point.row + 1
+        line_start, line_end = node_line_span(source, node)
         if short.lower() in {"get", "post", "put", "delete", "patch", "use"} and name.split(".", 1)[0] in {"app", "router", "server"}:
             path = _ts_string(source, args[0]) if args else ""
             if path:
@@ -966,7 +969,8 @@ class RuntimeSurfaceBuilder:
         right_text = _ts_text(source, right)
         self.surface.browser_sinks.append(BrowserSink(
             sink_type=sink_type, expression=_ts_text(source, node)[:300], file_path=file_path,
-            line_start=node.start_point.row + 1, line_end=node.end_point.row + 1,
+            line_start=node_line(source, node),
+            line_end=node_line_span(source, node)[1],
             dangerous=sink_type in {"innerHTML", "outerHTML", "srcdoc", "href", "src"},
             sanitization_detected=_contains_any(right_text.lower(), ("sanitize", "dompurify", "escape")),
             input_refs=_identifier_refs(right_text),

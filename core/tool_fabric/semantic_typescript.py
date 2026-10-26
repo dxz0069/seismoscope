@@ -11,7 +11,7 @@ try:
 except ImportError:  # pragma: no cover - dependency failures remain explicit in coverage.
     get_parser = None
 
-from ..languages.tree_sitter_gateway import parser_for
+from ..languages.tree_sitter_gateway import node_line, node_line_span, parser_for
 
 from .semantic_javascript import JS_SINKS
 from .semantic_source import FunctionRecord, GUARD_MARKERS, SOURCE_NAME_MARKERS
@@ -218,8 +218,7 @@ def _function_record(
     sources = []
     sinks = []
     guards = []
-    line_start = int(node.start_point.row) + 1
-    line_end = int(node.end_point.row) + 1
+    line_start, line_end = node_line_span(content, node)
     for parameter in parameters:
         if parameter.lower() in SOURCE_NAME_MARKERS:
             sources.append({"kind": "parameter", "name": parameter, "line": line_start})
@@ -231,7 +230,7 @@ def _function_record(
                 call_name = _expression_name(content, child.child_by_field_name("constructor"))
             if not call_name:
                 continue
-            observation = {"name": call_name, "line": int(child.start_point.row) + 1}
+            observation = {"name": call_name, "line": node_line(content, child)}
             calls.append(observation)
             sink_kind = _sink_kind(call_name)
             if sink_kind:
@@ -245,13 +244,13 @@ def _function_record(
             )):
                 sources.append({
                     "kind": "external_access", "name": member,
-                    "line": int(child.start_point.row) + 1,
+                    "line": node_line(content, child),
                 })
         elif child.type == "assignment_expression":
             target = _expression_name(content, child.child_by_field_name("left"))
             if target.rsplit(".", 1)[-1] in {"innerHTML", "outerHTML"}:
                 sinks.append({
-                    "name": target, "line": int(child.start_point.row) + 1,
+                    "name": target, "line": node_line(content, child),
                     "kind": "html_injection",
                 })
     return FunctionRecord(
