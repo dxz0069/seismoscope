@@ -3,9 +3,12 @@
 vendored 目标来自真实开源仓库的漏洞版本快照（许可见各目录内 LICENSE），
 行级命中标准：expected_types 中的漏洞类型出现在修复文件 diff hunk ±8 行内。
 
-当前基线 0/3，全部 strict xfail——检测器补上某类召回后对应用例翻成
-XPASS 并使 CI 失败，强制维护者移除该目标的 xfail 标记并更新基线计数；
-召回倒退同样直接可见。完整 11 目标回放与评测数据见对抗性评测报告。
+当前基线 2/3 已命中（v0.13.0：mistune CWE-22、launch-editor CWE-78）。
+serialize-javascript 保持 strict xfail：其漏洞形态是转义正则的语义绕过
+（`</script` 出现在序列化函数体末尾时未转义），源码表面看已加固——静态
+正则探测器原理性不可见，它是 "false positivity"（看着干净实则可绕过）
+的标本，归 LLM 语义审查通道职责。检测器若意外命中会翻 XPASS 并使 CI
+失败，强制复核。召回倒退（已命中的 2 目标失败）同样直接可见。
 """
 
 import asyncio
@@ -19,7 +22,10 @@ from main import run_audit
 
 FIXTURES = pathlib.Path(__file__).parent / "regression_fixtures" / "cve_replay"
 MANIFEST = json.loads((FIXTURES / "manifest.json").read_text(encoding="utf-8"))
-XFAIL_REASON = "CVE 行级召回基线 0/3：检测器升级后移除对应目标的 xfail 标记"
+# 语义绕过类目标：静态模式原理性不可见，归 LLM 通道（见模块 docstring）。
+SEMANTIC_ONLY_TARGETS = {
+    "serialize-javascript": "转义正则的语义绕过，静态模式不可见（false positivity 标本）",
+}
 
 
 def _params():
@@ -27,7 +33,11 @@ def _params():
         pytest.param(
             target,
             id=f"{target['target']}[{target['cwe']}]",
-            marks=pytest.mark.xfail(strict=True, reason=XFAIL_REASON),
+            marks=(
+                [pytest.mark.xfail(strict=True, reason=SEMANTIC_ONLY_TARGETS[target["target"]])]
+                if target["target"] in SEMANTIC_ONLY_TARGETS
+                else []
+            ),
         )
         for target in MANIFEST["targets"]
     ]
