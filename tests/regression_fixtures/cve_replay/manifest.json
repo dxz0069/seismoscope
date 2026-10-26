@@ -61,6 +61,27 @@
      ]
     }
    ]
+  },
+  {
+   "target": "systeminformation",
+   "cwe": "CWE-78",
+   "expected_types": [
+    "command_injection"
+   ],
+   "parent_commit": "d93a0ce510b8",
+   "advisory": "GHSA-gx6r-qc2v-3p3v / CVE-2023-42810",
+   "fix_commit": "7972565812ccb2a610a22911c54c3446f4171392",
+   "note": "SSID 命令注入：修复在调用处（552 行加 sanitizeShellString）；hunk_lines 除修复行外同时记录被修复保护的 sink 行（194 模板插值 / 196 execSync）——与修复 commit 的 diff 上下文一一对应",
+   "fix_files": [
+    {
+     "file": "lib/wifi.js",
+     "hunk_lines": [
+      194,
+      196,
+      552
+     ]
+    }
+   ]
   }
  ]
 }
