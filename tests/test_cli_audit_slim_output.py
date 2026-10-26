@@ -73,3 +73,43 @@ def test_persist_and_roundtrip_on_fixture_project(tmp_path):
     assert packages and len(packages) == len(result.get("remediation_bundles", []))
     slim_text = json.dumps(slim, ensure_ascii=False, default=str)
     assert len(slim_text) < 200000, "fixtures 项目的瘦身报告应远小于全量输出"
+
+
+def test_slim_report_keeps_exclusion_and_suppression_visibility():
+    """可见性/可审计性不得因瘦身丢失：排除回显与抑制概要必须随 slim 报告输出。"""
+    import main as main_module
+
+    class _FakeArtifact:
+        artifact_id = "art-1"
+        path = "state/artifacts/audit-result.json"
+        sha256 = "0" * 64
+        size_bytes = 123
+
+    result = {
+        "summary": {"ok": True},
+        "audit_summary": {"mode": "test"},
+        "merged_findings": [
+            {"id": "f1", "vulnerability_type": "sql_injection", "severity": "high",
+             "file_path": "svc.py", "line_start": 3, "line_end": 3},
+        ],
+        "remediation_bundles": [],
+        "needs_evidence_findings": [],
+        "exclusion": {
+            "patterns": ["**/*.min.js", "vendor/**"],
+            "pattern_count": 2,
+            "ignore_file_present": True,
+            "warning": ".vibe-secignore 来自被审计项目，可能压制检出——请人工核认其内容",
+        },
+        "suppressed_findings": [
+            {"finding": {"vulnerability_type": "prompt_injection", "file_path": "tpl.js",
+                         "line_start": 7},
+             "suppression": {"reason": "template noise"}},
+        ],
+    }
+    slim = main_module._slim_audit_payload(result, _FakeArtifact())
+    assert slim["exclusion"]["ignore_file_present"] is True
+    assert "vendor/**" in slim["exclusion"]["patterns"]
+    assert ".vibe-secignore" in slim["exclusion"]["warning"]
+    assert slim["suppressed_finding_count"] == 1
+    assert slim["suppressed_findings"][0]["vulnerability_type"] == "prompt_injection"
+    assert slim["suppressed_findings"][0]["suppression_reason"] == "template noise"
