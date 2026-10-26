@@ -60,7 +60,7 @@ def line_hits(findings: List[Dict[str, Any]], target: Dict[str, Any]) -> List[Di
 
 
 # 静态通道已命中的目标：作为 LLM 运行的可信度对照组（见 tests/test_cve_replay.py）。
-STATIC_CONTROL_TARGETS = {"mistune", "launch-editor"}
+STATIC_CONTROL_TARGETS = {"mistune", "launch-editor", "systeminformation"}
 
 
 async def run_target(target: Dict[str, Any], *, use_llm: bool, api_key: str | None) -> Dict[str, Any]:
