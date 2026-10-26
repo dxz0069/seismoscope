@@ -21,6 +21,10 @@ from enum import Enum
 from pathlib import Path
 
 from core.audit.path_exclusion import is_excluded, resolve_excludes
+
+
+# 泛化 JS exec/execSync 汇点模式（区分于 launch-editor 的精确模式，需模板插值污点门控）
+_JS_EXEC_SINK_PATTERN = r'(?:^|[^\w$.])exec(?:Sync)?\s*\('
 from core.agents.base import (
     AgentConfig,
     AgentPattern,
@@ -215,6 +219,8 @@ class AuditAgent(BaseAgent):
                     # JS：child_process.exec 单串参数经 shell 解释（真实 CVE 形态：launch-editor）
                     r'childProcess\.exec(?:Sync)?\(',
                     r'child_process\.exec(?:Sync)?\(',
+                    # 泛化 exec/execSync 汇点（经 _is_js_exec_taint 门控：模板插值命令拼接）
+                    r'(?:^|[^\w$.])exec(?:Sync)?\s*\(',
                     # Windows CMD ^ 转义白名单缺 %/引号处理（launch-editor 系 CVE 的绕过形态）
                     r'replace\(/\(\[&\|<>,;=\^\]\)/g,\s*[\'"]\^\$1[\'"]\)',
                 ],
@@ -962,6 +968,13 @@ class AuditAgent(BaseAgent):
                                     content, match.start(), match.end()
                                 ):
                                     continue
+                                if (
+                                    vuln_type == "command_injection"
+                                    and pattern == _JS_EXEC_SINK_PATTERN
+                                    and file.endswith((".js", ".ts", ".jsx", ".tsx"))
+                                    and not self._is_js_exec_taint(content, match.start())
+                                ):
+                                    continue
                                 matches_found += 1
                                 line_num = content[:match.start()].count('\n') + 1
                                 logger.debug(f"Found {vuln_type} at {file_path}:{line_num}")
@@ -1144,6 +1157,19 @@ class AuditAgent(BaseAgent):
         return bool(parts & {"tests", "test", "fixtures", "docs", "static"}) or (
             name.startswith("test_") or name.endswith("_test.py")
         )
+
+    @staticmethod
+    def _is_js_exec_taint(content: str, start: int) -> bool:
+        """泛化 exec 汇点门控：直接执行带插值的模板字面量，或调用点前
+        800 字符内存在 ``V = `cmd ...${...}...``` 形态的命令字符串赋值
+        （真实 CVE 形态：systeminformation SSID 注入——nmcli 命令模板
+        插值未经 sanitizeShellString 即 execSync）。非模板命令（调用方
+        自己拼好的常量命令）不构成此模式的候选。
+        """
+        if re.search(r"exec(?:Sync)?\s*\(\s*`[^`]*\$\{", content[start:start + 400]):
+            return True
+        window = content[max(0, start - 800):start]
+        return bool(re.search(r"[A-Za-z_$][\w$]*\s*=\s*`[^`]*\$\{", window))
 
     @staticmethod
     def _is_path_traversal_signal(content: str, start: int, end: int) -> bool:
