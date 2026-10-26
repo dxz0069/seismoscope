@@ -12,8 +12,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
-        python-version: ["3.11"]
+        # 3.11 双平台全测；3.12/3.13 在 Linux 上扩展验证
+        include:
+          - os: ubuntu-latest
+            python-version: "3.11"
+          - os: windows-latest
+            python-version: "3.11"
+          - os: ubuntu-latest
+            python-version: "3.12"
+          - os: ubuntu-latest
+            python-version: "3.13"
     steps:
       - uses: actions/checkout@v4
 
@@ -33,3 +41,9 @@ jobs:
 
       - name: Run tests
         run: pytest tests/ -q -p no:cacheprovider
+
+      # 能力防回退门禁：检测规则变更导致召回下降或 safe 靶场出现误报即失败。
+      # 基线更新：python scripts/benchmark_recall.py --json tests/fixtures/benchmark-baseline.json
+      - name: Audit capability regression gate
+        if: matrix.python-version == '3.11' && matrix.os == 'ubuntu-latest'
+        run: python scripts/benchmark_recall.py --compare tests/fixtures/benchmark-baseline.json

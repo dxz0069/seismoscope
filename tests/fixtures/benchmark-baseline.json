@@ -1,0 +1,86 @@
+{
+  "contract_version": "seismoscope.benchmark-recall.v1",
+  "generated_at": "2026-10-26T09:18:58.412621+00:00",
+  "mode": "deterministic-no-llm",
+  "sets": [
+    {
+      "label": "web-fixture",
+      "safe_fixture": false,
+      "expected_types": [
+        "api_key",
+        "code_injection",
+        "command_injection",
+        "hardcoded_password",
+        "path_traversal",
+        "sql_injection",
+        "xss"
+      ],
+      "detected_types": [
+        "api_key",
+        "code_injection",
+        "command_injection",
+        "hardcoded_password",
+        "path_traversal",
+        "sql_injection",
+        "xss"
+      ],
+      "recall": 1.0,
+      "missed_types": [],
+      "unexpected_types": []
+    },
+    {
+      "label": "agent-fixture",
+      "safe_fixture": false,
+      "expected_types": [
+        "excessive_agency",
+        "hardcoded_password",
+        "mcp_insecurity",
+        "prompt_injection",
+        "sql_injection"
+      ],
+      "detected_types": [
+        "excessive_agency",
+        "hardcoded_password",
+        "mcp_insecurity",
+        "prompt_injection",
+        "sql_injection"
+      ],
+      "recall": 1.0,
+      "missed_types": [],
+      "unexpected_types": []
+    },
+    {
+      "label": "vampi-mini",
+      "safe_fixture": false,
+      "expected_types": [
+        "api_key",
+        "mass_assignment",
+        "plaintext_password_comparison",
+        "sql_injection"
+      ],
+      "detected_types": [
+        "api_key",
+        "mass_assignment",
+        "plaintext_password_comparison",
+        "sql_injection"
+      ],
+      "recall": 1.0,
+      "missed_types": [],
+      "unexpected_types": []
+    },
+    {
+      "label": "safe-app",
+      "safe_fixture": true,
+      "expected_types": [],
+      "detected_types": [],
+      "recall": null,
+      "missed_types": [],
+      "unexpected_types": []
+    }
+  ],
+  "summary": {
+    "sets": 4,
+    "mean_recall": 1.0,
+    "safe_set_false_positives": 0
+  }
+}
