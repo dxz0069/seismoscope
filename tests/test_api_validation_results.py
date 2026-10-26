@@ -305,3 +305,55 @@ def test_store_reinitialization_marks_interrupted_task_failed():
     assert restored.status == server.AuditTaskStatus.FAILED
     assert restored.completed_at is not None
     assert "process restart" in restored.error
+
+
+def test_retry_rebuilds_failed_task_with_original_params():
+    project = asyncio.run(server.create_project(server.ProjectCreate(
+        name="Retry fixture", path="/tmp/retry-fixture",
+    )))
+    failed = server.AuditTask(
+        id="task-failed", project_id=project.id, status=server.AuditTaskStatus.FAILED,
+        created_at=datetime.now() - timedelta(hours=1), completed_at=datetime.now(),
+        error="Audit interrupted by a local API process restart before completion.",
+        use_llm=False, output_format="json",
+    )
+    server.audit_tasks_db[failed.id] = failed
+
+    retried = asyncio.run(server.retry_audit_task("task-failed", background_tasks=_NoopTasks()))
+
+    assert retried.id != failed.id
+    assert retried.status == server.AuditTaskStatus.PENDING
+    assert retried.project_id == project.id
+    assert retried.use_llm is False and retried.output_format == "json"
+    assert retried.id in server.audit_tasks_db
+    # 原任务保持 FAILED，重试生成新任务而不是复活旧任务
+    assert server.audit_tasks_db[failed.id].status == server.AuditTaskStatus.FAILED
+
+
+def test_retry_rejects_non_failed_task():
+    project = asyncio.run(server.create_project(server.ProjectCreate(
+        name="Retry running fixture", path="/tmp/retry-running",
+    )))
+    running = server.AuditTask(
+        id="task-running", project_id=project.id, status=server.AuditTaskStatus.RUNNING,
+        created_at=datetime.now(),
+    )
+    server.audit_tasks_db[running.id] = running
+
+    with pytest.raises(HTTPException) as exc_info:
+        asyncio.run(server.retry_audit_task("task-running", background_tasks=_NoopTasks()))
+    assert exc_info.value.status_code == 409
+
+    with pytest.raises(HTTPException) as missing:
+        asyncio.run(server.retry_audit_task("task-missing", background_tasks=_NoopTasks()))
+    assert missing.value.status_code == 404
+
+
+class _NoopTasks:
+    """BackgroundTasks 替身：记录调度但不执行。"""
+
+    def __init__(self):
+        self.scheduled = []
+
+    def add_task(self, func, *args, **kwargs):
+        self.scheduled.append((func, args, kwargs))
