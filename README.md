@@ -1,5 +1,7 @@
 # 候风 Seismoscope
 
+**[English](README.en.md)**
+
 [![CI](https://github.com/dxz0069/seismoscope/actions/workflows/ci.yml/badge.svg)](https://github.com/dxz0069/seismoscope/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/seismoscope.svg)](https://pypi.org/project/seismoscope/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -11,7 +13,7 @@
 
 > 分发名 **seismoscope**（`pip install seismoscope`），项目名 **候风 Seismoscope**（曾用名 vibe-guard / vibe-sec-platform）；CLI 提供 `vibe-sec` 与 `seismoscope` 两个等价命令，均指同一项目。
 
-**版本**: v0.10.0 | **状态**: ✅ 所有阶段完成（Phase 1-5），工程验证版（本地单人 Beta），成熟度自评见 [docs/progress/CURRENT_PROJECT_STATUS_2026-08-01.md](docs/progress/CURRENT_PROJECT_STATUS_2026-08-01.md)
+**版本**: v0.11.0 | **状态**: ✅ 所有阶段完成（Phase 1-5），工程验证版（本地单人 Beta），成熟度自评见 [docs/progress/CURRENT_PROJECT_STATUS_2026-08-01.md](docs/progress/CURRENT_PROJECT_STATUS_2026-08-01.md)
 
 ## 项目定位
 
