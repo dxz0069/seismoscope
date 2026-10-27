@@ -3,12 +3,11 @@
 vendored 目标来自真实开源仓库的漏洞版本快照（许可见各目录内 LICENSE），
 行级命中标准：expected_types 中的漏洞类型出现在修复文件 diff hunk ±8 行内（systeminformation 一类"修复在调用处、sink 在被调函数内"的目标，hunk_lines 同时记录被修复保护的 sink 行，见 manifest note）。
 
-当前基线 2/3 已命中（v0.13.0：mistune CWE-22、launch-editor CWE-78）。
-serialize-javascript 保持 strict xfail：其漏洞形态是转义正则的语义绕过
-（`</script` 出现在序列化函数体末尾时未转义），源码表面看已加固——静态
-正则探测器原理性不可见，它是 "false positivity"（看着干净实则可绕过）
-的标本，归 LLM 语义审查通道职责。检测器若意外命中会翻 XPASS 并使 CI
-失败，强制复核。召回倒退（已命中的 2 目标失败）同样直接可见。
+当前基线 4/4 已命中（v0.16.0：mistune、launch-editor、systeminformation、
+serialize-javascript）。serialize-javascript 的转义正则语义绕过由
+escape_semantics 分析器以确定性方式检出——转义正则的"环视缺端锚"缺陷
+可形式化为字符级规则，无需 LLM；它曾是 "false positivity"（看着已修复
+实则可绕过）的标本，翻牌过程见 note 与 CHANGELOG。召回倒退直接可见。
 """
 
 import asyncio
@@ -23,9 +22,8 @@ from main import run_audit
 FIXTURES = pathlib.Path(__file__).parent / "regression_fixtures" / "cve_replay"
 MANIFEST = json.loads((FIXTURES / "manifest.json").read_text(encoding="utf-8"))
 # 语义绕过类目标：静态模式原理性不可见，归 LLM 通道（见模块 docstring）。
-SEMANTIC_ONLY_TARGETS = {
-    "serialize-javascript": "转义正则的语义绕过，静态模式不可见（false positivity 标本）",
-}
+# v0.16.0 起 serialize-javascript 由 escape_semantics 确定性检出，移出本名单。
+SEMANTIC_ONLY_TARGETS = {}
 
 
 def _params():

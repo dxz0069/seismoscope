@@ -60,7 +60,9 @@ def line_hits(findings: List[Dict[str, Any]], target: Dict[str, Any]) -> List[Di
 
 
 # 静态通道已命中的目标：作为 LLM 运行的可信度对照组（见 tests/test_cve_replay.py）。
-STATIC_CONTROL_TARGETS = {"mistune", "launch-editor", "systeminformation"}
+# v0.16.0 起 serialize-javascript 由 escape_semantics 确定性检出，归入对照组；
+# 当前 4 个 vendor 目标全部静态可命中——后续新增语义类目标时移回语义集。
+STATIC_CONTROL_TARGETS = {"mistune", "launch-editor", "systeminformation", "serialize-javascript"}
 
 
 async def run_target(target: Dict[str, Any], *, use_llm: bool, api_key: str | None) -> Dict[str, Any]:
@@ -100,6 +102,7 @@ def summarize(report: List[Dict[str, Any]]) -> Dict[str, Any]:
         "semantic_hits": len(semantic_hits),
         "controls_passed": controls_ok,
         "conclusion": (
+            "no-semantic-targets" if controls_ok and not semantic else
             "accept" if controls_ok and semantic_hits else
             "reject" if controls_ok else
             "inconclusive"
@@ -107,6 +110,8 @@ def summarize(report: List[Dict[str, Any]]) -> Dict[str, Any]:
         "note": (
             "对照组（静态可命中目标）未全部命中，本次 LLM 运行不足以为语义结论背书"
             if not controls_ok else
+            "当前无语义类目标，仅对照组运行"
+            if not semantic else
             "语义目标命中 = LLM 通道通过验收"
             if semantic_hits else
             "对照组可信但语义目标未命中：LLM 通道未通过本次验收（reject）"
