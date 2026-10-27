@@ -159,6 +159,17 @@ python scripts/benchmark_recall.py --project /path/to/VAmPI --label vampi --expe
 
 `--compare` 在召回下降或误报出现时以退出码 1 失败，用于防止能力回退；外部靶场（真实 VAmPI、Juice Shop 等）通过 `--project/--expect` 接入。
 
+### 自定义检测规则
+
+默认规则外置于 `core/audit/rules/patterns.yml`（与内置规则由 golden 测试强制同步）。复制该文件、增删规则后设置环境变量即可生效，无需改代码：
+
+```bash
+export VIBE_SEC_RULES_PATH=/path/to/my-rules.yml   # 规则：vulnerability_type/severity/description/patterns
+vibe-sec audit /path/to/project
+```
+
+规则文件缺失或损坏时自动回落内置规则，审计不中断；单条非法规则跳过并告警。
+
 ### Docker 一键部署
 
 Docker 部署提供 Web 前端、REST API、SQLite 状态和 VRTM 快照的统一运行边界：
