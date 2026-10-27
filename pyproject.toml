@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "seismoscope"
-version = "0.17.0"
+version = "0.18.0"
 description = "Seismoscope (候风) — security audit & verification platform for the Vibe Coding era"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -61,6 +61,9 @@ Documentation = "https://github.com/dxz0069/seismoscope#readme"
 [tool.setuptools]
 py-modules = ["main"]
 include-package-data = true
+
+[tool.setuptools.package-data]
+core = ["audit/rules/*.yml"]
 
 [tool.setuptools.packages.find]
 where = ["."]
