@@ -22,6 +22,11 @@ web_vulnerability_patterns:
   - \b(?:admin|is_admin|is_superuser|is_staff|role)\s*=\s*(?:request|payload|body|form|args|params|json|data)\b
   - '["\''](?:admin|is_admin|is_superuser|is_staff|role)["\'']\s+in\s+[\w.]*(?:request|payload|body|form|args|params|json|data)\b'
   - \b(?:request|payload|body|form|args|params|json|data)[\w.]*\[[\'"](?:admin|is_admin|is_superuser|is_staff|role)[\'"]\]
+- vulnerability_type: idor
+  severity: high
+  description: 可能的越权对象访问：已认证接口按标识符查询对象，同调用无所有权谓词且无事后所有权比较
+  patterns:
+  - \.\s*(?:query|objects)\.\s*(?:filter_by|filter|get)\s*\(
 - vulnerability_type: plaintext_password_comparison
   severity: medium
   description: 可能的明文密码比较：疑似未哈希存储的密码被直接比对

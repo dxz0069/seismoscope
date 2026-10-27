@@ -45,6 +45,10 @@ from core.sanitization import redact_sensitive_text
 # 泛化 JS exec/execSync 汇点模式（区分于 launch-editor 的精确模式，需模板插值污点门控）
 _JS_EXEC_SINK_PATTERN = r'(?:^|[^\w$.])exec(?:Sync)?\s*\('
 
+# ORM 对象查询汇点（经 _is_idor_signal 门控：标识符来自路由参数、同调用无所有权
+# 谓词、函数域已认证、且窗口内无事后所有权比较——真实形态：VAmPI BOLA/IDOR）
+_IDOR_QUERY_PATTERN = r'\.\s*(?:query|objects)\.\s*(?:filter_by|filter|get)\s*\('
+
 logger = logging.getLogger(__name__)
 
 
@@ -186,6 +190,11 @@ class AuditAgent(BaseAgent):
                 ],
                 "severity": Severity.HIGH,
                 "description": "可能的特权字段自赋值：请求数据未经允许清单直接写入 admin/role 等特权字段",
+            },
+            "idor": {
+                "patterns": [_IDOR_QUERY_PATTERN],
+                "severity": Severity.HIGH,
+                "description": "可能的越权对象访问：已认证接口按标识符查询对象，同调用无所有权谓词且无事后所有权比较",
             },
             "plaintext_password_comparison": {
                 "patterns": [
@@ -989,6 +998,12 @@ class AuditAgent(BaseAgent):
                                     and not self._is_js_exec_taint(content, match.start())
                                 ):
                                     continue
+                                if (
+                                    vuln_type == "idor"
+                                    and pattern == _IDOR_QUERY_PATTERN
+                                    and not self._is_idor_signal(content, match.start())
+                                ):
+                                    continue
                                 matches_found += 1
                                 line_num = content[:match.start()].count('\n') + 1
                                 logger.debug(f"Found {vuln_type} at {file_path}:{line_num}")
@@ -1195,6 +1210,50 @@ class AuditAgent(BaseAgent):
         return bool(parts & {"tests", "test", "fixtures", "docs", "static"}) or (
             name.startswith("test_") or name.endswith("_test.py")
         )
+
+    @staticmethod
+    def _is_idor_signal(content: str, start: int) -> bool:
+        """IDOR 门控：ORM 查询按路由参数标识符取对象，且四项反证全部缺席。
+
+        保留候选需同时满足：标识符 kwarg 名出现在函数签名（外部可控）；
+        同一调用的参数段无所有权谓词（user=/owner=/user_id= 等）；
+        窗口内存在认证标记（对象级授权在此语境才成立）；窗口内无事后
+        所有权比较或 403 中止。公共匿名接口与显式检查过的代码不告警。
+        """
+        call_args = content[start:start + 400]
+        depth = 0
+        end_idx = None
+        for idx, ch in enumerate(call_args):
+            if ch == "(":
+                depth += 1
+            elif ch == ")":
+                depth -= 1
+                if depth == 0:
+                    end_idx = idx
+                    break
+        if end_idx is not None:
+            call_args = call_args[:end_idx]
+        window = content[max(0, start - 1500):start + 1500]
+        if re.search(
+            r"\b(?:user|owner|user_id|created_by|author|account|submitted_by|uploader)\s*=",
+            call_args,
+            re.IGNORECASE,
+        ):
+            return False
+        identifier = re.search(
+            r"\b(\w*(?:id|title|slug|uuid|key|pk)\w*)\s*=\s*(?:str\()?[A-Za-z_]\w*\)?\s*[,)]",
+            call_args,
+            re.IGNORECASE,
+        )
+        if identifier is None:
+            return False
+        if not re.search(rf"\bdef\s+\w+\s*\([^)]*\b{re.escape(identifier.group(1))}\b", window):
+            return False
+        if not re.search(r"token|auth|jwt|login_required|current_user|session\[|authorization", window, re.IGNORECASE):
+            return False
+        if re.search(r"\.\s*(?:user|owner|user_id|created_by)\b\s*(?:==|!=)|abort\s*\(\s*40[13]", window):
+            return False
+        return True
 
     @staticmethod
     def _is_js_exec_taint(content: str, start: int) -> bool:
