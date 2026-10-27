@@ -40,27 +40,36 @@ def test_line_hits_uses_same_standard_as_static_replay():
 
 def test_summarize_conclusion_matrix():
     module = _load_module()
-    # 对照组全过 + 语义目标命中 => accept
-    assert module.summarize([
-        {"target": "mistune", "hit": True},
-        {"target": "launch-editor", "hit": True},
-        {"target": "serialize-javascript", "hit": True},
-    ])["conclusion"] == "accept"
+    controls = ("mistune", "launch-editor", "systeminformation", "serialize-javascript")
+    # 对照组全过 + 合成语义目标命中 => accept（当前 4 个 vendor 目标均已归对照组）
+    assert module.summarize(
+        [{"target": name, "hit": True} for name in controls]
+        + [{"target": "future-semantic-target", "hit": True}]
+    )["conclusion"] == "accept"
     # 对照组全过但语义未命中 => reject（诚实失败）
-    summary = module.summarize([
-        {"target": "mistune", "hit": True},
-        {"target": "launch-editor", "hit": True},
-        {"target": "serialize-javascript", "hit": False},
-    ])
+    summary = module.summarize(
+        [{"target": name, "hit": True} for name in controls]
+        + [{"target": "future-semantic-target", "hit": False}]
+    )
     assert summary["conclusion"] == "reject" and summary["semantic_hits"] == 0
     assert "未通过本次验收" in summary["note"]
     # 对照组未全过 => inconclusive（LLM 运行不足以背书）
     summary = module.summarize([
         {"target": "mistune", "hit": False},
-        {"target": "serialize-javascript", "hit": True},
+        {"target": "future-semantic-target", "hit": True},
     ])
     assert summary["conclusion"] == "inconclusive"
     assert "对照组" in summary["note"]
+
+
+def test_summarize_all_controls_no_semantic_targets():
+    module = _load_module()
+    summary = module.summarize([
+        {"target": t, "hit": True}
+        for t in ("mistune", "launch-editor", "systeminformation", "serialize-javascript")
+    ])
+    assert summary["conclusion"] == "no-semantic-targets"
+    assert summary["semantic_targets"] == 0
 
 
 def test_missing_credentials_exit_code():

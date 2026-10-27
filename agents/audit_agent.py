@@ -21,6 +21,7 @@ from enum import Enum
 from pathlib import Path
 
 from core.audit.path_exclusion import is_excluded, resolve_excludes
+from core.audit.escape_semantics import find_lookahead_bypasses
 
 
 # 泛化 JS exec/execSync 汇点模式（区分于 launch-editor 的精确模式，需模板插值污点门控）
@@ -998,6 +999,30 @@ class AuditAgent(BaseAgent):
                                 )
 
                                 self.audit_state.candidates.append(candidate)
+
+                    # 转义正则语义分析：script 闭合标签中和的环视缺端锚
+                    # （串尾绕过，真实 CVE 形态：serialize-javascript）
+                    if file.endswith((".js", ".ts", ".jsx", ".tsx")):
+                        for bypass in find_lookahead_bypasses(content):
+                            candidate = CandidateCase(
+                                id=f"escape-bypass-{len(self.audit_state.candidates)}",
+                                vulnerability_type="xss",
+                                severity=Severity.HIGH,
+                                file_path=os.path.relpath(file_path, project_path),
+                                line_start=bypass["line_start"],
+                                line_end=bypass["line_end"],
+                                description="可能的转义绕过：" + bypass["reason"],
+                                evidence=[
+                                    {
+                                        "type": "code_snippet",
+                                        "content": bypass["evidence"],
+                                        "line": bypass["line_start"],
+                                        "analyzer": "escape_semantics.lookahead_bypass",
+                                    }
+                                ],
+                                confidence=0.75,
+                            )
+                            self.audit_state.candidates.append(candidate)
 
                 except Exception as e:
                     logger.warning(f"Failed to scan {file_path}: {e}")
