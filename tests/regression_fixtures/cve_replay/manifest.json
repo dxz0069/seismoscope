@@ -82,6 +82,25 @@
      ]
     }
    ]
+  },
+  {
+   "target": "serialize-javascript-split",
+   "cwe": "CWE-79",
+   "expected_types": [
+    "xss"
+   ],
+   "parent_commit": "739145a671af",
+   "advisory": "PSECBUGS-117112（split </script payload across function bodies，修复 ffda9f11）",
+   "note": "第一轮缺陷：中和正则只有要求闭合 > 的完整标签分支（[^>]*>），无裸前缀环视、无端锚——分块转义场景下串尾裸 </script 绕过。与 serialize-javascript（第二轮，环视缺端锚）同库不同快照",
+   "fix_files": [
+    {
+     "file": "index.js",
+     "hunk_lines": [
+      20,
+      39
+     ]
+    }
+   ]
   }
  ]
 }
