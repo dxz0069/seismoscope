@@ -4,6 +4,13 @@
 
 ## [Unreleased]
 
+## [0.20.0] — 2026-10-27
+
+### 新增
+
+- **VRTM 动态提示词提取**（旗舰能力补强）：f-string 插值 / 字符串拼接 / format 构造的提示词赋值（vibe coding 最典型写法）此前完全漏掉——仅识别纯字面量。现在动态提示词生成 prompt 节点 + 指向它的 external_content 边，T-PROMPT-INJECTION / T-INDIRECT-PROMPT-INJECTION 假设生成器在 Python 项目上从哑火变为直接触发；内建/模块名过滤避免噪声边
+- **VRTM Mermaid 导出**：`vibe-sec model --format mermaid`——GitHub 原生渲染的四平面攻击面图，假设攻击路径节点红框标注
+
 ## [0.19.0] — 2026-10-26
 
 ### 新增

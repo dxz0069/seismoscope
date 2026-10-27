@@ -491,7 +491,7 @@ class RuntimeSurfaceBuilder:
             if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
                 self._extract_python_function(file_path, content, node)
             if isinstance(node, (ast.Assign, ast.AnnAssign)):
-                self._extract_python_assignment(file_path, node)
+                self._extract_python_assignment(file_path, content, node)
             if isinstance(node, ast.Call):
                 self._extract_python_call(file_path, content, node)
             if isinstance(node, ast.Attribute):
@@ -591,18 +591,43 @@ class RuntimeSurfaceBuilder:
                 dangerous_operations=dangerous, risk_level=_risk_level(dangerous),
             ))
 
-    def _extract_python_assignment(self, file_path: str, node: ast.Assign | ast.AnnAssign) -> None:
+    def _extract_python_assignment(self, file_path: str, content: str, node: ast.Assign | ast.AnnAssign) -> None:
         targets = node.targets if isinstance(node, ast.Assign) else [node.target]
         value = node.value
         for target in targets:
             name = _python_name(target)
             literal = _python_literal(value)
-            if literal and any(marker in name.lower() for marker in ("prompt", "system_message", "instructions")):
+            if not any(marker in name.lower() for marker in ("prompt", "system_message", "instructions")):
+                continue
+            if literal:
                 self.surface.prompt_configs.append(PromptConfig(
                     name=name, type="system" if "system" in name.lower() else "template",
                     content=literal, file_path=file_path, line_start=node.lineno,
                     has_input_validation=False,
                     has_injection_protection=_contains_any(literal.lower(), ("do not follow", "untrusted content", "ignore instructions in")),
+                ))
+                continue
+            # 动态构造的提示词（f-string / 拼接 / format）——vibe coding 最典型写法。
+            # 生成 prompt 节点 + 指向它的 external_content 边（T-PROMPT-INJECTION
+            # 假设的触发条件）。
+            text, identifiers = _python_dynamic_prompt(value, _python_source(value, content))
+            if text is None:
+                continue
+            lowered_text = text.lower()
+            self.surface.prompt_configs.append(PromptConfig(
+                name=name, type="system" if "system" in name.lower() else "template",
+                content=text, file_path=file_path, line_start=node.lineno,
+                has_input_validation=False,
+                has_injection_protection=_contains_any(lowered_text, ("do not follow", "untrusted content", "ignore instructions in")),
+                description="Dynamically constructed prompt (interpolated values marked as external content).",
+            ))
+            for identifier in identifiers:
+                self.surface.external_content_inputs.append(ExternalContentInput(
+                    name=identifier, source_type="parameter",
+                    expression=f"{identifier} interpolated into prompt {name}",
+                    file_path=file_path, line_start=node.lineno,
+                    line_end=getattr(node, "end_lineno", node.lineno),
+                    target_refs=[name],
                 ))
 
     def _extract_python_call(self, file_path: str, content: str, node: ast.Call) -> None:
@@ -1168,6 +1193,49 @@ def _python_name(node: ast.AST | None) -> str:
     if isinstance(node, ast.Subscript):
         return _python_name(node.value)
     return ""
+
+
+def _python_dynamic_prompt(value: ast.expr | None, source_segment: str) -> tuple[str | None, list[str]]:
+    """动态构造提示词的规范化文本与被插值的标识符列表。
+
+    f-string 按字面部分 + ``{name}`` 占位重建文本；拼接 / format / % 等
+    其他动态形态取源码段为内容。标识符：f-string 取 FormattedValue 的
+    名称；Call 形态只取参数名（不取被调函数名）；其余取 AST 名称收集。
+    """
+    if value is None:
+        return None, []
+    names: list[str] = []
+    if isinstance(value, ast.JoinedStr):
+        parts: list[str] = []
+        for item in value.values:
+            if isinstance(item, ast.Constant):
+                parts.append(str(item.value))
+            else:
+                expr = getattr(item, "value", item)
+                label = _python_name(expr) or "?"
+                parts.append("{" + label + "}")
+                if label != "?":
+                    names.append(label)
+        return "".join(parts), list(dict.fromkeys(names))[:6]
+    if isinstance(value, ast.Call):
+        for arg in [*value.args, *value.keywords]:
+            for child in ast.walk(arg):
+                if isinstance(child, ast.Name):
+                    names.append(child.id)
+    else:
+        for child in ast.walk(value):
+            if isinstance(child, ast.Name):
+                names.append(child.id)
+    builtins = {
+        "chr", "str", "int", "float", "len", "format", "join", "upper", "lower",
+        "strip", "repr", "json", "dumps", "loads", "encode", "decode", "text",
+    }
+    dedup = [
+        item for item in dict.fromkeys(names)
+        if not item.startswith("_") and item not in builtins
+    ]
+    text = (source_segment or "").strip() or None
+    return text, dedup[:6]
 
 
 def _python_literal(node: ast.AST | None) -> str:

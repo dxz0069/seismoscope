@@ -1315,7 +1315,7 @@ def main():
     model_parser.add_argument("--store-dir", help="Override the local VRTM snapshot directory")
     model_parser.add_argument("--no-store", action="store_true", help="Do not persist this model")
     model_parser.add_argument("--list-snapshots", action="store_true", help="List stored model versions")
-    model_parser.add_argument("--format", choices=["json", "markdown", "dot"], default="json")
+    model_parser.add_argument("--format", choices=["json", "markdown", "dot", "mermaid"], default="json")
     model_parser.add_argument("--output", "-o", help="Write the model export to this path")
     model_parser.add_argument(
         "--fail-on-review", action="store_true",
