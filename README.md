@@ -148,7 +148,7 @@ AST 审计通道依赖 tree-sitter 解析器，首次使用会从 GitHub 下载�
 
 ### 召回/误报基线
 
-`scripts/benchmark_recall.py` 在固定靶场集上度量确定性审计能力（无 LLM），当前基线为**平均召回 100%、safe 集零误报**。另设真实 CVE 回放基线（`tests/test_cve_replay.py`）：mistune（CWE-22）、launch-editor（CWE-78）、systeminformation（CWE-78，模板插值命令拼接）已行级命中，serialize-javascript 的转义语义绕过保留 xfail（静态模式原理性不可见，归 LLM 语义通道，验收工具 `python scripts/cve_replay_llm.py`——静态可命中目标作对照组，对照未过则结论标记 inconclusive）。对真实 [VAmPI](https://github.com/erev0s/VAmPI) 靶场（11 个 Python 文件），6 个已知漏洞中 4 个静态可映射类型**全部命中且零误报**，IDOR/debug 端点等语义类由 LLM 审计通道负责：
+`scripts/benchmark_recall.py` 在固定靶场集上度量确定性审计能力（无 LLM），当前基线为**平均召回 100%、safe 集零误报**。另设真实 CVE 回放基线（`tests/test_cve_replay.py`）：**4/4 全部行级命中**——mistune（CWE-22）、launch-editor（CWE-78）、systeminformation（CWE-78）、serialize-javascript（CWE-79，转义正则环视缺端锚的语义绕过，由 `escape_semantics` 分析器确定性检出）。LLM 语义通道验收工具 `python scripts/cve_replay_llm.py` 以静态可命中目标作对照组，对照未过则结论标记 inconclusive。对真实 [VAmPI](https://github.com/erev0s/VAmPI) 靶场（11 个 Python 文件），6 个已知漏洞中 4 个静态可映射类型**全部命中且零误报**，IDOR/debug 端点等语义类由 LLM 审计通道负责：
 
 ```bash
 python scripts/benchmark_recall.py                          # 运行四个内置靶场集
