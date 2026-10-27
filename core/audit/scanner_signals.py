@@ -12,10 +12,10 @@ from ..runtime.permission_policy import PermissionPolicy
 from ..tool_fabric import (
     ArtifactStore,
     ContainerProfile,
+    OsvVulnerabilityAdapter,
     ToolGateway,
     ToolRegistry,
     ToolRequest,
-    OsvVulnerabilityAdapter,
     register_container_scanners,
 )
 

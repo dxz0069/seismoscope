@@ -2,18 +2,18 @@
 
 from __future__ import annotations
 
+import json
 from datetime import datetime, timezone
 from hashlib import sha256
-import json
 from pathlib import Path
 from typing import Any, Dict, Iterable, Optional
 
 from ..harness.models import RuntimeSurfaceGraph
 from ..surface.runtime_surface import RuntimeSurfaceBuilder
 from ..surface.threat_model import (
-    RuntimeThreatModelAnalyzer,
     TECHNIQUE_CATALOG_VERSION,
     VRTM_METHOD_VERSION,
+    RuntimeThreatModelAnalyzer,
 )
 from .declaration import VRTMDeclaration
 from .lifecycle import analyze_graph_changes, bind_hypothesis_statuses, compare_threat_models

@@ -27,8 +27,8 @@ try:
     from tree_sitter_language_pack import (
         PackConfig,
         configure,
-        downloaded_languages,
         download,
+        downloaded_languages,
         get_parser,
     )
 except ImportError:  # pragma: no cover - 依赖声明存在但运行环境可能缺包

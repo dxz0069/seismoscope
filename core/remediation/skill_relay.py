@@ -10,12 +10,11 @@ draft → dispatched → acknowledged → in_progress → completed → returned
                       (AI接收)         (AI开始修复)   (AI完成修复)
 """
 
+import logging
 from dataclasses import dataclass, field
+from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, List, Optional
-from datetime import datetime
-import logging
-
 
 logger = logging.getLogger(__name__)
 

@@ -5,10 +5,9 @@ Vibe Sec Platform — PermissionPolicy 权限策略引擎
 借鉴 lz-secure 的 harness.py 设计。
 """
 
-from typing import Dict, List, Optional
-from dataclasses import dataclass
 import logging
-
+from dataclasses import dataclass
+from typing import Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 

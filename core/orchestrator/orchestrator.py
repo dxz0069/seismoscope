@@ -22,6 +22,11 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
+from ..agent_runtime.completion import FinalizeTaskContract
+from ..agent_runtime.graph import TaskGraphController
+from ..agent_runtime.guard import AgentGuard
+from ..agent_runtime.loop import AgentTaskLoop
+from ..agent_runtime.task import AgentTask
 from ..agents.base import (
     AgentConfig,
     AgentPattern,
@@ -32,25 +37,19 @@ from ..agents.base import (
     TaskHandoff,
 )
 from ..agents.registry import AgentRegistry, AgentState
-from ..agent_runtime.loop import AgentTaskLoop
-from ..agent_runtime.guard import AgentGuard
-from ..agent_runtime.graph import TaskGraphController
-from ..agent_runtime.task import AgentTask
-from ..agent_runtime.completion import FinalizeTaskContract
 from ..audit.finding_cluster import cluster_findings
 from ..audit.lanes import group_findings_by_lane
-from ..audit.suppression import apply_suppressions
 from ..audit.models import normalize_finding
-from ..harness.return_protocol import build_return_packages
+from ..audit.suppression import apply_suppressions
 from ..harness.models import ProjectProfile, RuntimeSurfaceGraph
+from ..harness.return_protocol import build_return_packages
 from ..policy.closure_policy import ClosurePolicy
+from ..reasoning.reasoning_guard import ReasoningGuard
 from ..session.models import RunSession, RunStatus
 from ..session.store import SessionStore
-from ..reasoning.reasoning_guard import ReasoningGuard
 from ..surface.threat_model import RuntimeThreatModelAnalyzer
 from ..vrtm.lifecycle import analyze_graph_changes, bind_hypothesis_statuses, compare_threat_models
 from ..vrtm.observations import observations_from_audit, observations_from_verification
-
 
 logger = logging.getLogger(__name__)
 

@@ -11,7 +11,6 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-
 AUTHORIZATION_SCHEMA = "vibe-sec.verification-authorization.v1"
 
 

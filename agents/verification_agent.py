@@ -17,21 +17,20 @@ from typing import Any, Dict, List, Optional
 
 from core.agents.base import AgentConfig, AgentPattern, AgentResult, AgentType, BaseAgent
 from core.audit.protocol_analysis import find_matching_protocol_signal
-from core.sanitization import redact_sensitive_text, sanitize_for_persistence
-from core.runtime.docker_executor import DockerExecutor
+from core.llm_errors import classify_llm_failure
 from core.runtime.browser_executor import PlaywrightExecutor
+from core.runtime.docker_executor import DockerExecutor
+from core.sanitization import redact_sensitive_text, sanitize_for_persistence
 from core.tool_fabric import ArtifactStore
 from core.tool_fabric.dependency_inspection import inspect_dependencies
-from core.verification.react_review import ReActVerificationReviewer
-from core.llm_errors import classify_llm_failure
-from core.verification.poc_protocol import bind_poc_verdict, validate_poc_plan
-from core.verification.types import VULNERABILITY_TYPE_ALIASES
-from core.verification.service_runtime import ContainerServiceRunner, ServiceSpec
 from core.verification.environment_runtime import (
     ContainerEnvironmentRunner,
     ReproductionEnvironmentPlan,
 )
-
+from core.verification.poc_protocol import bind_poc_verdict, validate_poc_plan
+from core.verification.react_review import ReActVerificationReviewer
+from core.verification.service_runtime import ContainerServiceRunner, ServiceSpec
+from core.verification.types import VULNERABILITY_TYPE_ALIASES
 
 logger = logging.getLogger(__name__)
 

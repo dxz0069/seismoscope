@@ -5,12 +5,11 @@ Vibe Sec Platform — LLM 服务基类
 支持多种 LLM 提供商（OpenAI、Anthropic 等）。
 """
 
-from abc import ABC, abstractmethod
 import asyncio
+import logging
+from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
-import logging
-
 
 logger = logging.getLogger(__name__)
 

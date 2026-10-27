@@ -19,7 +19,6 @@ from ..llm_service import LLMMessage
 from ..reasoning.reasoning_guard import ReasoningGuard
 from .react_review import AuditEvidenceTools
 
-
 LANE_GUIDANCE = {
     "web_audit": [
         "Trace untrusted input through parsing, validation, authorization, and dangerous sinks.",

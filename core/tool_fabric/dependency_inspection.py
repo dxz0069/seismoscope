@@ -10,7 +10,6 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
 
-
 MAX_MANIFEST_BYTES = 2_000_000
 
 _IGNORED = {

@@ -1,6 +1,6 @@
 """Policy contracts for trigger suggestions and closure gates."""
 
-from .trigger_policy import TriggerDecision, TriggerPolicy
 from .closure_policy import ClosurePolicy
+from .trigger_policy import TriggerDecision, TriggerPolicy
 
 __all__ = ["ClosurePolicy", "TriggerDecision", "TriggerPolicy"]

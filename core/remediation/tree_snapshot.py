@@ -7,7 +7,6 @@ import json
 from pathlib import Path
 from typing import Any, Dict, Iterable
 
-
 IGNORED_PARTS = {
     ".git", ".hg", ".svn", "node_modules", "vendor", "venv", ".venv",
     "__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache", "dist",

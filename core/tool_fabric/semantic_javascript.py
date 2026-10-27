@@ -11,8 +11,7 @@ try:
 except ImportError:  # pragma: no cover - dependency failures are reported by the tool.
     esprima = None
 
-from .semantic_source import FunctionRecord, GUARD_MARKERS, SOURCE_NAME_MARKERS
-
+from .semantic_source import GUARD_MARKERS, SOURCE_NAME_MARKERS, FunctionRecord
 
 JAVASCRIPT_EXTENSIONS = {".js", ".jsx", ".mjs", ".cjs"}
 

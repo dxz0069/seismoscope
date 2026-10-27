@@ -21,7 +21,6 @@ from .models import (
     utc_now,
 )
 
-
 OSV_QUERY_BATCH_URL = "https://api.osv.dev/v1/querybatch"
 _OSV_ECOSYSTEMS = {
     "python": "PyPI",

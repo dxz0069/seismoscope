@@ -5,12 +5,11 @@
 """
 
 import importlib.util
+import logging
 from pathlib import Path
 from typing import List
-import logging
 
 from .base import BasePlugin, PluginRegistry, plugin_registry
-
 
 logger = logging.getLogger(__name__)
 

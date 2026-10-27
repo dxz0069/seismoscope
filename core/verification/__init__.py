@@ -1,5 +1,10 @@
 """Vibe Coding 安全审查验证平台 — 验证模块"""
-from .react_review import ReActVerificationResult, ReActVerificationReviewer, VerificationEvidenceTools
+from .environment_runtime import (
+    ContainerEnvironmentRunner,
+    EnvironmentServiceSpec,
+    ReproductionEnvironmentHandle,
+    ReproductionEnvironmentPlan,
+)
 from .poc_protocol import (
     PoCControl,
     PoCHarnessKind,
@@ -11,11 +16,10 @@ from .poc_protocol import (
     bind_poc_verdict,
     validate_poc_plan,
 )
-from .environment_runtime import (
-    ContainerEnvironmentRunner,
-    EnvironmentServiceSpec,
-    ReproductionEnvironmentHandle,
-    ReproductionEnvironmentPlan,
+from .react_review import (
+    ReActVerificationResult,
+    ReActVerificationReviewer,
+    VerificationEvidenceTools,
 )
 
 __all__ = [

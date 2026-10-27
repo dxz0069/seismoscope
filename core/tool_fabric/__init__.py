@@ -17,7 +17,6 @@ from .models import (
     ToolSpec,
 )
 from .registry import CallableToolAdapter, ToolAdapter, ToolRegistry
-from .source_tools import SourceToolSuite, build_source_registry, source_tool_specs
 from .scanner_adapters import (
     BanditAdapter,
     CodeQLAdapter,
@@ -28,6 +27,7 @@ from .scanner_adapters import (
     register_active_scanners,
     register_container_scanners,
 )
+from .source_tools import SourceToolSuite, build_source_registry, source_tool_specs
 
 __all__ = [
     "ArtifactRef",

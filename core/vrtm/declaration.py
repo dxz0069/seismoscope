@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
+import json
+import re
 from dataclasses import dataclass, field
 from hashlib import sha256
-import json
 from pathlib import Path
-import re
 from typing import Any, Dict, List, Optional
 
 import yaml
@@ -17,8 +17,7 @@ from ..harness.models import (
     RuntimeSurfaceNode,
     stable_id,
 )
-from ..harness.vrtm import EvidenceLevel, NODE_GROUPS, RELATION_SEMANTICS, enrich_runtime_graph
-
+from ..harness.vrtm import NODE_GROUPS, RELATION_SEMANTICS, EvidenceLevel, enrich_runtime_graph
 
 DECLARATION_SCHEMA = "vibe-sec.vrtm.declaration.v1"
 _REFERENCE_PATTERN = re.compile(r"^[A-Za-z0-9_.:/-]{1,160}$")

@@ -18,12 +18,11 @@ from core.agents.base import (
     AgentType,
     BaseAgent,
 )
-from core.surface.runtime_surface import RuntimeSurface, RuntimeSurfaceBuilder
-from core.surface.risk_chain import RiskChain, RiskChainBuilder
-from core.surface.threat_model import RuntimeThreatModelAnalyzer
 from core.harness.models import RuntimeSurfaceGraph
+from core.surface.risk_chain import RiskChain, RiskChainBuilder
+from core.surface.runtime_surface import RuntimeSurface, RuntimeSurfaceBuilder
+from core.surface.threat_model import RuntimeThreatModelAnalyzer
 from core.vrtm.declaration import VRTMDeclaration
-
 
 logger = logging.getLogger(__name__)
 

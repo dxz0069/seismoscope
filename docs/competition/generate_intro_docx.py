@@ -1,8 +1,10 @@
 """Generate Word version of project introduction."""
-import re, os
+import os
+import re
+
 from docx import Document
-from docx.shared import Pt, Inches, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.shared import Inches, Pt, RGBColor
 
 doc = Document()
 style = doc.styles['Normal']

@@ -15,12 +15,11 @@ from typing import Any, Dict, Optional
 
 from core.agents.base import AgentConfig, AgentType
 from core.agents.registry import AgentRegistry
-from core.orchestrator.orchestrator import OrchestratorAgent, OrchestrationConfig
 from core.llm_service import MockLLMService
+from core.orchestrator.orchestrator import OrchestrationConfig, OrchestratorAgent
 from core.policy.trigger_policy import TriggerPolicy
 from core.session.models import RunSession
 from core.session.store import SessionStore
-
 
 logging.basicConfig(
     level=logging.INFO,
@@ -47,12 +46,12 @@ def setup_agent_registry(llm_service=None, event_emitter=None) -> AgentRegistry:
     Returns:
         注册了所有 Agent 的注册表
     """
-    from agents.recon_agent import ReconAgent
-    from agents.surface_agent import SurfaceAgent
     from agents.audit_agent import AuditAgent
-    from agents.verification_agent import VerificationAgent
-    from agents.remediation_agent import RemediationAgent
+    from agents.recon_agent import ReconAgent
     from agents.regression_agent import RegressionAgent
+    from agents.remediation_agent import RemediationAgent
+    from agents.surface_agent import SurfaceAgent
+    from agents.verification_agent import VerificationAgent
 
     registry = AgentRegistry()
 

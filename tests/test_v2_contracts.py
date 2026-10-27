@@ -3,19 +3,19 @@
 import asyncio
 import json
 
+from agents.verification_agent import VerificationEvidence
+from core.agent_runtime.completion import FinalizeFindingContract, FinalizeVerificationContract
 from core.audit.lanes import AuditLane, classify_lane
 from core.audit.models import normalize_finding
+from core.audit.react_review import ReActFindingReviewer
 from core.harness.models import RuntimeSurfaceGraph
 from core.harness.return_protocol import build_return_packages
+from core.llm_service import LLMResponse, MockLLMService
 from core.policy.trigger_policy import TriggerPolicy
 from core.session.models import RunSession, RunStatus
-from core.llm_service import LLMResponse, MockLLMService
-from core.audit.react_review import ReActFindingReviewer
-from core.agent_runtime.completion import FinalizeFindingContract, FinalizeVerificationContract
 from core.surface.runtime_surface import RuntimeSurfaceBuilder
 from core.surface.threat_model import RuntimeThreatModelAnalyzer
 from core.verification.react_review import ReActVerificationReviewer
-from agents.verification_agent import VerificationEvidence
 
 
 def test_finding_contract_assigns_stable_id_and_lane():

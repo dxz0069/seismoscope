@@ -5,12 +5,11 @@ Vibe Sec Platform — 智能体基础设施
 借鉴 AutoCVE 的 base.py 设计，增加 context_refs 避免数据复制。
 """
 
+from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
+from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, List, Optional, Protocol
-from abc import ABC, abstractmethod
-from datetime import datetime
-
 
 # ========== 枚举类型 ==========
 

@@ -9,11 +9,10 @@ Vibe Sec Platform — RiskChain 风险链分析
 - evidence_predicates: 证据谓词（支持证据）
 """
 
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
-from enum import Enum
 import logging
-
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 

@@ -9,7 +9,6 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Dict
 
-
 SENSITIVE_KEY_PARTS = (
     "api_key", "apikey", "access_key", "token", "password", "passwd",
     "secret", "credential", "private_key", "client_secret",
