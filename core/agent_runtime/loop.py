@@ -6,9 +6,9 @@ import asyncio
 import inspect
 import json
 import time
-from dataclasses import dataclass, field
-from typing import Any, Dict, Optional
 from collections.abc import Callable
+from dataclasses import dataclass, field
+from typing import Any
 
 from ..agents.base import AgentResult, TaskHandoff
 from .completion import CompletionValidationResult, CompletionValidator

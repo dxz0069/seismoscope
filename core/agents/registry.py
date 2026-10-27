@@ -8,7 +8,6 @@ Vibe Sec Platform — Agent 注册中心
 import logging
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Dict, List, Optional, Set
 
 from .base import AgentType, BaseAgent
 

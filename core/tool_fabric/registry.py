@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import inspect
-from typing import Any, Dict, List, Optional, Protocol
 from collections.abc import Awaitable, Callable
+from typing import Any, Protocol
 
 from .models import ToolRequest, ToolResult, ToolSpec
 

@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from hashlib import sha1
-from typing import Any, Dict, List, Tuple
 from collections.abc import Iterable
+from hashlib import sha1
+from typing import Any
 
 from ..harness.models import RuntimeSurfaceGraph
 

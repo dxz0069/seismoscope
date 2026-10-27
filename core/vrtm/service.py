@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone, UTC
+from collections.abc import Iterable
+from datetime import UTC, datetime
 from hashlib import sha256
 from pathlib import Path
-from typing import Any, Dict, Optional
-from collections.abc import Iterable
+from typing import Any
 
 from ..harness.models import RuntimeSurfaceGraph
 from ..surface.runtime_surface import RuntimeSurfaceBuilder

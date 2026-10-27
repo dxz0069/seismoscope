@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, List
 from collections.abc import Iterable
+from typing import Any
 
 from ..harness.models import RuntimeGraphObservation, stable_id
 

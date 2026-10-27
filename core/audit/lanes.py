@@ -1,9 +1,9 @@
 """Logical audit lanes used by the deterministic merge stage."""
 
 from collections import defaultdict
-from enum import Enum
-from typing import Any, Dict, List
 from collections.abc import Iterable
+from enum import Enum
+from typing import Any
 
 
 class AuditLane(str, Enum):

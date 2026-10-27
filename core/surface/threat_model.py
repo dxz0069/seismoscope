@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from hashlib import sha1
-from typing import Any, Dict, List, Optional
-from collections.abc import Iterable
+from typing import Any
 
 from ..harness.models import RuntimeSurfaceGraph
 

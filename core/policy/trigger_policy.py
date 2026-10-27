@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional
-from collections.abc import Iterable, Mapping
 
 try:
     import yaml

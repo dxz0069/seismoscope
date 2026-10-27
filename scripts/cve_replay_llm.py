@@ -24,9 +24,9 @@ import shutil
 import sys
 import tempfile
 import time
-from pathlib import Path
-from typing import Any, Dict, List
 from datetime import UTC
+from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -164,7 +164,7 @@ def main() -> int:
             entry["target"] = entry["target"] + " [static]"
             report.append(entry)
 
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     document = {
         "contract_version": "seismoscope.cve-replay-llm.v1",

@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import ast
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional
-from collections.abc import Iterable
+from typing import Any
 
 SOURCE_NAME_MARKERS = {
     "request", "req", "user_input", "user_data", "query", "payload", "event",

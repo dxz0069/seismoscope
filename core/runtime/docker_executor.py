@@ -14,7 +14,7 @@ import tempfile
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from core.sanitization import redact_sensitive_text
 from core.tool_fabric.container import ContainerProfile, ContainerRunResult, ContainerToolRunner

@@ -7,10 +7,9 @@
 "全排除"攻击对使用者可见。
 """
 
+from collections.abc import Iterable
 from fnmatch import fnmatch
 from pathlib import Path
-from typing import List, Optional
-from collections.abc import Iterable
 
 DEFAULT_EXCLUDES = [
     "**/*.min.js",

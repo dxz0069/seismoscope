@@ -1,8 +1,8 @@
 """Stable contracts shared by audit, verification, remediation, and reports."""
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone, UTC
-from typing import Any, Dict, List, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 
 def _now() -> str:

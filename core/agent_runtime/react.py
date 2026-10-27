@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
 from collections.abc import Iterable
+from dataclasses import dataclass, field
+from typing import Any
 
 from ..llm_service import LLMMessage
 from .context import ContextWindow

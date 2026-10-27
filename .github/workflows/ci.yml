@@ -37,7 +37,7 @@ jobs:
           pip install -e ".[dev]"
 
       - name: Lint (error-level only)
-        run: ruff check . --select F,E9
+        run: ruff check . --select F,E9,I,UP --ignore UP042  # UP042(StrEnum) 涉及 str() 语义，暂缓
 
       - name: Run tests
         run: pytest tests/ -q -p no:cacheprovider

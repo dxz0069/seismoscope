@@ -7,9 +7,9 @@ import hmac
 import json
 import os
 import secrets
-from datetime import datetime, timedelta, timezone, UTC
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 AUTHORIZATION_SCHEMA = "vibe-sec.verification-authorization.v1"
 

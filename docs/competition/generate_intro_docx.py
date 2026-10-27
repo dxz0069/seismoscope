@@ -15,7 +15,7 @@ style.paragraph_format.space_after = Pt(3)
 style.paragraph_format.line_spacing = 1.25
 
 for lvl, sz in [(1, 16), (2, 13), (3, 11)]:
-    s = doc.styles['Heading %d' % lvl]
+    s = doc.styles[f'Heading {lvl}']
     s.font.name = 'SimHei'
     s.font.size = Pt(sz)
     s.font.bold = True
@@ -60,4 +60,4 @@ for line in lines:
 
 fp = '作品简介-v2.docx'
 doc.save(fp)
-print('Saved: %s (%d KB)' % (fp, os.path.getsize(fp) / 1024))
+print(f'Saved: {fp} ({os.path.getsize(fp) / 1024:.0f} KB)')

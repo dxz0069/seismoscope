@@ -17,10 +17,11 @@ Vibe Sec Platform — 确定性编排器
 import asyncio
 import logging
 import math
+from collections.abc import Callable
 from copy import deepcopy
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
 
 from ..agent_runtime.completion import FinalizeTaskContract
 from ..agent_runtime.graph import TaskGraphController

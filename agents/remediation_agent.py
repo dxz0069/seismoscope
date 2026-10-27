@@ -8,7 +8,7 @@ import tempfile
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from core.agents.base import AgentConfig, AgentPattern, AgentResult, AgentType, BaseAgent
 from core.remediation.tree_snapshot import build_tree_snapshot

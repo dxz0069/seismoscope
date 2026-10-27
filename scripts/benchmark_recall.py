@@ -36,8 +36,9 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from main import run_audit  # noqa: E402
 from datetime import UTC
+
+from main import run_audit  # noqa: E402
 
 FIXTURES = ROOT / "tests" / "fixtures"
 
@@ -164,7 +165,7 @@ async def measure_set(label: str, project_path: str, expected: set, safe: bool) 
 
 async def run_benchmark(extra_sets: list | None = None) -> dict:
     """执行全部内置与外部靶场集，返回汇总报告。"""
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     reports = []
     workdir = Path(tempfile.mkdtemp(prefix="seismoscope-bench-"))

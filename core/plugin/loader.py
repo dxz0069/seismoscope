@@ -7,7 +7,6 @@
 import importlib.util
 import logging
 from pathlib import Path
-from typing import List
 
 from .base import BasePlugin, PluginRegistry, plugin_registry
 

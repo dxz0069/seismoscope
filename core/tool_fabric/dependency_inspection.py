@@ -7,9 +7,9 @@ import json
 import re
 import tomllib
 import xml.etree.ElementTree as ET
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
 from collections.abc import Callable, Iterable
+from pathlib import Path
+from typing import Any
 
 MAX_MANIFEST_BYTES = 2_000_000
 

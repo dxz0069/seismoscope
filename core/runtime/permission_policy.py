@@ -7,7 +7,6 @@ Vibe Sec Platform — PermissionPolicy 权限策略引擎
 
 import logging
 from dataclasses import dataclass
-from typing import Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 

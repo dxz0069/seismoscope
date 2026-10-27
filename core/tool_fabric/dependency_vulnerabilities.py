@@ -5,8 +5,8 @@ from __future__ import annotations
 import asyncio
 import inspect
 import re
-from typing import Any, Dict, List, Optional
 from collections.abc import Awaitable, Callable
+from typing import Any
 
 import httpx
 

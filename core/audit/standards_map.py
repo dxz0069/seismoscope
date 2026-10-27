@@ -11,7 +11,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 _CWE_BASE = "https://cwe.mitre.org/data/definitions/"
 _OwASP_LLM = "https://owasp.org/www-project-top-10-for-large-language-model-applications/"

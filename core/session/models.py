@@ -6,9 +6,9 @@ session/event/checkpoint model at the boundary.
 """
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone, UTC
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 from uuid import uuid4
 
 from ..sanitization import sanitize_for_persistence

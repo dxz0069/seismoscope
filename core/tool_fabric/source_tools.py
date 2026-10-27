@@ -7,9 +7,9 @@ import fnmatch
 import hashlib
 import json
 import re
-from pathlib import Path
-from typing import Any, Dict, List, Optional
 from collections.abc import Iterable
+from pathlib import Path
+from typing import Any
 
 from ..sanitization import redact_sensitive_text
 from .dependency_inspection import inspect_dependencies, is_dependency_file
