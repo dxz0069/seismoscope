@@ -767,6 +767,11 @@ class AuditAgent(BaseAgent):
                 if candidate.id in selected_ids
             ]
             stats["budget_skipped"] = max(0, len(self.audit_state.candidates) - len(selected))
+            logger.info(
+                "react review budget selected %d/%d (targeted priority: security-control first, test dirs last): %s",
+                len(selected), len(self.audit_state.candidates),
+                [(c.id, c.file_path) for c in selected],
+            )
         else:
             selected = list(self.audit_state.candidates[:limit])
 

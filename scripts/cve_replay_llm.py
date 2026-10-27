@@ -61,9 +61,14 @@ def line_hits(findings: list[dict[str, Any]], target: dict[str, Any]) -> list[di
 
 
 # 静态通道已命中的目标：作为 LLM 运行的可信度对照组（见 tests/test_cve_replay.py）。
-# v0.16.0 起 serialize-javascript 由 escape_semantics 确定性检出，归入对照组；
-# 当前 4 个 vendor 目标全部静态可命中——后续新增语义类目标时移回语义集。
-STATIC_CONTROL_TARGETS = {"mistune", "launch-editor", "systeminformation", "serialize-javascript"}
+# v0.16.0 起 serialize-javascript 两代快照均由 escape_semantics 确定性检出；
+# v0.22.0 起 systeminformation 家族三代同。当前 8 个 vendor 目标全部静态可命中
+# ——后续新增语义类（暂无）目标时移回语义集。
+STATIC_CONTROL_TARGETS = {
+    "mistune", "launch-editor", "systeminformation",
+    "serialize-javascript", "serialize-javascript-split",
+    "systeminformation-inetlatency", "systeminformation-v4", "systeminformation-8021x",
+}
 
 
 async def run_target(target: dict[str, Any], *, use_llm: bool, api_key: str | None) -> dict[str, Any]:
@@ -75,6 +80,9 @@ async def run_target(target: dict[str, Any], *, use_llm: bool, api_key: str | No
         shutil.copytree(FIXTURES / target["target"], project)
         result = await run_audit(
             str(project), use_llm=use_llm, api_key=api_key, output_format="json",
+            # 语义通道验收必须开启 ReAct 审查——否则定向预算不参与，
+            # "LLM 模式"退化为静态扫描 + 2 条深度分析（历史两轮实测即此形态）
+            enable_react_audit=use_llm,
         )
     data = json.loads(result) if isinstance(result, str) else result
     findings = data.get("merged_findings", []) or []
