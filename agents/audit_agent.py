@@ -229,6 +229,9 @@ class AuditAgent(BaseAgent):
                     r'childProcess\.exec(?:Sync)?\(',
                     r'child_process\.exec(?:Sync)?\(',
                     # 泛化 exec/execSync 汇点（经 _is_js_exec_taint 门控：模板插值命令拼接）
+                    # execFile/spawn 参数由字符串 split 而来——参数数组安全性被打穿
+                    # （真实 CVE 形态：systeminformation CVE-2021-21388 inetLatency）
+                    r'(?:execFile|execFileSync|spawnSync|spawn)\s*\([^)\n]*\.split\(',
                     r'(?:^|[^\w$.])exec(?:Sync)?\s*\(',
                     # Windows CMD ^ 转义白名单缺 %/引号处理（launch-editor 系 CVE 的绕过形态）
                     r'replace\(/\(\[&\|<>,;=\^\]\)/g,\s*[\'"]\^\$1[\'"]\)',
@@ -749,6 +752,12 @@ class AuditAgent(BaseAgent):
                         "severity": candidate.severity.value,
                         "confidence": candidate.confidence,
                         "order": index,
+                        "file_path": candidate.file_path,
+                        "evidence_text": " ".join(
+                            str(item.get("content", ""))[:200]
+                            for item in (candidate.evidence or [])
+                            if isinstance(item, dict)
+                        ),
                     }
                     for index, candidate in enumerate(self.audit_state.candidates)
                 ],
@@ -1263,10 +1272,16 @@ class AuditAgent(BaseAgent):
         插值未经 sanitizeShellString 即 execSync）。非模板命令（调用方
         自己拼好的常量命令）不构成此模式的候选。
         """
-        if re.search(r"exec(?:Sync)?\s*\(\s*`[^`]*\$\{", content[start:start + 400]):
+        if re.search(
+            r"exec(?:Sync)?\s*\(\s*(?:`[^`]*\$\{|['\"]?[^'\"\n]*['\"][^'\"\n]*\+)",
+            content[start:start + 400],
+        ):
             return True
         window = content[max(0, start - 800):start]
-        return bool(re.search(r"[A-Za-z_$][\w$]*\s*=\s*`[^`]*\$\{", window))
+        return bool(re.search(
+            r"[A-Za-z_$][\w$]*\s*=\s*(?:`[^`]*\$\{|['\"]?[^'\"\n]*['\"][^'\"\n]*\+)",
+            window,
+        ))
 
     @staticmethod
     def _is_path_traversal_signal(content: str, start: int, end: int) -> bool:
