@@ -237,6 +237,13 @@ async def run_audit(
 
     # 执行审计
     logger.info(f"Starting audit for project: {project_path}")
+    # AST 通道首跑预检：未就绪时给出双分支指引（在线预热 / 离线降级），
+    # 不阻断审计——各泳道自带正则降级路径。
+    from core.languages.tree_sitter_gateway import status as _tree_sitter_status
+
+    ts_status = _tree_sitter_status()
+    if not ts_status.get("all_ready"):
+        logger.info(f"AST lane not ready: {ts_status.get('hint')}")
     result = await orchestrator.run({
         "project_path": project_path,
         "audit_scope": audit_scope or {
@@ -293,6 +300,23 @@ async def run_audit(
             if ignore_file_present else ""
         ),
     }
+
+    # AST 泳道降级显式化：解析器获取失败的语言回填结果契约，避免消费者
+    # 误以为跑的是全精度 AST 分析（实际已降级为正则通道）。
+    from core.languages.tree_sitter_gateway import degraded_languages as _ast_degraded_languages
+
+    ast_degraded = _ast_degraded_languages()
+    if ast_degraded:
+        degradation = {
+            "languages": ast_degraded,
+            "impact": "AST 泳道已降级为正则分析，该语言协议分析精度可能下降",
+            "hint": (
+                "受限网络可设置 VIBE_SEC_TREE_SITTER_CACHE 指向预置解析器缓存目录，"
+                "或设置 VIBE_SEC_DISABLE_TREE_SITTER=1 显式跳过 AST 通道"
+            ),
+        }
+        result.data["ast_degradation"] = degradation
+        logger.warning(f"AST lane degraded for languages: {', '.join(ast_degraded)}")
 
     if persist_vrtm:
         from core.vrtm import VRTMService
@@ -1149,6 +1173,20 @@ def _print_deployment_report(report: dict[str, Any], *, as_json: bool) -> None:
         print(f"[{state}] {image.get('id')} -> {image.get('image')} ({image.get('reason')})")
     llm = doctor.get("llm", {})
     print(f"LLM credentials: {'configured' if llm.get('configured') else 'not configured'}")
+    capabilities = doctor.get("capabilities")
+    if capabilities:
+        print("Capabilities:")
+        for name, info in capabilities.items():
+            state = "READY" if info.get("available") else ("OPTIONAL" if info.get("optional") else "DEGRADED")
+            suffix = ""
+            if not info.get("available"):
+                parts = list(info.get("blocking") or [])
+                if info.get("fallback"):
+                    parts.append(f"fallback: {info['fallback']}")
+                if info.get("next_step"):
+                    parts.append(f"next: {info['next_step']}")
+                suffix = f" ({'; '.join(parts)})" if parts else ""
+            print(f"  [{state}] {name}{suffix}")
 
 
 def main():

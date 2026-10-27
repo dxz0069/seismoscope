@@ -4,6 +4,14 @@
 
 ## [Unreleased]
 
+## [0.23.0] — 2026-10-27
+
+### 新增（感谢 @shangjian2023 三项贡献）
+
+- **doctor 三态判定与能力矩阵**（PR #9）：`ready / degraded_ready / not_ready`——无 Docker 环境不再误报完全不可用（静态审计照常），逐能力 `static_audit / secret_leak_scan / mcp_ast_analysis / container_verification / llm_deep_analysis / codeql_scan` 给出 available/optional/blocking/fallback/next_step；契约升 `doctor.v2`，v1 字段全保留
+- **AST 泳道降级显式化**（PR #10）：网关新增 `degraded_languages()`；运行期实际发生降级时回填 `result["ast_degradation"] = {languages, impact, hint}` 并记 WARNING、首跑输出双分支指引——与 doctor 安装期探测互补；干净路径零噪音
+- **真实 VAmPI 形态正则回归**（PR #8）：字典下标密钥/特权字段成员检查/下标取值三条模式以靶场原始形态锁定；修测试助手只扫 web 泳道的盲区（下标密钥位于 secrets 泳道）
+
 ## [0.22.0] — 2026-10-27
 
 ### 新增

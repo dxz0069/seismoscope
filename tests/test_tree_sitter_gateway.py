@@ -124,3 +124,22 @@ class TestWarmupAndStatus:
         snapshot = gateway_clean_state.status()
         assert snapshot["enabled"] is False
         assert snapshot["all_ready"] is False
+
+
+@pytest.mark.usefixtures("gateway_clean_state")
+class TestDegradedLanguages:
+    def test_failed_languages_are_listed_for_result_contract(self, gateway_clean_state, monkeypatch):
+        def fake_get_parser(name):
+            from tree_sitter_language_pack.exceptions import DownloadError
+
+            raise DownloadError("network blocked")
+
+        monkeypatch.setattr(gateway_clean_state, "get_parser", fake_get_parser)
+        assert gateway_clean_state.parser_for("python") is None
+        assert gateway_clean_state.parser_for("tsx") is None
+        assert gateway_clean_state.degraded_languages() == ["python", "tsx"]
+
+    def test_clean_run_has_no_degraded_languages(self, gateway_clean_state, monkeypatch):
+        monkeypatch.setattr(gateway_clean_state, "get_parser", lambda name: _SentinelParser())
+        assert gateway_clean_state.parser_for("python") is not None
+        assert gateway_clean_state.degraded_languages() == []

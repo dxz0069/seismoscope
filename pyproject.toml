@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "seismoscope"
-version = "0.22.0"
+version = "0.23.0"
 description = "Seismoscope (候风) — security audit & verification platform for the Vibe Coding era"
 readme = "README.md"
 requires-python = ">=3.11"
