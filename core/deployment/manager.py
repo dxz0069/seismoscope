@@ -10,10 +10,10 @@ import shutil
 import subprocess
 import sys
 import urllib.request
-from datetime import datetime, timezone, UTC
-from pathlib import Path
-from typing import Any, Dict, List, Optional
 from collections.abc import Iterable
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Any
 
 from ..languages.tree_sitter_gateway import status as tree_sitter_status
 from ..languages.tree_sitter_gateway import warmup as tree_sitter_warmup

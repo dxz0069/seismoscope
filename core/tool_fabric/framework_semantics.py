@@ -5,10 +5,10 @@ from __future__ import annotations
 import ast
 import os
 import re
+from collections.abc import Iterable, Sequence
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional
-from collections.abc import Iterable, Sequence
+from typing import Any
 
 try:
     from tree_sitter_language_pack import get_parser

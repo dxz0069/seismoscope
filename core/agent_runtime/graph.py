@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import asyncio
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
 from collections.abc import Iterable
+from dataclasses import dataclass, field
+from typing import Any
 
 from .loop import AgentTaskLoop, TaskLoopResult
 from .task import AgentTask

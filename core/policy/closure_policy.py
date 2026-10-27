@@ -1,6 +1,6 @@
 """Closure policy for evidence-backed finding lifecycle."""
 
-from typing import Any, Dict
+from typing import Any
 
 from ..harness.gates import can_close_finding
 

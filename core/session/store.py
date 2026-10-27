@@ -4,7 +4,6 @@ import json
 from datetime import date, datetime
 from enum import Enum
 from pathlib import Path
-from typing import List, Optional, Union
 
 from .models import Checkpoint, RunSession
 

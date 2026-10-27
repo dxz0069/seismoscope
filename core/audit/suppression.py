@@ -10,7 +10,7 @@ import json
 import os
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 
 def _state_root() -> Path:
@@ -43,7 +43,7 @@ def add_suppression(
     reason: str = "",
 ) -> dict[str, Any]:
     entry = {
-        "id": f"sup-{hashlib.sha256(f'{vulnerability_type}|{file_path}|{line}'.encode('utf-8')).hexdigest()[:12]}",
+        "id": f"sup-{hashlib.sha256(f'{vulnerability_type}|{file_path}|{line}'.encode()).hexdigest()[:12]}",
         "vulnerability_type": vulnerability_type,
         "file_path": str(file_path).replace("\\", "/"),
         "line": int(line) if line else None,

@@ -21,8 +21,8 @@ tree_sitter_language_pack 在解析器未缓存时会从 GitHub 下载平台解�
 from __future__ import annotations
 
 import os
-from typing import Any, Dict, Optional
 from collections.abc import Iterable
+from typing import Any
 
 try:
     from tree_sitter_language_pack import (

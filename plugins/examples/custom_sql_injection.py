@@ -4,7 +4,7 @@
 演示如何创建一个自定义的漏洞检测插件
 """
 
-from typing import Any, Dict, List
+from typing import Any
 
 from core.plugin import (
     DetectionRulePlugin,

@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import hashlib
+from collections.abc import Iterable
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional
-from collections.abc import Iterable
+from typing import Any
 
 from ..tool_fabric.dependency_inspection import is_dependency_file
 from ..tool_fabric.source_tools import IGNORED_DIRECTORIES, SOURCE_EXTENSIONS

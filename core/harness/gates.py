@@ -1,6 +1,6 @@
 """Deterministic closure gates used before a finding is considered closed."""
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 # Canonical regression status value.  Some upstream components emit "success"
 # instead of "passed"; normalise at the gate rather than fixing every producer.

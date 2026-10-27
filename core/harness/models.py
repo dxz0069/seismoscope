@@ -2,10 +2,10 @@
 
 import json
 import re
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from hashlib import sha1, sha256
-from typing import Any, Dict, List, Optional
-from collections.abc import Iterable
+from typing import Any
 
 from .vrtm import EvidenceLevel, enrich_runtime_graph
 

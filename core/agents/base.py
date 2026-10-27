@@ -6,10 +6,11 @@ Vibe Sec Platform — 智能体基础设施
 """
 
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Protocol
+from typing import Any, Optional, Protocol
 
 # ========== 枚举类型 ==========
 

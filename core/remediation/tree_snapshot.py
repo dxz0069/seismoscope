@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import hashlib
 import json
-from pathlib import Path
-from typing import Any, Dict
 from collections.abc import Iterable
+from pathlib import Path
+from typing import Any
 
 IGNORED_PARTS = {
     ".git", ".hg", ".svn", "node_modules", "vendor", "venv", ".venv",

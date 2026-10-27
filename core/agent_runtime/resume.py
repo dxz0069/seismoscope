@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
 from collections.abc import Callable
+from typing import Any
 
 from ..session.models import RunSession
 from ..session.store import SessionStore

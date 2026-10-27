@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import json
 import tempfile
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional
-from collections.abc import Callable
+from typing import Any
 
 from ..agent_runtime import (
     AgentTask,

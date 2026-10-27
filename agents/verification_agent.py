@@ -13,7 +13,7 @@ import re
 import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from core.agents.base import AgentConfig, AgentPattern, AgentResult, AgentType, BaseAgent
 from core.audit.protocol_analysis import find_matching_protocol_signal

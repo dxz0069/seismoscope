@@ -1,7 +1,7 @@
 """Stable payload returned to a coding agent or Skill host."""
 
-from typing import Any, Dict, List
 from collections.abc import Iterable
+from typing import Any
 
 
 def build_return_packages(

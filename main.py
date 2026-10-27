@@ -11,7 +11,7 @@ import os
 import sys
 import uuid
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 from core.agents.base import AgentConfig, AgentType
 from core.agents.registry import AgentRegistry

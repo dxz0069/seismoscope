@@ -6,10 +6,10 @@ import asyncio
 import inspect
 import json
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional
-from collections.abc import Callable
+from typing import Any
 from urllib.parse import urlparse
 
 from ..runtime.permission_policy import PermissionPolicy

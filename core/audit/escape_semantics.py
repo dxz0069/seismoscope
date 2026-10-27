@@ -23,7 +23,7 @@
 from __future__ import annotations
 
 import re
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 #: 锚点：源码中出现在正则字面量内的 </script（转义写法 <\/script）
 _SCRIPT_CLOSE_ANCHOR = re.compile(r"<\\/script", re.IGNORECASE)

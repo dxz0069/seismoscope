@@ -4,6 +4,14 @@
 
 ## [Unreleased]
 
+## [0.18.1] — 2026-10-26
+
+### 变更
+
+- **lint 债清偿 3212 → 984 条**（-69%）：导入排序（I001）、类型注解现代化（UP006/UP045/UP035 等约 2400 处，含 319 处跟随残渣）；修复 UP037+UP045 组合把 `Optional["callable"]` 改坏的两处（改 `typing.Callable`）；`_JS_EXEC_SINK_PATTERN` 移至 import 之后清除 E402
+- **CI lint 门禁收紧**：`F,E9` → `F,E9,I,UP`（UP042/StrEnum 涉及 `str()` 语义暂缓豁免）——已清偿类别锁死不回潮
+- `tests/fixtures` 加入 ruff 排除（fixture 行号是测试契约，不得被工具重排）
+
 ## [0.18.0] — 2026-10-26
 
 ### 新增

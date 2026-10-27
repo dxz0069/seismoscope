@@ -5,9 +5,8 @@ from __future__ import annotations
 import json
 import shutil
 import subprocess
-from dataclasses import dataclass, field
-from typing import Dict, Set
 from collections.abc import Iterable
+from dataclasses import dataclass, field
 
 
 @dataclass(frozen=True)

@@ -18,14 +18,8 @@ import re
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-from core.audit.escape_semantics import find_lookahead_bypasses
-from core.audit.path_exclusion import is_excluded, resolve_excludes
-from core.audit.rules_registry import as_agent_rule_map, load_pattern_rules
-
-# 泛化 JS exec/execSync 汇点模式（区分于 launch-editor 的精确模式，需模板插值污点门控）
-_JS_EXEC_SINK_PATTERN = r'(?:^|[^\w$.])exec(?:Sync)?\s*\('
 from core.agents.base import (
     AgentConfig,
     AgentPattern,
@@ -35,15 +29,21 @@ from core.agents.base import (
     Severity,
 )
 from core.audit.candidate_cluster import cluster_candidates
+from core.audit.escape_semantics import find_lookahead_bypasses
 from core.audit.lanes import group_findings_by_lane
 from core.audit.models import EvidenceBundle
+from core.audit.path_exclusion import is_excluded, resolve_excludes
 from core.audit.protocol_analysis import iter_protocol_signals
 from core.audit.react_discovery import ReActAuditDiscovery
 from core.audit.react_review import ReActFindingReviewer
+from core.audit.rules_registry import as_agent_rule_map, load_pattern_rules
 from core.audit.scanner_signals import ContainerScannerCollector, DependencyVulnerabilityCollector
 from core.audit.target_planner import AuditTargetPlanner
 from core.llm_errors import classify_llm_failure
 from core.sanitization import redact_sensitive_text
+
+# 泛化 JS exec/execSync 汇点模式（区分于 launch-editor 的精确模式，需模板插值污点门控）
+_JS_EXEC_SINK_PATTERN = r'(?:^|[^\w$.])exec(?:Sync)?\s*\('
 
 logger = logging.getLogger(__name__)
 

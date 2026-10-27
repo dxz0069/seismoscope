@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import PurePosixPath
-from typing import Any, Dict, List, Protocol
+from typing import Any, Protocol
 from urllib.parse import urlparse
 
 from ..sanitization import redact_sensitive_text, sanitize_for_persistence

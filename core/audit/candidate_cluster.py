@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import hashlib
 from collections import defaultdict
-from copy import deepcopy
-from typing import Any, Dict, List, Optional
 from collections.abc import Iterable
+from copy import deepcopy
+from typing import Any
 
 SEVERITY_RANK = {"info": 0, "low": 1, "medium": 2, "high": 3, "critical": 4}
 

@@ -13,11 +13,11 @@ import json
 import logging
 import os
 import re
+from collections.abc import Iterable
 from dataclasses import asdict, dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional
-from collections.abc import Iterable
+from typing import Any
 
 from ..tool_fabric.framework_semantics import analyze_framework_semantics
 
