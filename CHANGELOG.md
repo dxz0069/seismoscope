@@ -4,6 +4,13 @@
 
 ## [Unreleased]
 
+## [0.24.0] — 2026-10-27
+
+### 新增
+
+- **CVE 回放靶场 8 → 10 目标**：lodash 两例入库为诚实 xfail——CVE-2021-23337（`_.template` variable 未校验即入 Function 头，缺席型语义缺陷）、CVE-2020-8203（zipObjectDeep `__proto__` 原型污染）；vendored 子集（lodash.js + 许可/元数据，父提交与上游一致）
+- **30 秒演示仓库** [seismoscope-demo](https://github.com/dxz0069/seismoscope-demo)：fork 后 CI 从 PyPI 安装并审查，Security 标签页 1 分钟出告警（实测 xss/sql_injection/api_key 三条带 CWE 直链）；README 双语入口
+
 ## [0.23.1] — 2026-10-27
 
 ### 修复

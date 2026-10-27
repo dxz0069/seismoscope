@@ -161,6 +161,43 @@
      ]
     }
    ]
+  },
+  {
+   "target": "lodash-template",
+   "cwe": "CWE-94",
+   "expected_types": [
+    "code_injection"
+   ],
+   "parent_commit": "ded9bc66583e",
+   "advisory": "GHSA-35jh-r3h4-6jhm / CVE-2021-23337（修复 3469357c）",
+   "note": "_.template 的 variable 选项未做标识符字符校验即拼入 Function 头——缺席型语义缺陷（修复=补 reForbiddenIdentifierChars 校验），静态正则不可见，xfail 诚实记录。vendored 子集：lodash.js + 许可/元数据（test/dist 不参与 sink 检测，剔除以控 CI 时长，父提交 lodash.js 与上游一致）",
+   "fix_files": [
+    {
+     "file": "lodash.js",
+     "hunk_lines": [
+      14880,
+      14885
+     ]
+    }
+   ]
+  },
+  {
+   "target": "lodash-zipobject",
+   "cwe": "CWE-1321",
+   "expected_types": [
+    "mass_assignment"
+   ],
+   "parent_commit": "e7b28ea6cb17",
+   "advisory": "GHSA-p6mc-m468-83gw / CVE-2020-8203（修复 c84fe827）",
+   "note": "zipObjectDeep 允许 __proto__ 路径致原型污染——路径遍历到原型链的语义缺陷（修复=baseZipObject 加 __proto__ 拒绝），缺席型，xfail 诚实记录。vendored 子集：lodash.js + 许可/元数据（test/dist 不参与 sink 检测，剔除以控 CI 时长，父提交 lodash.js 与上游一致）",
+   "fix_files": [
+    {
+     "file": "lodash.js",
+     "hunk_lines": [
+      8690
+     ]
+    }
+   ]
   }
  ]
 }

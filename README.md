@@ -113,6 +113,10 @@ python scripts/open_remediation_pr.py results.json --repo owner/name --split  # 
 - **RemediationAgent**: 整改建议生成
 - **RegressionAgent**: 回归测试
 
+## 30 秒演示
+
+Fork [seismoscope-demo](https://github.com/dxz0069/seismoscope-demo) → Actions 自动审查 → Security 标签页约 1 分钟出现告警（含 CWE 直链的 XSS / SQL 注入 / 硬编码密钥）。
+
 ## 快速开始
 
 ### 安装
