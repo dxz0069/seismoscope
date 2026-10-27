@@ -4,6 +4,14 @@
 
 ## [Unreleased]
 
+## [0.16.0] — 2026-10-26
+
+### 新增
+
+- **转义正则语义分析器** `core/audit/escape_semantics`：检出 script 闭合标签中和正则"正向环视缺端锚"的串尾绕过——字符类感知的正则字面量扫描 + 环视体端锚判定，确定性、零 LLM
+- **CVE 回放基线 4/4 全命中**：serialize-javascript（CWE-79）翻牌——转义语义绕过曾同时击败静态与 LLM 通道（首测 reject），本次证明其可形式化为字符级规则
+- LLM 验收工具：serialize-javascript 归入对照组；新增 no-semantic-targets 结论态
+
 ## [0.15.1] — 2026-10-26
 
 ### 修复

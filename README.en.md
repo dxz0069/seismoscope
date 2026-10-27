@@ -78,7 +78,7 @@ python scripts/benchmark_recall.py --compare baseline.json  # exit 1 on recall r
 python scripts/benchmark_recall.py --project /path/to/VAmPI --label vampi --expect sql_injection,api_key
 ```
 
-Current baseline: **100% recall on all built-in fixture sets, zero false positives on the safe fixture**. A real-CVE replay baseline (`tests/test_cve_replay.py`) additionally pins line-level hits on mistune (CWE-22), launch-editor (CWE-78) and systeminformation (CWE-78, template-interpolated shell commands); serialize-javascript's escaping-semantic bypass stays xfail — statically invisible by design, owned by the LLM semantic lane. On the real [VAmPI](https://github.com/erev0s/VAmPI) benchmark (11 Python files), all 4 statically-mappable vulnerability types are detected with zero false positives; semantic types (IDOR, debug-endpoint exposure) are the LLM lane's responsibility. CI re-runs the gate on every PR.
+Current baseline: **100% recall on all built-in fixture sets, zero false positives on the safe fixture**. A real-CVE replay baseline (`tests/test_cve_replay.py`) pins line-level hits on all four vendored targets — mistune (CWE-22), launch-editor (CWE-78), systeminformation (CWE-78) and serialize-javascript (CWE-79, whose lookahead-without-anchor escaping bypass is caught deterministically by the `escape_semantics` analyzer). The LLM semantic-lane acceptance tool uses statically-hittable targets as controls. On the real [VAmPI](https://github.com/erev0s/VAmPI) benchmark (11 Python files), all 4 statically-mappable vulnerability types are detected with zero false positives; semantic types (IDOR, debug-endpoint exposure) are the LLM lane's responsibility. CI re-runs the gate on every PR.
 
 ## Audit Scope
 
