@@ -66,8 +66,18 @@ def _markdown(result: dict[str, Any]) -> str:
     else:
         lines.append("No security-significant expansion was detected against the selected baseline.")
     lines.extend(["", "## Unknowns", ""])
-    for item in coverage.get("unknowns", []):
-        lines.append(f"- `{item.get('kind', 'unknown')}` at `{item.get('node_id', '')}`")
+    unknowns = coverage.get("unknowns", [])
+    if not unknowns:
+        lines.append("No unknown security fact was recorded.")
+    else:
+        by_kind: dict[str, list[str]] = {}
+        for item in unknowns:
+            by_kind.setdefault(str(item.get("kind", "unknown")), []).append(str(item.get("node_id", "")))
+        lines.append(f"{len(unknowns)} unknown security facts (grouped by kind):")
+        for kind in sorted(by_kind, key=lambda k: -len(by_kind[k])):
+            sample = ", ".join(f"`{node}`" for node in by_kind[kind][:3])
+            more = f" … +{len(by_kind[kind]) - 3}" if len(by_kind[kind]) > 3 else ""
+            lines.append(f"- `{kind}` × {len(by_kind[kind])}: {sample}{more}")
     lines.extend([
         "",
         "> Coverage and confidence describe available evidence. They do not prove that the project is secure.",

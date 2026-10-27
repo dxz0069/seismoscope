@@ -711,12 +711,49 @@ class RuntimeSurfaceBuilder:
                 value_node = node.child_by_field_name("value")
                 name = _ts_text(source, name_node)
                 literal = _ts_string(source, value_node)
-                if literal and any(marker in name.lower() for marker in ("prompt", "systemmessage", "instructions")):
+                prompt_named = any(marker in name.lower() for marker in ("prompt", "systemmessage", "instructions"))
+                # 模板字面量与拼接是动态构造：优先于字面量路径（_ts_string 对
+                # 拼接只取首个字面量，会把动态提示词误判为纯字面量）。
+                dynamic_value = value_node is not None and (
+                    value_node.type == "template_string"
+                    or "${" in _ts_text(source, value_node)
+                    or value_node.type == "binary_expression"
+                )
+                if literal and prompt_named and not dynamic_value:
                     self.surface.prompt_configs.append(PromptConfig(
                         name=name, type="system" if "system" in name.lower() else "template",
                         content=literal, file_path=file_path, line_start=node_line(source, node),
                         has_injection_protection=_contains_any(literal.lower(), ("do not follow", "untrusted content", "ignore instructions in")),
                     ))
+                elif prompt_named and dynamic_value:
+                    # 模板字面量 `${var}` / 字符串拼接构造的提示词（与 Python 侧
+                    # 动态提示词提取对齐）：插值标识符成为指向提示词的 external_content。
+                    dynamic_text = _ts_text(source, value_node)
+                    interpolated = [
+                        item.strip().rsplit(".", 1)[-1].strip()
+                        for item in re.findall(r"[$]\{([^}]+)\}", dynamic_text)
+                    ]
+                    interpolated += re.findall(r"\+\s*([A-Za-z_$][\w$]*)", dynamic_text)
+                    identifiers = [
+                        item for item in dict.fromkeys(interpolated)
+                        if item and not item.startswith("_")
+                    ][:6]
+                    if identifiers:
+                        prompt_line = node_line(source, node)
+                        self.surface.prompt_configs.append(PromptConfig(
+                            name=name, type="system" if "system" in name.lower() else "template",
+                            content=dynamic_text[:200], file_path=file_path, line_start=prompt_line,
+                            has_injection_protection=_contains_any(dynamic_text.lower(), ("do not follow", "untrusted content", "ignore instructions in")),
+                            description="Dynamically constructed prompt (interpolated values marked as external content).",
+                        ))
+                        for identifier in identifiers:
+                            self.surface.external_content_inputs.append(ExternalContentInput(
+                                name=identifier, source_type="parameter",
+                                expression=f"{identifier} interpolated into prompt {name}",
+                                file_path=file_path, line_start=prompt_line,
+                                line_end=node_line_span(source, node)[1],
+                                target_refs=[name],
+                            ))
                 if value_node is not None:
                     value_text = _ts_text(source, value_node)
                     source_type = _javascript_external_source(value_text)
@@ -773,6 +810,41 @@ class RuntimeSurfaceBuilder:
                     calls=[],
                 ))
 
+            # 动态提示词（模板字面量/拼接）：默认路径（无 tree-sitter）也能
+            # 建立 prompt 节点与指向它的 external_content 边。
+            dynamic_match = re.search(
+                r"\b(?:const|let|var)\s+([\w$]*(?:prompt|message|instructions)[\w$]*)\s*=\s*(.+?);?\s*$",
+                line,
+                re.IGNORECASE,
+            )
+            if dynamic_match:
+                name, value_text = dynamic_match.group(1), dynamic_match.group(2).strip()
+                if "${" in value_text or "+" in value_text:
+                    interpolated = [
+                        item.strip().rsplit(".", 1)[-1]
+                        for item in re.findall(r"[$]\{([^}]+)\}", value_text)
+                    ]
+                    interpolated += re.findall(r"\+\s*([A-Za-z_$][\w$]*)", value_text)
+                    identifiers = [
+                        item for item in dict.fromkeys(interpolated)
+                        if item and item not in {"await", "String", "JSON"}
+                    ][:6]
+                    if identifiers:
+                        self.surface.prompt_configs.append(PromptConfig(
+                            name=name, type="system" if "system" in name.lower() else "template",
+                            content=value_text[:200], file_path=file_path, line_start=line_number,
+                            has_input_validation=False,
+                            has_injection_protection=_contains_any(value_text.lower(), ("do not follow", "untrusted content", "ignore instructions in")),
+                            description="Dynamically constructed prompt (fallback line analysis).",
+                        ))
+                        for identifier in identifiers:
+                            self.surface.external_content_inputs.append(ExternalContentInput(
+                                name=identifier, source_type="parameter",
+                                expression=f"{identifier} interpolated into prompt {name}",
+                                file_path=file_path, line_start=line_number, line_end=line_number,
+                                target_refs=[name],
+                            ))
+                        continue
             prompt_match = re.search(
                 r"\b(?:const|let|var)\s+([\w$]*(?:prompt|message|instructions)[\w$]*)\s*=\s*(['\"])(.*?)\2",
                 line,
@@ -791,7 +863,7 @@ class RuntimeSurfaceBuilder:
                         ("do not follow", "untrusted content", "ignore instructions in"),
                     ),
                 ))
-
+                continue
             route_match = re.search(
                 r"\b(?:app|router|server)\.(get|post|put|patch|delete)\s*\(\s*(['\"])(.*?)\2",
                 line,

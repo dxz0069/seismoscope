@@ -4,6 +4,15 @@
 
 ## [Unreleased]
 
+## [0.21.0] — 2026-10-27
+
+### 新增
+
+- **JS/TS 动态提示词提取**（与 v0.20.0 Python 侧对齐）：模板字面量 `${var}` 与字符串拼接在默认路径（逐行 fallback）与 tree-sitter 路径都生成 prompt 节点 + external_content 边——修复 fallback 中字面量分支优先吞掉拼接形态、以及大小写敏感漏配 `systemPrompt` 命名两个问题
+- **威胁技术 ↔ 标准映射**：14 项 VRTM 技术全部关联 CWE/OWASP（映射表与 threat_model 目录由测试强制逐 id 对齐，新增技术漏映射即 CI 红）；假设序列化携带 standards 标签
+- **假设进入 SARIF**：`note` 级 informational result（kind=vrtm-hypothesis），位置取自攻击路径首个可定位节点，规则带 OWASP/CWE 标签与 helpUri——威胁建模与标准告警管道汇流
+- **未知清单分组导出**：markdown 导出按 kind 分组计数、超样折叠
+
 ## [0.20.0] — 2026-10-27
 
 ### 新增

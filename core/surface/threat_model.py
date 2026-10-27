@@ -112,7 +112,7 @@ class RiskHypothesis:
         self.status = HypothesisStatus.validate(self.status)
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        value = {
             "id": self.hypothesis_id,
             "technique_id": self.technique_id,
             "title": self.title,
@@ -134,6 +134,12 @@ class RiskHypothesis:
             "residual_status": self.residual_status,
             "control_state": self.control_state,
         }
+        from ..audit.standards_map import technique_standards
+
+        standards = technique_standards(self.technique_id)
+        if standards:
+            value["standards"] = standards
+        return value
 
 
 @dataclass
