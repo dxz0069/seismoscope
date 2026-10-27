@@ -17,7 +17,6 @@ from uuid import uuid4
 from ..sanitization import redact_sensitive_text
 from ..tool_fabric.container import ContainerProfile, ContainerRunResult, ContainerToolRunner
 
-
 _SHELLS = {"sh", "bash", "cmd", "cmd.exe", "powershell", "pwsh", "wsl"}
 
 

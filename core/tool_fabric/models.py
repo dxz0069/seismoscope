@@ -6,9 +6,9 @@ from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional
+from uuid import uuid4
 
 from ..sanitization import SENSITIVE_KEY_PARTS, redact_sensitive_text
-from uuid import uuid4
 
 
 def utc_now() -> str:

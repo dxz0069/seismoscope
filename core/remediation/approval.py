@@ -11,7 +11,6 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-
 APPROVAL_SCHEMA = "vibe-sec.remediation-approval.v1"
 
 

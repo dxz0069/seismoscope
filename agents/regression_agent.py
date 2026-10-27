@@ -16,8 +16,8 @@ from typing import Any, Dict, List, Optional
 from core.agents.base import AgentConfig, AgentPattern, AgentResult, AgentType, BaseAgent
 from core.remediation.skill_relay import RelayState, SkillRelayPackage
 from core.remediation.tree_snapshot import diff_tree_snapshot, load_snapshot_ref
-from core.sanitization import redact_sensitive_text
 from core.runtime.docker_executor import DockerExecutor
+from core.sanitization import redact_sensitive_text
 
 
 @dataclass

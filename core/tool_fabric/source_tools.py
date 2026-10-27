@@ -28,7 +28,6 @@ from .semantic_typescript import (
     trace_typescript_flow,
 )
 
-
 SOURCE_EXTENSIONS = {
     ".py", ".js", ".jsx", ".ts", ".tsx", ".java", ".go", ".php", ".rb",
     ".rs", ".cs", ".c", ".cc", ".cpp", ".h", ".hpp", ".vue", ".svelte",

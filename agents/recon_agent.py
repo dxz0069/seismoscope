@@ -8,12 +8,12 @@ Vibe Sec Platform — Recon Agent
 4. 构建项目画像
 """
 
-import os
-import re
 import json
 import logging
-from typing import Any, Dict, List, Optional
+import os
+import re
 from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 from core.agents.base import (
     AgentConfig,
@@ -23,7 +23,6 @@ from core.agents.base import (
     BaseAgent,
 )
 from core.tool_fabric.dependency_inspection import inspect_dependencies
-
 
 logger = logging.getLogger(__name__)
 

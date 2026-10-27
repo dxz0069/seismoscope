@@ -6,14 +6,14 @@ from types import SimpleNamespace
 import pytest
 from fastapi import BackgroundTasks, HTTPException
 
-from api import server
 import core.llm_service as llm_service
 from agents.audit_agent import AuditAgent, CandidateCase
+from api import server
 from core.agents.base import AgentConfig, AgentType, Severity
 from core.llm_service import (
-    ConfiguredLLMService,
     DEEPSEEK_API_BASE_URL,
     DEEPSEEK_DEFAULT_MODEL,
+    ConfiguredLLMService,
     DeepSeekService,
     LLMResponse,
     MockLLMService,

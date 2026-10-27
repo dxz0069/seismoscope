@@ -11,11 +11,10 @@ Vibe Sec Platform — ReasoningGuard 推理监护
 4. closure_state_conflict: 闭环状态与监护信号冲突
 """
 
-from typing import Any, Dict, List, Optional
+import logging
 from dataclasses import dataclass
 from enum import Enum
-import logging
-
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 

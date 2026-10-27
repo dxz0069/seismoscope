@@ -5,13 +5,12 @@ Vibe Sec Platform — Agent 注册中心
 支持动态 Agent 树，子 Agent 可以有依赖关系。
 """
 
-from typing import Dict, List, Optional, Set
+import logging
 from dataclasses import dataclass, field
 from enum import Enum
-import logging
+from typing import Dict, List, Optional, Set
 
 from .base import AgentType, BaseAgent
-
 
 logger = logging.getLogger(__name__)
 

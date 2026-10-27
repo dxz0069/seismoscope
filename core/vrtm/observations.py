@@ -7,7 +7,6 @@ from typing import Any, Dict, Iterable, List, Tuple
 
 from ..harness.models import RuntimeSurfaceGraph
 
-
 VULNERABILITY_TECHNIQUES = {
     "prompt_injection": "T-PROMPT-INJECTION",
     "indirect_prompt_injection": "T-INDIRECT-PROMPT-INJECTION",

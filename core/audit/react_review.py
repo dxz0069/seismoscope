@@ -16,26 +16,26 @@ from ..agent_runtime import (
     ReActHandler,
 )
 from ..agent_runtime.guard import AgentGuard
-from ..llm_service import LLMMessage
 from ..llm_errors import classify_llm_failure
+from ..llm_service import LLMMessage
 from ..reasoning.reasoning_guard import ReasoningGuard
 from ..runtime.permission_policy import PermissionPolicy
 from ..tool_fabric import (
     ArtifactStore,
     BanditAdapter,
-    CodeQLAdapter,
     CallableToolAdapter,
+    CodeQLAdapter,
+    GitleaksAdapter,
+    SemgrepAdapter,
     ToolGateway,
     ToolResult,
     ToolRiskClass,
     ToolSignal,
     ToolSpec,
+    TrivyAdapter,
     build_source_registry,
     register_container_scanners,
     source_tool_specs,
-    GitleaksAdapter,
-    SemgrepAdapter,
-    TrivyAdapter,
 )
 
 

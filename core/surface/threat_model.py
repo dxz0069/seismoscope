@@ -8,7 +8,6 @@ from typing import Any, Dict, Iterable, List, Optional
 
 from ..harness.models import RuntimeSurfaceGraph
 
-
 VRTM_METHOD_VERSION = "0.4"
 TECHNIQUE_CATALOG_VERSION = "2026.07.22"
 

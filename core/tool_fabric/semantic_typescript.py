@@ -12,10 +12,8 @@ except ImportError:  # pragma: no cover - dependency failures remain explicit in
     get_parser = None
 
 from ..languages.tree_sitter_gateway import node_line, node_line_span, parser_for
-
 from .semantic_javascript import JS_SINKS
-from .semantic_source import FunctionRecord, GUARD_MARKERS, SOURCE_NAME_MARKERS
-
+from .semantic_source import GUARD_MARKERS, SOURCE_NAME_MARKERS, FunctionRecord
 
 TYPESCRIPT_EXTENSIONS = {".ts", ".tsx", ".mts", ".cts"}
 

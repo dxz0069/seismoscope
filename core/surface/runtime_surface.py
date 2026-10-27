@@ -34,7 +34,6 @@ except ImportError:  # pragma: no cover - declared dependency, failure is record
 
 from ..sanitization import redact_sensitive_text
 
-
 logger = logging.getLogger(__name__)
 
 # Some Tree-sitter grammar builds can terminate the interpreter on malformed or

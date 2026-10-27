@@ -9,17 +9,18 @@ REST API 服务
 - 插件管理
 """
 
-from fastapi import BackgroundTasks, FastAPI, Header, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
-from typing import Any, Dict, List, Literal, Optional
+import asyncio
+import os
+import secrets
+import uuid
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-import secrets
-import uuid
-import os
-import asyncio
+from typing import Any, Dict, List, Literal, Optional
+
+from fastapi import BackgroundTasks, FastAPI, Header, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, Field
 
 if __package__:
     from .state_store import ApiStateStore
@@ -32,7 +33,6 @@ from core.llm_service import (
     create_configured_llm_service,
     normalize_llm_api_key,
 )
-
 
 app = FastAPI(
     title="Vibe Sec Platform API",

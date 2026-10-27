@@ -14,7 +14,6 @@ from core.agents.base import AgentConfig, AgentPattern, AgentResult, AgentType, 
 from core.remediation.tree_snapshot import build_tree_snapshot
 from core.tool_fabric import ArtifactStore
 
-
 logger = logging.getLogger(__name__)
 
 

@@ -7,7 +7,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
 
-
 SOURCE_NAME_MARKERS = {
     "request", "req", "user_input", "user_data", "query", "payload", "event",
     "message", "url", "filename", "path", "command", "cmd",

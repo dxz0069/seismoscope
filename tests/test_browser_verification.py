@@ -3,8 +3,7 @@ from types import SimpleNamespace
 
 import agents.verification_agent as verification_module
 from agents.verification_agent import VerificationAgent
-from core.runtime.browser_executor import BrowserExecutionResult
-from core.runtime.browser_executor import PlaywrightExecutor
+from core.runtime.browser_executor import BrowserExecutionResult, PlaywrightExecutor
 
 
 def test_browser_verification_blocks_non_loopback_target_before_playwright():

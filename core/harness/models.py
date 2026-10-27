@@ -1,9 +1,9 @@
 """Runtime graph and project profile contracts."""
 
-from dataclasses import dataclass, field
-from hashlib import sha1, sha256
 import json
 import re
+from dataclasses import dataclass, field
+from hashlib import sha1, sha256
 from typing import Any, Dict, Iterable, List, Optional
 
 from .vrtm import EvidenceLevel, enrich_runtime_graph

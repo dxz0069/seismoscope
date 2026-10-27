@@ -16,7 +16,6 @@ except ImportError:  # pragma: no cover - dependency is declared but optional at
 
 from ..languages.tree_sitter_gateway import parser_for
 
-
 _NATIVE_TREE_SITTER_ENABLED = os.getenv("VIBE_SEC_ENABLE_TREE_SITTER") == "1"
 
 

@@ -10,7 +10,6 @@ from typing import Any, Dict, Iterable, List, Optional
 from ..tool_fabric.dependency_inspection import is_dependency_file
 from ..tool_fabric.source_tools import IGNORED_DIRECTORIES, SOURCE_EXTENSIONS
 
-
 LANE_NODE_TYPES = {
     "web_audit": {"entry_point", "code_block", "trust_boundary", "permission"},
     "agent_audit": {"prompt", "tool", "permission", "privileged_asset", "code_block"},

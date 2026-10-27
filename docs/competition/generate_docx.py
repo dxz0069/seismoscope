@@ -1,11 +1,13 @@
 """Convert design document markdown to formatted Word document."""
-import re, os
+import os
+import re
+
 from docx import Document
-from docx.shared import Pt, Inches, Cm, RGBColor
-from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.style import WD_STYLE_TYPE
-from docx.oxml.ns import qn
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml import OxmlElement
+from docx.oxml.ns import qn
+from docx.shared import Cm, Inches, Pt, RGBColor
 
 SRC = r'E:\zhuomian\c444\lz\vibe-sec-platform\系统设计文档-最终版.md'
 DST = r'E:\zhuomian\c444\lz\vibe-sec-platform\系统设计文档-最终版-v2.docx'
