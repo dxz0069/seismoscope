@@ -4,6 +4,18 @@
 
 ## [Unreleased]
 
+## [0.19.0] — 2026-10-26
+
+### 新增
+
+- **IDOR 越权对象访问启发式**：ORM 查询汇点（`.query`/`.objects` 的 filter/get）经四重反证窗口门控（标识符来自函数签名、同调用无所有权谓词、函数域已认证、无事后所有权比较/403）。真实 VAmPI 验证：已知 6 漏洞可映射类型 4→5 全中、零误报
+- **前端构建冒烟入 CI**：Vite/Vue3 工作台（frontend-v2）在 Ubuntu + Node 22 上构建验证
+
+### 核实
+
+- TriggerPolicy 内容级匹配（旧报告问题 #4）核实为已完整实现（CONTENT_RULES 权重评估 + `.vibe-sec/trigger-policy.yaml` 配置 + diff 内容评估）——历史盘点条目撤销
+- serialize-javascript 伪装修复两轮（RegExp/URL spoofing）评估后不纳入靶场：".toString 无类型守卫即拼接"形式化泛化性差、误报面宽，宁缺毋滥
+
 ## [0.18.1] — 2026-10-26
 
 ### 变更

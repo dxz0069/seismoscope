@@ -7,6 +7,22 @@ on:
     branches: [main]
 
 jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend-v2/package-lock.json
+
+      - name: Build frontend (smoke)
+        run: |
+          npm ci --prefix frontend-v2
+          npm run build --prefix frontend-v2
+
   test:
     runs-on: ${{ matrix.os }}
     strategy:
