@@ -19,14 +19,20 @@ from main import run_audit
 
 
 def _scan_patterns(content: str) -> set:
+    """web 泳道与 secrets 泳道共享同一入口语义：一起扫，避免漏掉泳道间迁移。"""
     import re
 
     agent = AuditAgent()
     found = set()
-    for vuln, info in agent.web_vulnerability_patterns.items():
-        for pattern in info["patterns"]:
-            if re.search(pattern, content, re.IGNORECASE | re.MULTILINE):
-                found.add(vuln)
+    collections = (
+        agent.web_vulnerability_patterns,
+        agent.secret_patterns,
+    )
+    for collection in collections:
+        for vuln, info in collection.items():
+            for pattern in info["patterns"]:
+                if re.search(pattern, content, re.IGNORECASE | re.MULTILINE):
+                    found.add(vuln)
     return found
 
 
@@ -107,6 +113,62 @@ class TestPatternRecall:
             assert vuln_type in REMEDIATION_PROFILES
             assert vuln_type in VerificationAgent.SUPPORTED_TYPES
             assert vuln_type in VerificationAgent.STATIC_CONFIRMABLE
+
+
+# 真实 VAmPI 靶场（samanLashkari/VAmPI）的原始形态，对应 a9c5d31 补齐的
+# 三条正则：字典下标带引号键的密钥赋值、特权字段成员检查、特权字段下标取值。
+VAMPI_REAL_USERS = (
+    'from flask import request\n'
+    'from app import db\n'
+    '\n'
+    '\n'
+    'def register():\n'
+    '    request_data = request.get_json()\n'
+    "    if 'username' in request_data and 'password' in request_data:\n"
+    "        if 'admin' in request_data:\n"
+    "            user = User(username=request_data['username'],\n"
+    "                        admin=request_data['admin'])\n"
+    '        else:\n'
+    "            user = User(username=request_data['username'])\n"
+    '        db.session.add(user)\n'
+)
+
+VAMPI_REAL_CONFIG = (
+    'from flask import Flask\n'
+    '\n'
+    'app = Flask(__name__)\n'
+    "app.config['SECRET_KEY'] = 'random'\n"
+)
+
+SAFE_CONFIG_KEYS = (
+    'import os\n'
+    '\n'
+    'from flask import Flask\n'
+    '\n'
+    'app = Flask(__name__)\n'
+    'app.config["SECRET_KEY"] = os.urandom(32)\n'
+    'os.environ["API_KEY"] = ""\n'
+)
+
+
+class TestRealVampiShapes:
+    def test_subscript_key_lookup_mass_assignment_detected(self):
+        assert "mass_assignment" in _scan_patterns(VAMPI_REAL_USERS)
+
+    def test_subscript_secret_key_assignment_detected(self):
+        assert "api_key" in _scan_patterns(VAMPI_REAL_CONFIG)
+
+    def test_non_literal_secret_values_not_flagged(self):
+        found = _scan_patterns(SAFE_CONFIG_KEYS)
+        assert "api_key" not in found
+
+    def test_real_shape_end_to_end_recall(self, tmp_path):
+        (tmp_path / "api_views").mkdir()
+        (tmp_path / "config.py").write_text(VAMPI_REAL_CONFIG, encoding="utf-8")
+        (tmp_path / "api_views" / "users.py").write_text(VAMPI_REAL_USERS, encoding="utf-8")
+        result = asyncio.run(run_audit(project_path=str(tmp_path), use_llm=False))
+        types = _vulnerability_types(result)
+        assert {"mass_assignment", "api_key"} <= types
 
 
 def _write_fixture(tmp_path):
