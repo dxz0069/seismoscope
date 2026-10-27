@@ -40,13 +40,13 @@ class VerificationEvidence:
     evidence_type: str
     description: str
     success: bool
-    data: Dict[str, Any] = field(default_factory=dict)
+    data: dict[str, Any] = field(default_factory=dict)
     confidence: float = 0.5
     available: bool = True
     predicate: str = ""
     outcome: str = "inconclusive"  # supported, contradicted, inconclusive, unavailable
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "evidence_type": self.evidence_type,
             "description": self.description,
@@ -81,7 +81,7 @@ class VerificationAgent(BaseAgent):
 
     def __init__(
         self,
-        config: Optional[AgentConfig] = None,
+        config: AgentConfig | None = None,
         llm_service=None,
         tools=None,
         event_emitter=None,
@@ -94,7 +94,7 @@ class VerificationAgent(BaseAgent):
         )
         super().__init__(config=config, llm_service=llm_service, tools=tools, event_emitter=event_emitter)
 
-    async def run(self, payload: Dict[str, Any]) -> AgentResult:
+    async def run(self, payload: dict[str, Any]) -> AgentResult:
         project_path = payload.get("project_path")
         findings = list(payload.get("findings_to_verify", []) or [])
 
@@ -123,9 +123,9 @@ class VerificationAgent(BaseAgent):
                 "verification_summary": {"total": 0, "verified": 0, "rejected": 0, "needs_evidence": 0},
             })
 
-        verified: List[Dict[str, Any]] = []
-        rejected: List[Dict[str, Any]] = []
-        needs_evidence: List[Dict[str, Any]] = []
+        verified: list[dict[str, Any]] = []
+        rejected: list[dict[str, Any]] = []
+        needs_evidence: list[dict[str, Any]] = []
         for original in findings:
             finding = dict(original)
             raw_poc_plan = finding.get("poc_plan") or finding.get("verification_plan")
@@ -226,13 +226,13 @@ class VerificationAgent(BaseAgent):
             finding["verification_status"] = "needs_evidence"
             needs_evidence.append(finding)
 
-    def _should_use_react(self, payload: Dict[str, Any]) -> bool:
+    def _should_use_react(self, payload: dict[str, Any]) -> bool:
         if payload.get("enable_react_verification") is False:
             return False
         return self.llm_service is not None and str(getattr(self.llm_service, "provider", "mock")).lower() != "mock"
 
     @staticmethod
-    def _select_verification_method(finding: Dict[str, Any]) -> str:
+    def _select_verification_method(finding: dict[str, Any]) -> str:
         severity = str(finding.get("severity", "medium")).lower()
         if severity in {"critical", "high"}:
             return "full"
@@ -243,10 +243,10 @@ class VerificationAgent(BaseAgent):
     async def _verify_finding(
         self,
         project_path: str,
-        finding: Dict[str, Any],
+        finding: dict[str, Any],
         method: str,
         *,
-        service_authorization: Optional[Dict[str, Any]] = None,
+        service_authorization: dict[str, Any] | None = None,
     ) -> VerificationEvidence:
         static = await self._static_verification(project_path, finding)
         if not static.available or static.outcome == "contradicted" or method == "basic":
@@ -299,7 +299,7 @@ class VerificationAgent(BaseAgent):
     @staticmethod
     def _combined(
         evidence_type: str,
-        items: List[VerificationEvidence],
+        items: list[VerificationEvidence],
         description: str,
         *,
         success: bool = True,
@@ -315,7 +315,7 @@ class VerificationAgent(BaseAgent):
             outcome="supported" if success else "inconclusive",
         )
 
-    async def _static_verification(self, project_path: str, finding: Dict[str, Any]) -> VerificationEvidence:
+    async def _static_verification(self, project_path: str, finding: dict[str, Any]) -> VerificationEvidence:
         file_path = str(finding.get("file_path", ""))
         line_start = int(finding.get("line_start", 0) or 0)
         line_end = int(finding.get("line_end", line_start) or line_start)
@@ -420,7 +420,7 @@ class VerificationAgent(BaseAgent):
             )
 
     @staticmethod
-    def _verify_dependency_version(root: Path, finding: Dict[str, Any]) -> Dict[str, Any]:
+    def _verify_dependency_version(root: Path, finding: dict[str, Any]) -> dict[str, Any]:
         evidence_items = list(finding.get("evidence", []) or [])
         evidence_items.extend(list(dict(finding.get("evidence_bundle", {}) or {}).get("items", []) or []))
         scanner = next((
@@ -526,9 +526,9 @@ class VerificationAgent(BaseAgent):
     async def _dynamic_verification(
         self,
         project_path: str,
-        finding: Dict[str, Any],
+        finding: dict[str, Any],
         *,
-        service_authorization: Optional[Dict[str, Any]] = None,
+        service_authorization: dict[str, Any] | None = None,
     ) -> VerificationEvidence:
         raw_plan = finding.get("poc_plan") or finding.get("verification_plan")
         validation = validate_poc_plan(
@@ -547,7 +547,7 @@ class VerificationAgent(BaseAgent):
         plan = validation.plan
         positive = plan.positive_control.harness
         negative = plan.negative_control.harness
-        environment_evidence: Dict[str, Any] = {}
+        environment_evidence: dict[str, Any] = {}
         if plan.environment.get("services"):
             try:
                 environment_plan = ReproductionEnvironmentPlan.from_dict(plan.environment)
@@ -643,7 +643,7 @@ class VerificationAgent(BaseAgent):
         )
 
     @staticmethod
-    def _parse_environment_control(run) -> Dict[str, Any]:
+    def _parse_environment_control(run) -> dict[str, Any]:
         if not run.success:
             return {
                 "verified": False,
@@ -670,7 +670,7 @@ class VerificationAgent(BaseAgent):
         payload["status"] = "verified" if payload["verified"] else "needs_evidence"
         return payload
 
-    async def _fuzzing_verification(self, project_path: str, finding: Dict[str, Any]) -> VerificationEvidence:
+    async def _fuzzing_verification(self, project_path: str, finding: dict[str, Any]) -> VerificationEvidence:
         del project_path
         plan = dict(finding.get("verification_plan") or {})
         harness = str(plan.get("fuzz_harness", ""))
@@ -703,9 +703,9 @@ class VerificationAgent(BaseAgent):
     async def _browser_verification(
         self,
         project_path: str,
-        finding: Dict[str, Any],
+        finding: dict[str, Any],
         *,
-        service_authorization: Optional[Dict[str, Any]] = None,
+        service_authorization: dict[str, Any] | None = None,
     ) -> VerificationEvidence:
         browser_plan = dict((finding.get("verification_plan") or {}).get("browser") or {})
         predicate = "Browser positive control executes the XSS marker and the negative control does not"
@@ -829,11 +829,11 @@ class VerificationAgent(BaseAgent):
         )
 
     @classmethod
-    def _bind_fallback_result(cls, finding: Dict[str, Any], evidence: VerificationEvidence, method: str) -> None:
+    def _bind_fallback_result(cls, finding: dict[str, Any], evidence: VerificationEvidence, method: str) -> None:
         can_confirm_static = bool(evidence.data.get("can_confirm_statically", False))
         if evidence.success and evidence.evidence_type != "static":
             status = "verified"
-            gaps: List[str] = []
+            gaps: list[str] = []
         elif evidence.success and can_confirm_static:
             status = "static_only"
             gaps = [
@@ -860,14 +860,14 @@ class VerificationAgent(BaseAgent):
 
     @staticmethod
     def _merge_evidence_bundle(
-        finding: Dict[str, Any],
-        verification_bundle: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        finding: dict[str, Any],
+        verification_bundle: dict[str, Any],
+    ) -> dict[str, Any]:
         discovery_bundle = dict(finding.get("evidence_bundle", {}) or {})
         discovery_items = list(discovery_bundle.get("items", []) or [])
         verification_items = list(verification_bundle.get("items", []) or [])
 
-        items: List[Dict[str, Any]] = []
+        items: list[dict[str, Any]] = []
         seen = set()
         for item in [*discovery_items, *verification_items]:
             if not isinstance(item, dict):

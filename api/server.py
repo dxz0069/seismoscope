@@ -69,7 +69,7 @@ class ProjectCreate(BaseModel):
     """创建项目请求"""
     name: str
     path: str
-    description: Optional[str] = None
+    description: str | None = None
     audit_scope: AuditScope = AuditScope()
 
 
@@ -78,7 +78,7 @@ class Project(BaseModel):
     id: str
     name: str
     path: str
-    description: Optional[str] = None
+    description: str | None = None
     audit_scope: AuditScope
     created_at: datetime
     updated_at: datetime
@@ -89,7 +89,7 @@ class ModelConfigCreate(BaseModel):
 
     model_type: Literal["chat", "embedding"] = "chat"
     provider: Literal["openai", "openai_compatible", "anthropic", "auto"]
-    api_base: Optional[str] = Field(default=None, max_length=500)
+    api_base: str | None = Field(default=None, max_length=500)
     api_key: str = Field(min_length=1, max_length=10000, repr=False)
     model_name: str = Field(min_length=1, max_length=200)
     temperature: float = Field(default=0.2, ge=0, le=2)
@@ -102,18 +102,18 @@ class ModelConfigCreate(BaseModel):
 
 
 class ModelConfigUpdate(BaseModel):
-    model_type: Optional[Literal["chat", "embedding"]] = None
-    provider: Optional[Literal["openai", "openai_compatible", "anthropic", "auto"]] = None
-    api_base: Optional[str] = Field(default=None, max_length=500)
-    api_key: Optional[str] = Field(default=None, max_length=10000, repr=False)
-    model_name: Optional[str] = Field(default=None, min_length=1, max_length=200)
-    temperature: Optional[float] = Field(default=None, ge=0, le=2)
-    max_tokens: Optional[int] = Field(default=None, ge=1, le=32768)
-    top_p: Optional[float] = Field(default=None, ge=0, le=1)
-    frequency_penalty: Optional[float] = Field(default=None, ge=-2, le=2)
-    presence_penalty: Optional[float] = Field(default=None, ge=-2, le=2)
-    is_active: Optional[bool] = None
-    description: Optional[str] = Field(default=None, max_length=2000)
+    model_type: Literal["chat", "embedding"] | None = None
+    provider: Literal["openai", "openai_compatible", "anthropic", "auto"] | None = None
+    api_base: str | None = Field(default=None, max_length=500)
+    api_key: str | None = Field(default=None, max_length=10000, repr=False)
+    model_name: str | None = Field(default=None, min_length=1, max_length=200)
+    temperature: float | None = Field(default=None, ge=0, le=2)
+    max_tokens: int | None = Field(default=None, ge=1, le=32768)
+    top_p: float | None = Field(default=None, ge=0, le=1)
+    frequency_penalty: float | None = Field(default=None, ge=-2, le=2)
+    presence_penalty: float | None = Field(default=None, ge=-2, le=2)
+    is_active: bool | None = None
+    description: str | None = Field(default=None, max_length=2000)
 
 
 class ModelConfig(BaseModel):
@@ -122,7 +122,7 @@ class ModelConfig(BaseModel):
     id: str
     model_type: Literal["chat", "embedding"]
     provider: Literal["openai", "openai_compatible", "anthropic", "auto"]
-    api_base: Optional[str] = None
+    api_base: str | None = None
     model_name: str
     temperature: float
     max_tokens: int
@@ -150,7 +150,7 @@ class ModelConnectionCheck(BaseModel):
         "unavailable",
     ]
     message: str
-    latency_ms: Optional[int] = None
+    latency_ms: int | None = None
     checked_at: datetime
 
 
@@ -165,7 +165,7 @@ class StoredModelConfig(ModelConfig):
             api_key_configured=bool(self.api_key),
         )
 
-    def runtime_options(self) -> Dict[str, Any]:
+    def runtime_options(self) -> dict[str, Any]:
         return {
             "provider": self.provider,
             "api_key": self.api_key,
@@ -197,12 +197,12 @@ class AuditTask(BaseModel):
     project_id: str
     status: AuditTaskStatus
     created_at: datetime
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
     findings_count: int = 0
     remediation_count: int = 0
-    result: Optional[Dict[str, Any]] = None
-    error: Optional[str] = None
+    result: dict[str, Any] | None = None
+    error: str | None = None
     # 创建参数随任务持久化：进程重启把运行中任务标记为 FAILED 后，
     # retry 端点据此按原参数重建任务（llm_config 不持久化，重试时重新解析）。
     use_llm: bool = False
@@ -216,11 +216,11 @@ class AuditTaskSummary(BaseModel):
     project_id: str
     status: AuditTaskStatus
     created_at: datetime
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
     findings_count: int = 0
     remediation_count: int = 0
-    error: Optional[str] = None
+    error: str | None = None
 
 
 class Finding(BaseModel):
@@ -235,33 +235,33 @@ class Finding(BaseModel):
     line_start: int
     line_end: int
     description: str
-    evidence: List[Dict[str, Any]] = Field(default_factory=list)
+    evidence: list[dict[str, Any]] = Field(default_factory=list)
     verification_status: str = "needs_evidence"
     verification_level: int = 1
-    verification_predicate: Optional[str] = None
-    evidence_bundle: Dict[str, Any] = Field(default_factory=lambda: {
+    verification_predicate: str | None = None
+    evidence_bundle: dict[str, Any] = Field(default_factory=lambda: {
         "items": [], "gaps": [], "level": 1, "artifact_refs": [],
     })
-    validation_sessions: List[Dict[str, Any]] = Field(default_factory=list)
+    validation_sessions: list[dict[str, Any]] = Field(default_factory=list)
     duplicate_count: int = 1
-    duplicate_finding_ids: List[str] = Field(default_factory=list)
-    source_task_ids: List[str] = Field(default_factory=list)
-    deduplication_key: Optional[str] = None
+    duplicate_finding_ids: list[str] = Field(default_factory=list)
+    source_task_ids: list[str] = Field(default_factory=list)
+    deduplication_key: str | None = None
     review_priority_score: int = 0
     review_priority: str = "P3"
-    updated_at: Optional[datetime] = None
+    updated_at: datetime | None = None
 
 
 class ProjectFindingQueue(BaseModel):
     """Deduplicated review queue while raw task results remain persisted."""
 
     project_id: str
-    task_id: Optional[str] = None
+    task_id: str | None = None
     includes_history: bool = False
     raw_findings_count: int
     review_findings_count: int
     duplicate_findings_count: int
-    findings: List[Finding]
+    findings: list[Finding]
 
 
 class FindingVerificationStatus(str, Enum):
@@ -292,7 +292,7 @@ class DynamicValidationEvidence(BaseModel):
     candidate_case: ValidationCase
     positive_control: ValidationCase
     negative_control: ValidationCase
-    artifact_ref: Optional[str] = Field(default=None, max_length=500)
+    artifact_ref: str | None = Field(default=None, max_length=500)
     captured_at: datetime = Field(default_factory=datetime.now)
 
 
@@ -316,10 +316,10 @@ class RemediationBundle(BaseModel):
     line_end: int
     ai_patch_prompt: str
     patch_strategy: str
-    patch_constraints: List[Dict[str, Any]]
-    retest_plan: List[Dict[str, Any]]
-    acceptance_criteria: List[str]
-    package_id: Optional[str] = None
+    patch_constraints: list[dict[str, Any]]
+    retest_plan: list[dict[str, Any]]
+    acceptance_criteria: list[str]
+    package_id: str | None = None
     verification_status: str = "needs_evidence"
     proposal_only: bool = True
     state: str = "draft"
@@ -338,19 +338,19 @@ class PluginInfo(BaseModel):
 class VRTMBuildRequest(BaseModel):
     """Build or evolve a runtime threat model for a local project."""
     project_id: str
-    declaration_path: Optional[str] = None
-    observations: List[Dict[str, Any]] = Field(default_factory=list)
-    baseline_snapshot_id: Optional[str] = None
+    declaration_path: str | None = None
+    observations: list[dict[str, Any]] = Field(default_factory=list)
+    baseline_snapshot_id: str | None = None
     persist: bool = True
 
 
 # ========== 内存存储（生产环境应使用数据库） ==========
 
-projects_db: Dict[str, Project] = {}
-audit_tasks_db: Dict[str, AuditTask] = {}
-findings_db: Dict[str, List[Finding]] = {}
-remediation_db: Dict[str, List[RemediationBundle]] = {}
-model_configs_db: Dict[str, StoredModelConfig] = {}
+projects_db: dict[str, Project] = {}
+audit_tasks_db: dict[str, AuditTask] = {}
+findings_db: dict[str, list[Finding]] = {}
+remediation_db: dict[str, list[RemediationBundle]] = {}
+model_configs_db: dict[str, StoredModelConfig] = {}
 
 
 def _default_state_store_path() -> Path:
@@ -376,11 +376,11 @@ def reload_api_state() -> None:
         for payload in persisted["audit_tasks"]
         for task in [AuditTask.model_validate(payload)]
     }
-    findings: Dict[str, List[Finding]] = {}
+    findings: dict[str, list[Finding]] = {}
     for row in persisted["findings"]:
         finding = Finding.model_validate(row["payload"])
         findings.setdefault(row["task_id"], []).append(finding)
-    remediations: Dict[str, List[RemediationBundle]] = {}
+    remediations: dict[str, list[RemediationBundle]] = {}
     for row in persisted["remediations"]:
         remediation = RemediationBundle.model_validate(row["payload"])
         remediations.setdefault(row["task_id"], []).append(remediation)
@@ -456,7 +456,7 @@ def clear_api_state() -> None:
 reload_api_state()
 
 
-def _finding_evidence_bundle(finding_data: Dict[str, Any]) -> Dict[str, Any]:
+def _finding_evidence_bundle(finding_data: dict[str, Any]) -> dict[str, Any]:
     """Keep the audit result's verification contract intact at the API boundary."""
     bundle = dict(finding_data.get("evidence_bundle") or {})
     bundle.setdefault("items", list(finding_data.get("evidence") or []))
@@ -469,7 +469,7 @@ def _finding_evidence_bundle(finding_data: Dict[str, Any]) -> Dict[str, Any]:
     return bundle
 
 
-def _require_validation_token(presented_token: Optional[str]) -> None:
+def _require_validation_token(presented_token: str | None) -> None:
     """Prevent an unauthenticated client from promoting a finding to verified."""
     configured_token = os.getenv("VIBE_SEC_VALIDATION_TOKEN")
     if not configured_token:
@@ -524,7 +524,7 @@ async def create_project(project: ProjectCreate):
     return new_project
 
 
-@app.get("/api/projects", response_model=List[Project])
+@app.get("/api/projects", response_model=list[Project])
 async def list_projects():
     """列出所有项目"""
     return list(projects_db.values())
@@ -563,8 +563,8 @@ def _save_model_config(config: StoredModelConfig) -> StoredModelConfig:
     return config
 
 
-@app.get("/api/model-configs", response_model=List[ModelConfig])
-async def list_model_configs(model_type: Optional[str] = None):
+@app.get("/api/model-configs", response_model=list[ModelConfig])
+async def list_model_configs(model_type: str | None = None):
     """List local model profiles without returning API credentials."""
     configs = sorted(model_configs_db.values(), key=lambda config: config.updated_at, reverse=True)
     if model_type:
@@ -717,7 +717,7 @@ async def delete_model_config(config_id: str):
 
 # ========== 审计任务 API ==========
 
-def _active_chat_model_config() -> Optional[StoredModelConfig]:
+def _active_chat_model_config() -> StoredModelConfig | None:
     active_configs = [
         config for config in model_configs_db.values()
         if config.model_type == "chat" and config.is_active and config.api_key
@@ -734,7 +734,7 @@ def _legacy_llm_key_is_configured() -> bool:
     )
 
 
-def _resolve_llm_config_or_raise(use_llm: bool) -> Optional[Dict[str, Any]]:
+def _resolve_llm_config_or_raise(use_llm: bool) -> dict[str, Any] | None:
     """创建/重试任务共用的 LLM 配置解析：未就绪时以 422 拒绝。"""
     if not use_llm:
         return None
@@ -761,8 +761,8 @@ def _execute_audit(
     project: Project,
     use_llm: bool,
     output_format: str,
-    llm_config: Optional[Dict[str, Any]] = None,
-) -> Dict[str, Any]:
+    llm_config: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     """Run the audit in a worker thread without blocking FastAPI's event loop."""
     from main import run_audit
 
@@ -787,7 +787,7 @@ async def run_audit_task(
     project: Project,
     use_llm: bool,
     output_format: str,
-    llm_config: Optional[Dict[str, Any]] = None,
+    llm_config: dict[str, Any] | None = None,
 ):
     """后台运行审计任务"""
     task = audit_tasks_db[task_id]
@@ -957,8 +957,8 @@ async def retry_audit_task(task_id: str, background_tasks: BackgroundTasks):
     return new_task
 
 
-@app.get("/api/audit-tasks", response_model=List[AuditTaskSummary])
-async def list_audit_tasks(project_id: Optional[str] = None):
+@app.get("/api/audit-tasks", response_model=list[AuditTaskSummary])
+async def list_audit_tasks(project_id: str | None = None):
     """列出审计任务"""
     if project_id:
         return [t for t in audit_tasks_db.values() if t.project_id == project_id]
@@ -975,7 +975,7 @@ async def get_audit_task(task_id: str):
 
 # ========== 结果查询 API ==========
 
-@app.get("/api/audit-tasks/{task_id}/findings", response_model=List[Finding])
+@app.get("/api/audit-tasks/{task_id}/findings", response_model=list[Finding])
 async def get_findings(task_id: str):
     """获取审计发现"""
     if task_id not in audit_tasks_db:
@@ -1022,7 +1022,7 @@ async def record_finding_validation(
     task_id: str,
     finding_id: str,
     update: FindingValidationUpdate,
-    x_vibe_sec_validation_token: Optional[str] = Header(default=None),
+    x_vibe_sec_validation_token: str | None = Header(default=None),
 ):
     """Record a Harness-authenticated runtime validation without trusting a bare claim."""
     _require_validation_token(x_vibe_sec_validation_token)
@@ -1070,7 +1070,7 @@ async def record_finding_validation(
     return finding
 
 
-@app.get("/api/audit-tasks/{task_id}/remediations", response_model=List[RemediationBundle])
+@app.get("/api/audit-tasks/{task_id}/remediations", response_model=list[RemediationBundle])
 async def get_remediations(task_id: str):
     """获取整改包"""
     if task_id not in audit_tasks_db:
@@ -1089,7 +1089,7 @@ async def get_remediations(task_id: str):
 
 # ========== 插件管理 API ==========
 
-@app.get("/api/plugins", response_model=List[PluginInfo])
+@app.get("/api/plugins", response_model=list[PluginInfo])
 async def list_plugins():
     """列出所有插件"""
     from core.plugin import plugin_registry

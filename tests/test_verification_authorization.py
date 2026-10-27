@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, UTC
 from pathlib import Path
 
 import pytest
@@ -39,7 +39,7 @@ def test_authorization_rejects_tampering_wrong_project_expiry_and_repository_pat
 
     with pytest.raises(ValueError, match="different project"):
         load_verification_authorization(issued["path"], str(other), state_root=str(state))
-    expired = datetime.now(timezone.utc) + timedelta(days=1)
+    expired = datetime.now(UTC) + timedelta(days=1)
     with pytest.raises(ValueError, match="expired"):
         load_verification_authorization(
             issued["path"], str(project), state_root=str(state), now=expired,

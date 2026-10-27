@@ -2,7 +2,7 @@
 
 import asyncio
 import json
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, UTC
 from pathlib import Path
 
 from core.runtime.permission_policy import PermissionPolicy
@@ -162,7 +162,7 @@ def test_artifact_manifest_supports_query_and_explicit_tombstoned_cleanup(tmp_pa
     assert [item["artifact_id"] for item in store.list_artifacts(producer="read_source")] == [first.artifact_id]
     assert [item["artifact_id"] for item in store.list_artifacts(artifact_type="scanner_output")] == [second.artifact_id]
 
-    future = datetime.now(timezone.utc) + timedelta(seconds=1)
+    future = datetime.now(UTC) + timedelta(seconds=1)
     preview = store.cleanup_expired(0, dry_run=True, now=future)
     assert set(preview["candidate_ids"]) == {first.artifact_id, second.artifact_id}
     assert Path(first.path).is_file()

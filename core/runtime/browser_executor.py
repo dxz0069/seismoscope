@@ -6,7 +6,7 @@ import base64
 import ipaddress
 import time
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime, timezone, UTC
 from typing import Any, Dict, List, Optional
 from urllib.parse import urlparse
 
@@ -15,10 +15,10 @@ from urllib.parse import urlparse
 class BrowserEvidence:
     type: str
     content: str
-    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
-    url: Optional[str] = None
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
+    url: str | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "type": self.type,
             "content": self.content,
@@ -31,17 +31,17 @@ class BrowserEvidence:
 class BrowserExecutionResult:
     success: bool
     url: str
-    evidence: List[BrowserEvidence] = field(default_factory=list)
-    console_logs: List[Dict[str, Any]] = field(default_factory=list)
-    network_requests: List[Dict[str, Any]] = field(default_factory=list)
-    error: Optional[str] = None
+    evidence: list[BrowserEvidence] = field(default_factory=list)
+    console_logs: list[dict[str, Any]] = field(default_factory=list)
+    network_requests: list[dict[str, Any]] = field(default_factory=list)
+    error: str | None = None
     execution_time: float = 0.0
     status: str = "completed"
     predicate_satisfied: bool = False
     predicate: str = ""
-    controls: Dict[str, Any] = field(default_factory=dict)
+    controls: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "success": self.success,
             "status": self.status,
@@ -81,7 +81,7 @@ class PlaywrightExecutor:
         positive_payload: str,
         negative_payload: str,
         marker: str = "__VIBE_SEC_XSS__",
-        submit_selector: Optional[str] = None,
+        submit_selector: str | None = None,
         timeout_ms: int = 15_000,
     ) -> BrowserExecutionResult:
         predicate = f"positive control sets window[{marker!r}] or opens a marker dialog; negative control does not"
@@ -145,15 +145,15 @@ class PlaywrightExecutor:
         payload: str,
         marker: str,
         *,
-        submit_selector: Optional[str],
+        submit_selector: str | None,
         timeout_ms: int,
         collect_evidence: bool,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         context = await browser.new_context()
         page = await context.new_page()
-        logs: List[Dict[str, Any]] = []
-        requests: List[Dict[str, Any]] = []
-        dialogs: List[str] = []
+        logs: list[dict[str, Any]] = []
+        requests: list[dict[str, Any]] = []
+        dialogs: list[str] = []
         target_host = (urlparse(url).hostname or "").lower()
 
         async def route_handler(route):
@@ -186,7 +186,7 @@ class PlaywrightExecutor:
             await page.wait_for_timeout(500)
             marker_value = await page.evaluate("name => window[name] === true", marker)
             marker_observed = bool(marker_value or any(marker in item for item in dialogs))
-            evidence: List[BrowserEvidence] = []
+            evidence: list[BrowserEvidence] = []
             if collect_evidence:
                 screenshot = await page.screenshot(full_page=True)
                 evidence.append(BrowserEvidence("screenshot", base64.b64encode(screenshot).decode("ascii"), url=url))
@@ -201,7 +201,7 @@ class PlaywrightExecutor:
         finally:
             await context.close()
 
-    async def verify_xss_vulnerability(self, url: str, payload: str) -> Dict[str, Any]:
+    async def verify_xss_vulnerability(self, url: str, payload: str) -> dict[str, Any]:
         del payload
         return {
             "verified": False,
@@ -211,7 +211,7 @@ class PlaywrightExecutor:
             "url": url,
         }
 
-    def _validate_url(self, url: str) -> Optional[str]:
+    def _validate_url(self, url: str) -> str | None:
         parsed = urlparse(str(url))
         if parsed.scheme not in {"http", "https"} or not parsed.hostname:
             return "Browser target must be an HTTP(S) URL"

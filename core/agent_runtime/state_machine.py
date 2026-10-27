@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime, timezone, UTC
 from enum import Enum
-from typing import Any, Callable, Dict, Iterable, Optional
+from typing import Any, Dict, Optional
+from collections.abc import Callable, Iterable
 
 
 def _now() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 class AgentRuntimeState(str, Enum):
@@ -40,10 +41,10 @@ class StateTransition:
     from_state: AgentRuntimeState
     to_state: AgentRuntimeState
     reason: str = ""
-    data: Dict[str, Any] = field(default_factory=dict)
+    data: dict[str, Any] = field(default_factory=dict)
     timestamp: str = field(default_factory=_now)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "from_state": self.from_state.value,
             "to_state": self.to_state.value,
@@ -53,7 +54,7 @@ class StateTransition:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "StateTransition":
+    def from_dict(cls, data: dict[str, Any]) -> StateTransition:
         return cls(
             from_state=AgentRuntimeState(data["from_state"]),
             to_state=AgentRuntimeState(data["to_state"]),
@@ -135,8 +136,8 @@ class TaskStateMachine:
         self,
         state: AgentRuntimeState = AgentRuntimeState.CREATED,
         *,
-        history: Optional[Iterable[StateTransition]] = None,
-        sink: Optional[TransitionSink] = None,
+        history: Iterable[StateTransition] | None = None,
+        sink: TransitionSink | None = None,
     ):
         self.state = state
         self.history = list(history or [])
@@ -158,7 +159,7 @@ class TaskStateMachine:
         target: AgentRuntimeState,
         *,
         reason: str = "",
-        data: Optional[Dict[str, Any]] = None,
+        data: dict[str, Any] | None = None,
     ) -> StateTransition:
         if isinstance(target, str):
             target = AgentRuntimeState(target)
@@ -176,7 +177,7 @@ class TaskStateMachine:
             self.sink(transition)
         return transition
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "state": self.state.value,
             "history": [item.to_dict() for item in self.history],
@@ -185,10 +186,10 @@ class TaskStateMachine:
     @classmethod
     def from_dict(
         cls,
-        data: Dict[str, Any],
+        data: dict[str, Any],
         *,
-        sink: Optional[TransitionSink] = None,
-    ) -> "TaskStateMachine":
+        sink: TransitionSink | None = None,
+    ) -> TaskStateMachine:
         return cls(
             state=AgentRuntimeState(data.get("state", AgentRuntimeState.CREATED.value)),
             history=[StateTransition.from_dict(item) for item in data.get("history", [])],

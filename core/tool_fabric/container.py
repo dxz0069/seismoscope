@@ -23,7 +23,7 @@ class ContainerProfile:
     workspace_mount: str = "/workspace"
     workspace_mode: str = "ro"
     read_only_root: bool = True
-    tmpfs: List[str] = field(default_factory=lambda: ["/tmp:rw,noexec,nosuid,size=128m"])
+    tmpfs: list[str] = field(default_factory=lambda: ["/tmp:rw,noexec,nosuid,size=128m"])
 
     def __post_init__(self) -> None:
         if not re.fullmatch(r"[A-Za-z0-9._/:@-]+", self.image):
@@ -38,12 +38,12 @@ class ContainerProfile:
 @dataclass
 class ContainerRunResult:
     status: str
-    command: List[str]
+    command: list[str]
     exit_code: int = -1
     stdout: str = ""
     stderr: str = ""
     duration_ms: int = 0
-    error: Optional[str] = None
+    error: str | None = None
     output_truncated: bool = False
 
     @property
@@ -62,12 +62,12 @@ class ContainerToolRunner:
 
     def build_command(
         self,
-        command: List[str],
+        command: list[str],
         *,
         project_root: str,
         profile: ContainerProfile,
-        env: Optional[Dict[str, str]] = None,
-    ) -> List[str]:
+        env: dict[str, str] | None = None,
+    ) -> list[str]:
         if not command or any(not isinstance(item, str) or "\x00" in item for item in command):
             raise ValueError("Container command must be a non-empty string argument list")
         project = Path(project_root).resolve()
@@ -108,12 +108,12 @@ class ContainerToolRunner:
 
     async def run(
         self,
-        command: List[str],
+        command: list[str],
         *,
         project_root: str,
         profile: ContainerProfile,
         timeout_seconds: float = 120,
-        env: Optional[Dict[str, str]] = None,
+        env: dict[str, str] | None = None,
     ) -> ContainerRunResult:
         full_command = self.build_command(
             command,
@@ -140,7 +140,7 @@ class ContainerToolRunner:
                 stdout, stderr = await asyncio.wait_for(
                     process.communicate(), timeout=max(1.0, float(timeout_seconds)),
                 )
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 process.kill()
                 await process.wait()
                 return ContainerRunResult(

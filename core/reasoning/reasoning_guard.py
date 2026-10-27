@@ -42,10 +42,10 @@ class VerificationLane(Enum):
 class MonitoringResult:
     """监护结果"""
     status: str  # "ready", "blocked", "warning"
-    anomalies: List[AnomalyType]
+    anomalies: list[AnomalyType]
     lane: VerificationLane
     confidence_score: float
-    details: Dict[str, Any]
+    details: dict[str, Any]
 
 
 class ReasoningGuard:
@@ -109,9 +109,9 @@ class ReasoningGuard:
 
     def monitor(
         self,
-        finding: Dict[str, Any],
-        evidence: Optional[Dict[str, Any]] = None,
-        context: Optional[Dict[str, Any]] = None,
+        finding: dict[str, Any],
+        evidence: dict[str, Any] | None = None,
+        context: dict[str, Any] | None = None,
     ) -> MonitoringResult:
         """
         监控推理过程
@@ -191,8 +191,8 @@ class ReasoningGuard:
 
     def _check_unsupported_confirmation(
         self,
-        finding: Dict[str, Any],
-        evidence: Dict[str, Any],
+        finding: dict[str, Any],
+        evidence: dict[str, Any],
     ) -> bool:
         """检测证据不足却试图确认"""
         confidence = float(finding.get("confidence", 0))
@@ -211,8 +211,8 @@ class ReasoningGuard:
 
     def _check_evidence_mismatch(
         self,
-        finding: Dict[str, Any],
-        evidence: Dict[str, Any],
+        finding: dict[str, Any],
+        evidence: dict[str, Any],
     ) -> bool:
         """检测证据与结论不匹配"""
         vuln_type = finding.get("vulnerability_type", "")
@@ -232,8 +232,8 @@ class ReasoningGuard:
 
     def _check_reward_hacking(
         self,
-        finding: Dict[str, Any],
-        context: Dict[str, Any],
+        finding: dict[str, Any],
+        context: dict[str, Any],
     ) -> bool:
         """检测奖励黑客风险"""
         # 检查是否在短时间内产生了过多 findings
@@ -250,8 +250,8 @@ class ReasoningGuard:
 
     def _check_closure_state_conflict(
         self,
-        finding: Dict[str, Any],
-        context: Dict[str, Any],
+        finding: dict[str, Any],
+        context: dict[str, Any],
     ) -> bool:
         """检测闭环状态冲突"""
         phase = context.get("phase", "")
@@ -265,8 +265,8 @@ class ReasoningGuard:
 
     def _check_premature_finalization(
         self,
-        finding: Dict[str, Any],
-        evidence: Dict[str, Any],
+        finding: dict[str, Any],
+        evidence: dict[str, Any],
     ) -> bool:
         """检测过早最终化"""
         evidence_items = evidence.get("items", [])
@@ -280,8 +280,8 @@ class ReasoningGuard:
 
     def _check_insufficient_context(
         self,
-        finding: Dict[str, Any],
-        context: Dict[str, Any],
+        finding: dict[str, Any],
+        context: dict[str, Any],
     ) -> bool:
         """检测上下文不足"""
         # 检查是否有必要的上下文信息
@@ -293,7 +293,7 @@ class ReasoningGuard:
 
         return False
 
-    def _check_logical_inconsistency(self, finding: Dict[str, Any]) -> bool:
+    def _check_logical_inconsistency(self, finding: dict[str, Any]) -> bool:
         """检测逻辑不一致"""
         severity = finding.get("severity", "").lower()
         confidence = float(finding.get("confidence", 0))
@@ -304,7 +304,7 @@ class ReasoningGuard:
 
         return False
 
-    def _route_lane(self, anomalies: List[AnomalyType]) -> VerificationLane:
+    def _route_lane(self, anomalies: list[AnomalyType]) -> VerificationLane:
         """路由到验证车道"""
         if AnomalyType.REWARD_HACKING_RISK in anomalies:
             return VerificationLane.MANUAL_REVIEW
@@ -318,9 +318,9 @@ class ReasoningGuard:
 
     def _calculate_confidence_score(
         self,
-        finding: Dict[str, Any],
-        evidence: Dict[str, Any],
-        anomalies: List[AnomalyType],
+        finding: dict[str, Any],
+        evidence: dict[str, Any],
+        anomalies: list[AnomalyType],
     ) -> float:
         """计算置信度分数"""
         base_confidence = float(finding.get("confidence", 0.5))
@@ -340,7 +340,7 @@ class ReasoningGuard:
         self.session_findings_count = 0
         self.session_confirmations = 0
 
-    def get_session_stats(self) -> Dict[str, Any]:
+    def get_session_stats(self) -> dict[str, Any]:
         """获取会话统计"""
         return {
             "findings_count": self.session_findings_count,

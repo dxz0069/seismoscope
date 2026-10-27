@@ -19,12 +19,12 @@ from ..tool_fabric.container import ContainerProfile, ContainerToolRunner
 @dataclass(frozen=True)
 class ServiceSpec:
     image: str
-    command: List[str]
+    command: list[str]
     container_port: int
     health_path: str = "/"
     host_port: int = 0
     startup_timeout_seconds: float = 30.0
-    environment: Dict[str, str] = field(default_factory=dict)
+    environment: dict[str, str] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if not self.command or any(not isinstance(item, str) or "\x00" in item for item in self.command):
@@ -47,7 +47,7 @@ class ServiceHandle:
     network_name: str = ""
     base_url: str = ""
     health_url: str = ""
-    error: Optional[str] = None
+    error: str | None = None
     logs: str = ""
     started_at: float = 0.0
 
@@ -67,7 +67,7 @@ class ContainerServiceRunner:
         self,
         *,
         docker_binary: str = "docker",
-        allowed_images: Optional[Set[str]] = None,
+        allowed_images: set[str] | None = None,
     ):
         self.docker_binary = docker_binary
         self.allowed_images = set(allowed_images or self.DEFAULT_ALLOWED_IMAGES)
@@ -183,7 +183,7 @@ class ContainerServiceRunner:
             return int(sock.getsockname()[1])
 
     @staticmethod
-    async def _run(command: List[str], *, timeout: float) -> tuple[int, str, str]:
+    async def _run(command: list[str], *, timeout: float) -> tuple[int, str, str]:
         try:
             process = await asyncio.create_subprocess_exec(
                 *command,
@@ -197,5 +197,5 @@ class ContainerServiceRunner:
                 stdout.decode("utf-8", errors="replace")[-16_000:],
                 stderr.decode("utf-8", errors="replace")[-16_000:],
             )
-        except (OSError, asyncio.TimeoutError) as exc:
+        except (TimeoutError, OSError) as exc:
             return -1, "", str(exc)

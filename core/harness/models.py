@@ -4,7 +4,8 @@ import json
 import re
 from dataclasses import dataclass, field
 from hashlib import sha1, sha256
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, List, Optional
+from collections.abc import Iterable
 
 from .vrtm import EvidenceLevel, enrich_runtime_graph
 
@@ -72,7 +73,7 @@ _SEVERITY_RANK = {"critical": 4, "high": 3, "medium": 2, "low": 1}
 _TERMINAL_RISK_STATUSES = {"refuted", "mitigated", "resolved"}
 
 
-def _projection_evidence(items: Iterable[Dict[str, Any]]) -> Dict[str, Any]:
+def _projection_evidence(items: Iterable[dict[str, Any]]) -> dict[str, Any]:
     """Describe an aggregation without promoting member evidence to runtime proof."""
     values = [dict(item or {}) for item in items]
     levels = [str(item.get("level", "unknown")) for item in values]
@@ -87,7 +88,7 @@ def _projection_evidence(items: Iterable[Dict[str, Any]]) -> Dict[str, Any]:
     }
 
 
-def _ordered_risk_ids(risk_paths: Iterable[Dict[str, Any]], limit: int = 8) -> list[str]:
+def _ordered_risk_ids(risk_paths: Iterable[dict[str, Any]], limit: int = 8) -> list[str]:
     """Return the most severe paths that still require a security decision.
 
     A refuted or mitigated hypothesis remains in the model as audit history, but
@@ -111,14 +112,14 @@ def _ordered_risk_ids(risk_paths: Iterable[Dict[str, Any]], limit: int = 8) -> l
 
 
 def _semantic_runtime_projection(
-    nodes: list[Dict[str, Any]],
-    edges: list[Dict[str, Any]],
-    risk_paths: list[Dict[str, Any]],
+    nodes: list[dict[str, Any]],
+    edges: list[dict[str, Any]],
+    risk_paths: list[dict[str, Any]],
     *,
     view_id: str,
     title: str,
-    flow_planes: Optional[set[str]] = None,
-) -> Dict[str, Any]:
+    flow_planes: set[str] | None = None,
+) -> dict[str, Any]:
     """Collapse implementation detail into a small, decision-oriented runtime view.
 
     The raw graph remains intact for source tracing.  This projection intentionally
@@ -132,15 +133,15 @@ def _semantic_runtime_projection(
     selected_risk_ids = set(_ordered_risk_ids(risk_paths))
     path_by_id = {str(path.get("id")): path for path in risk_paths if path.get("id")}
 
-    def is_visible_edge(edge: Dict[str, Any]) -> bool:
+    def is_visible_edge(edge: dict[str, Any]) -> bool:
         return not flow_planes or bool(set(edge.get("flow_planes", []) or []) & flow_planes)
 
     visible_edges = [edge for edge in edges if is_visible_edge(edge)]
-    outgoing: Dict[str, list[Dict[str, Any]]] = {}
+    outgoing: dict[str, list[dict[str, Any]]] = {}
     for edge in visible_edges:
         outgoing.setdefault(str(edge.get("source", "")), []).append(edge)
 
-    category_members: Dict[str, list[Dict[str, Any]]] = {}
+    category_members: dict[str, list[dict[str, Any]]] = {}
     for node_id, node in nodes_by_id.items():
         role = role_by_node_id.get(node_id)
         if role:
@@ -148,8 +149,8 @@ def _semantic_runtime_projection(
 
     # Risk paths provide the authoritative visual emphasis even where extracted
     # implementation edges have been compressed away.
-    path_role_ids: Dict[str, list[str]] = {}
-    edge_risk_ids: Dict[tuple[str, str], set[str]] = {}
+    path_role_ids: dict[str, list[str]] = {}
+    edge_risk_ids: dict[tuple[str, str], set[str]] = {}
     for path_id, path in path_by_id.items():
         if flow_planes and not (set(path.get("flow_planes", []) or []) & flow_planes):
             continue
@@ -164,14 +165,14 @@ def _semantic_runtime_projection(
         for source, target in zip(role_ids, role_ids[1:], strict=False):
             edge_risk_ids.setdefault((source, target), set()).add(path_id)
 
-    projected_edges: Dict[tuple[str, str], Dict[str, Any]] = {}
+    projected_edges: dict[tuple[str, str], dict[str, Any]] = {}
 
     def add_projected_edge(
         source_role: str,
         target_role: str,
         *,
-        source_edge: Optional[Dict[str, Any]] = None,
-        risk_ids: Optional[Iterable[str]] = None,
+        source_edge: dict[str, Any] | None = None,
+        risk_ids: Iterable[str] | None = None,
     ) -> None:
         if source_role == target_role:
             return
@@ -382,7 +383,7 @@ def _semantic_value(value: Any) -> Any:
     return value
 
 
-def _fingerprint_evidence(value: Dict[str, Any]) -> Dict[str, Any]:
+def _fingerprint_evidence(value: dict[str, Any]) -> dict[str, Any]:
     return {
         key: _semantic_value(value[key])
         for key in ("level", "confidence", "source", "reason")
@@ -390,7 +391,7 @@ def _fingerprint_evidence(value: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def _fingerprint_node(node: "RuntimeSurfaceNode") -> Dict[str, Any]:
+def _fingerprint_node(node: "RuntimeSurfaceNode") -> dict[str, Any]:
     return {
         "id": node.node_id,
         "type": node.node_type,
@@ -400,7 +401,7 @@ def _fingerprint_node(node: "RuntimeSurfaceNode") -> Dict[str, Any]:
     }
 
 
-def _fingerprint_edge(edge: "RuntimeSurfaceEdge") -> Dict[str, Any]:
+def _fingerprint_edge(edge: "RuntimeSurfaceEdge") -> dict[str, Any]:
     return {
         "source": edge.source,
         "target": edge.target,
@@ -415,16 +416,16 @@ def _fingerprint_edge(edge: "RuntimeSurfaceEdge") -> Dict[str, Any]:
 @dataclass
 class ProjectProfile:
     project_path: str
-    languages: List[str] = field(default_factory=list)
-    frameworks: List[str] = field(default_factory=list)
-    entry_points: List[Dict[str, Any]] = field(default_factory=list)
-    dependencies: Dict[str, Any] = field(default_factory=dict)
-    sensitive_files: List[str] = field(default_factory=list)
-    commands: List[str] = field(default_factory=list)
-    insights: List[str] = field(default_factory=list)
+    languages: list[str] = field(default_factory=list)
+    frameworks: list[str] = field(default_factory=list)
+    entry_points: list[dict[str, Any]] = field(default_factory=list)
+    dependencies: dict[str, Any] = field(default_factory=dict)
+    sensitive_files: list[str] = field(default_factory=list)
+    commands: list[str] = field(default_factory=list)
+    insights: list[str] = field(default_factory=list)
 
     @classmethod
-    def from_dict(cls, value: Dict[str, Any]) -> "ProjectProfile":
+    def from_dict(cls, value: dict[str, Any]) -> "ProjectProfile":
         tech = value.get("tech_stack", {})
         return cls(
             project_path=value.get("project_path", ""),
@@ -437,7 +438,7 @@ class ProjectProfile:
             insights=list(value.get("insights", [])),
         )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "project_path": self.project_path,
             "languages": self.languages,
@@ -455,10 +456,10 @@ class RuntimeSurfaceNode:
     node_id: str
     node_type: str
     label: str
-    attributes: Dict[str, Any] = field(default_factory=dict)
-    evidence: Dict[str, Any] = field(default_factory=dict)
+    attributes: dict[str, Any] = field(default_factory=dict)
+    evidence: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "id": self.node_id,
             "type": self.node_type,
@@ -473,12 +474,12 @@ class RuntimeSurfaceEdge:
     source: str
     target: str
     relation: str
-    attributes: Dict[str, Any] = field(default_factory=dict)
+    attributes: dict[str, Any] = field(default_factory=dict)
     semantic_relation: str = ""
-    flow_planes: List[str] = field(default_factory=list)
-    evidence: Dict[str, Any] = field(default_factory=dict)
+    flow_planes: list[str] = field(default_factory=list)
+    evidence: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "source": self.source,
             "target": self.target,
@@ -500,13 +501,13 @@ class RuntimeGraphObservation:
     source_tool: str = ""
     evidence_ref: str = ""
     confidence: float = 0.5
-    facts: Dict[str, Any] = field(default_factory=dict)
-    hypothesis_ids: List[str] = field(default_factory=list)
+    facts: dict[str, Any] = field(default_factory=dict)
+    hypothesis_ids: list[str] = field(default_factory=list)
     trust_class: str = "external"
-    provenance: Dict[str, Any] = field(default_factory=dict)
+    provenance: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
-    def from_dict(cls, value: Dict[str, Any]) -> "RuntimeGraphObservation":
+    def from_dict(cls, value: dict[str, Any]) -> "RuntimeGraphObservation":
         observation = cls(
             observation_id=str(value.get("id") or value.get("observation_id") or ""),
             target_kind=str(value.get("target_kind", "")),
@@ -552,7 +553,7 @@ class RuntimeGraphObservation:
         if self.trust_class == "harness" and not self.provenance.get("run_id"):
             raise ValueError("Harness observations require run provenance")
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "id": self.observation_id,
             "target_kind": self.target_kind,
@@ -571,14 +572,14 @@ class RuntimeGraphObservation:
 
 @dataclass
 class RuntimeSurfaceGraph:
-    nodes: List[RuntimeSurfaceNode] = field(default_factory=list)
-    edges: List[RuntimeSurfaceEdge] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    nodes: list[RuntimeSurfaceNode] = field(default_factory=list)
+    edges: list[RuntimeSurfaceEdge] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def node_ids(self) -> List[str]:
+    def node_ids(self) -> list[str]:
         return [node.node_id for node in self.nodes]
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "nodes": [node.to_dict() for node in self.nodes],
             "edges": [edge.to_dict() for edge in self.edges],
@@ -586,7 +587,7 @@ class RuntimeSurfaceGraph:
         }
 
     @classmethod
-    def from_dict(cls, value: Dict[str, Any]) -> "RuntimeSurfaceGraph":
+    def from_dict(cls, value: dict[str, Any]) -> "RuntimeSurfaceGraph":
         graph = cls(
             nodes=[RuntimeSurfaceNode(
                 str(item.get("id", "")), str(item.get("type", "")),
@@ -615,7 +616,7 @@ class RuntimeSurfaceGraph:
         encoded = json.dumps(payload, ensure_ascii=False, sort_keys=True, default=str).encode("utf-8")
         return sha256(encoded).hexdigest()
 
-    def diff(self, previous: "RuntimeSurfaceGraph") -> Dict[str, Any]:
+    def diff(self, previous: "RuntimeSurfaceGraph") -> dict[str, Any]:
         current_nodes = {item.node_id: item.to_dict() for item in self.nodes}
         previous_nodes = {item.node_id: item.to_dict() for item in previous.nodes}
         current_edges = {_edge_identity(item): item.to_dict() for item in self.edges}
@@ -638,14 +639,14 @@ class RuntimeSurfaceGraph:
             ),
         }
 
-    def apply_observations(self, values: Iterable[Dict[str, Any]]) -> Dict[str, Any]:
+    def apply_observations(self, values: Iterable[dict[str, Any]]) -> dict[str, Any]:
         """Apply evidence-bound observations to existing graph entities."""
         previous = RuntimeSurfaceGraph.from_dict(self.to_dict())
         nodes = {item.node_id: item for item in self.nodes}
         edges = {_edge_identity(item): item for item in self.edges}
-        accepted: List[str] = []
-        superseded: List[str] = []
-        rejected: List[Dict[str, str]] = []
+        accepted: list[str] = []
+        superseded: list[str] = []
+        rejected: list[dict[str, str]] = []
         seen: set[str] = {
             str(record.get("id"))
             for target in [*self.nodes, *self.edges]
@@ -737,12 +738,12 @@ class RuntimeSurfaceGraph:
             "graph_diff": graph_diff,
         }
 
-    def to_visualization(self, threat_model: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def to_visualization(self, threat_model: dict[str, Any] | None = None) -> dict[str, Any]:
         """Return a frontend-ready layered graph projection without losing source ids."""
         threat_model = dict(threat_model or {})
         hypotheses = list(threat_model.get("hypotheses", []))
-        node_risks: Dict[str, List[str]] = {node.node_id: [] for node in self.nodes}
-        edge_risks: Dict[tuple[str, str], List[str]] = {}
+        node_risks: dict[str, list[str]] = {node.node_id: [] for node in self.nodes}
+        edge_risks: dict[tuple[str, str], list[str]] = {}
         for hypothesis in hypotheses:
             hypothesis_id = str(hypothesis.get("id", ""))
             path = [str(item) for item in hypothesis.get("attack_path", [])]
@@ -960,10 +961,10 @@ class RuntimeSurfaceGraph:
     @classmethod
     def from_surface(cls, surface: Any) -> "RuntimeSurfaceGraph":
         graph = cls(metadata={"method": "runtime_surface_projection", "version": "4"})
-        node_index: Dict[tuple[str, str, Any, Any], str] = {}
+        node_index: dict[tuple[str, str, Any, Any], str] = {}
         edge_index: set[tuple[str, str, str]] = set()
 
-        def node_identity(node_type: str, label: str, attributes: Dict[str, Any]) -> tuple[Any, ...]:
+        def node_identity(node_type: str, label: str, attributes: dict[str, Any]) -> tuple[Any, ...]:
             """Use semantic anchors so an inserted source line does not redraw the runtime."""
             file_path = str(attributes.get("file_path", "")).replace("\\", "/")
             if node_type == "code_block":
@@ -1003,7 +1004,7 @@ class RuntimeSurfaceGraph:
                 return (node_type, file_path, attributes.get("sink_type", ""), label)
             return (node_type, label, file_path, attributes.get("line_start"))
 
-        def add_node(node_type: str, label: str, attributes: Dict[str, Any]) -> str:
+        def add_node(node_type: str, label: str, attributes: dict[str, Any]) -> str:
             attributes = dict(attributes)
             key = node_identity(node_type, label, attributes)
             if key in node_index:
@@ -1018,7 +1019,7 @@ class RuntimeSurfaceGraph:
             node_index[key] = node_id
             return node_id
 
-        def add_edge(source: str, target: str, relation: str, attributes: Dict[str, Any]) -> None:
+        def add_edge(source: str, target: str, relation: str, attributes: dict[str, Any]) -> None:
             if not source or not target or source == target:
                 return
             key = (source, target, relation)
@@ -1029,7 +1030,7 @@ class RuntimeSurfaceGraph:
             value.setdefault("provenance", "surface_extractor")
             graph.edges.append(RuntimeSurfaceEdge(source, target, relation, value))
 
-        def in_file(mapping: Dict[str, List[str]], file_path: str) -> List[str]:
+        def in_file(mapping: dict[str, list[str]], file_path: str) -> list[str]:
             return list(mapping.get(file_path, []))
 
         actor_id = add_node(
@@ -1042,10 +1043,10 @@ class RuntimeSurfaceGraph:
             },
         )
 
-        code_by_file: Dict[str, List[str]] = {}
-        code_by_name: Dict[tuple[str, str], str] = {}
-        code_by_short_name: Dict[str, List[str]] = {}
-        code_objects: Dict[str, Any] = {}
+        code_by_file: dict[str, list[str]] = {}
+        code_by_name: dict[tuple[str, str], str] = {}
+        code_by_short_name: dict[str, list[str]] = {}
+        code_objects: dict[str, Any] = {}
         for block in getattr(surface, "code_blocks", []):
             attributes = block.to_dict()
             attributes.update({"trust_zone": "application_logic", "privilege_level": "application"})
@@ -1082,7 +1083,7 @@ class RuntimeSurfaceGraph:
                         "security_meaning": "application_control_flow",
                     })
 
-        permission_by_file: Dict[str, List[str]] = {}
+        permission_by_file: dict[str, list[str]] = {}
         for permission in getattr(surface, "permission_profiles", []):
             attributes = permission.to_dict()
             attributes.update({
@@ -1093,7 +1094,7 @@ class RuntimeSurfaceGraph:
             permission_id = add_node("permission", permission.permission_type, attributes)
             permission_by_file.setdefault(permission.file_path, []).append(permission_id)
 
-        boundary_by_file: Dict[str, List[str]] = {}
+        boundary_by_file: dict[str, list[str]] = {}
         for boundary in getattr(surface, "trust_boundaries", []):
             attributes = boundary.to_dict()
             attributes.update({
@@ -1109,7 +1110,7 @@ class RuntimeSurfaceGraph:
             if boundary.file_path:
                 boundary_by_file.setdefault(boundary.file_path, []).append(boundary_id)
 
-        entry_by_file: Dict[str, List[str]] = {}
+        entry_by_file: dict[str, list[str]] = {}
         for entry in getattr(surface, "page_entries", []):
             attributes = entry.to_dict()
             attributes.update({
@@ -1144,8 +1145,8 @@ class RuntimeSurfaceGraph:
                     "security_meaning": "authorization_decision",
                 })
 
-        external_by_file: Dict[str, List[str]] = {}
-        external_objects: Dict[str, Any] = {}
+        external_by_file: dict[str, list[str]] = {}
+        external_objects: dict[str, Any] = {}
         for external in getattr(surface, "external_content_inputs", []):
             attributes = external.to_dict()
             attributes.update({
@@ -1167,8 +1168,8 @@ class RuntimeSurfaceGraph:
                         "security_meaning": "untrusted_input_flow",
                     })
 
-        prompt_by_file: Dict[str, List[str]] = {}
-        prompt_objects: Dict[str, Any] = {}
+        prompt_by_file: dict[str, list[str]] = {}
+        prompt_objects: dict[str, Any] = {}
         for prompt in getattr(surface, "prompt_configs", []):
             attributes = prompt.to_dict()
             attributes.update({
@@ -1198,7 +1199,7 @@ class RuntimeSurfaceGraph:
                     "confidence": "explicit_reference" if prompt.name in getattr(external_objects[source_id], "target_refs", []) else "bounded_colocation",
                 })
 
-        model_by_file: Dict[str, List[str]] = {}
+        model_by_file: dict[str, list[str]] = {}
         for model in getattr(surface, "model_invocations", []):
             attributes = model.to_dict()
             attributes.update({
@@ -1230,8 +1231,8 @@ class RuntimeSurfaceGraph:
                     "confidence": "explicit_reference",
                 })
 
-        tool_by_file: Dict[str, List[str]] = {}
-        tool_by_identity: Dict[tuple[str, str], str] = {}
+        tool_by_file: dict[str, list[str]] = {}
+        tool_by_identity: dict[tuple[str, str], str] = {}
         for tool in getattr(surface, "tool_profiles", []):
             attributes = tool.to_dict()
             attributes.update({
@@ -1271,7 +1272,7 @@ class RuntimeSurfaceGraph:
                     "security_meaning": "privileged_capability_access",
                 })
 
-        mcp_by_file: Dict[str, List[str]] = {}
+        mcp_by_file: dict[str, list[str]] = {}
         for capability in getattr(surface, "mcp_capabilities", []):
             attributes = capability.to_dict()
             attributes.update({
@@ -1323,8 +1324,8 @@ class RuntimeSurfaceGraph:
                         "security_meaning": "privileged_capability_access",
                     })
 
-        browser_by_file: Dict[str, List[str]] = {}
-        browser_objects: Dict[str, Any] = {}
+        browser_by_file: dict[str, list[str]] = {}
+        browser_objects: dict[str, Any] = {}
         for sink in getattr(surface, "browser_sinks", []):
             attributes = sink.to_dict()
             attributes.update({
@@ -1353,8 +1354,8 @@ class RuntimeSurfaceGraph:
                     "sanitization_detected": sink.sanitization_detected,
                 })
 
-        storage_by_file: Dict[str, List[str]] = {}
-        storage_objects: Dict[str, Any] = {}
+        storage_by_file: dict[str, list[str]] = {}
+        storage_objects: dict[str, Any] = {}
         for storage in getattr(surface, "storage_assets", []):
             attributes = storage.to_dict()
             attributes.update({
@@ -1374,7 +1375,7 @@ class RuntimeSurfaceGraph:
                     "security_meaning": "data_write_flow" if relation == "writes" else "data_read_flow",
                 })
 
-        workflow_jobs: Dict[tuple[str, str, str], str] = {}
+        workflow_jobs: dict[tuple[str, str, str], str] = {}
         for workflow in getattr(surface, "workflow_nodes", []):
             attributes = workflow.to_dict()
             attributes.update({
@@ -1462,7 +1463,7 @@ class RuntimeSurfaceGraph:
             for endpoint in (edge.source, edge.target)
         }
         isolated = [node for node in graph.nodes if node.node_id not in connected_ids]
-        isolated_by_type: Dict[str, int] = {}
+        isolated_by_type: dict[str, int] = {}
         for node in isolated:
             isolated_by_type[node.node_type] = isolated_by_type.get(node.node_type, 0) + 1
         graph.metadata["isolated_node_count"] = len(isolated)

@@ -50,7 +50,7 @@ class SurfaceAgent(BaseAgent):
 
     def __init__(
         self,
-        config: Optional[AgentConfig] = None,
+        config: AgentConfig | None = None,
         llm_service=None,
         tools=None,
         event_emitter=None,
@@ -70,7 +70,7 @@ class SurfaceAgent(BaseAgent):
             event_emitter=event_emitter,
         )
 
-    async def run(self, payload: Dict[str, Any]) -> AgentResult:
+    async def run(self, payload: dict[str, Any]) -> AgentResult:
         """
         执行攻击面建模
 
@@ -188,7 +188,7 @@ class SurfaceAgent(BaseAgent):
             logger.error(f"Surface modeling failed: {e}", exc_info=True)
             return AgentResult.failure_result(f"Surface modeling failed: {str(e)}")
 
-    def _extract_recon_data(self, payload: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    def _extract_recon_data(self, payload: dict[str, Any]) -> dict[str, Any] | None:
         """提取 Recon 数据"""
         # 从 recon_handoff 中提取数据
         recon_handoff = payload.get("recon_handoff")
@@ -216,7 +216,7 @@ class SurfaceAgent(BaseAgent):
 
         return None
 
-    def _identify_high_risk_areas(self, surface: RuntimeSurface) -> List[Dict[str, Any]]:
+    def _identify_high_risk_areas(self, surface: RuntimeSurface) -> list[dict[str, Any]]:
         """识别高风险区域"""
         high_risk_areas = []
 
@@ -334,8 +334,8 @@ class SurfaceAgent(BaseAgent):
     async def _generate_insights(
         self,
         surface: RuntimeSurface,
-        high_risk_areas: List[Dict[str, Any]],
-    ) -> List[str]:
+        high_risk_areas: list[dict[str, Any]],
+    ) -> list[str]:
         """使用 LLM 生成洞察"""
         if not self.llm_service:
             return []
@@ -379,8 +379,8 @@ class SurfaceAgent(BaseAgent):
 
 async def build_risk_chains_for_findings(
     runtime_surface: RuntimeSurface,
-    findings: List[Dict[str, Any]],
-) -> List[RiskChain]:
+    findings: list[dict[str, Any]],
+) -> list[RiskChain]:
     """
     为 findings 构建风险链
 

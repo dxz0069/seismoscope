@@ -29,7 +29,7 @@ class AgentRegistration:
     """Agent 注册信息"""
     agent_type: AgentType
     agent_class: type
-    dependencies: List[AgentType] = field(default_factory=list)
+    dependencies: list[AgentType] = field(default_factory=list)
     enabled: bool = True
     priority: int = 0  # 优先级，数值越大优先级越高
 
@@ -52,15 +52,15 @@ class AgentRegistry:
     """
 
     def __init__(self):
-        self._registrations: Dict[AgentType, AgentRegistration] = {}
-        self._instances: Dict[AgentType, BaseAgent] = {}
-        self._states: Dict[AgentType, AgentState] = {}
+        self._registrations: dict[AgentType, AgentRegistration] = {}
+        self._instances: dict[AgentType, BaseAgent] = {}
+        self._states: dict[AgentType, AgentState] = {}
 
     def register(
         self,
         agent_type: AgentType,
         agent_class: type,
-        dependencies: Optional[List[AgentType]] = None,
+        dependencies: list[AgentType] | None = None,
         enabled: bool = True,
         priority: int = 0,
     ) -> None:
@@ -108,11 +108,11 @@ class AgentRegistry:
                 del self._states[agent_type]
             logger.info(f"Unregistered agent: {agent_type.value}")
 
-    def get_registration(self, agent_type: AgentType) -> Optional[AgentRegistration]:
+    def get_registration(self, agent_type: AgentType) -> AgentRegistration | None:
         """获取 Agent 注册信息"""
         return self._registrations.get(agent_type)
 
-    def get_instance(self, agent_type: AgentType) -> Optional[BaseAgent]:
+    def get_instance(self, agent_type: AgentType) -> BaseAgent | None:
         """获取 Agent 实例"""
         return self._instances.get(agent_type)
 
@@ -128,7 +128,7 @@ class AgentRegistry:
         """设置 Agent 状态"""
         self._states[agent_type] = state
 
-    def list_agents(self, enabled_only: bool = False) -> List[AgentType]:
+    def list_agents(self, enabled_only: bool = False) -> list[AgentType]:
         """
         列出所有注册的 Agent 类型
 
@@ -146,16 +146,16 @@ class AgentRegistry:
             ]
         return list(self._registrations.keys())
 
-    def get_enabled_agents(self) -> List[AgentType]:
+    def get_enabled_agents(self) -> list[AgentType]:
         """获取所有启用的 Agent 类型"""
         return self.list_agents(enabled_only=True)
 
-    def get_dependencies(self, agent_type: AgentType) -> List[AgentType]:
+    def get_dependencies(self, agent_type: AgentType) -> list[AgentType]:
         """获取 Agent 的依赖列表"""
         reg = self._registrations.get(agent_type)
         return reg.dependencies if reg else []
 
-    def get_execution_order(self) -> List[AgentType]:
+    def get_execution_order(self) -> list[AgentType]:
         """
         获取 Agent 执行顺序（拓扑排序）
 
@@ -174,8 +174,8 @@ class AgentRegistry:
             return []
 
         # 构建依赖图
-        graph: Dict[AgentType, Set[AgentType]] = {}
-        in_degree: Dict[AgentType, int] = {}
+        graph: dict[AgentType, set[AgentType]] = {}
+        in_degree: dict[AgentType, int] = {}
 
         for agent_type in enabled_agents:
             graph[agent_type] = set()
@@ -231,7 +231,7 @@ class AgentRegistry:
         for agent_type in self._registrations:
             self._states[agent_type] = AgentState.PENDING
 
-    def get_completed_agents(self) -> List[AgentType]:
+    def get_completed_agents(self) -> list[AgentType]:
         """获取所有已完成的 Agent 类型"""
         return [
             agent_type
@@ -239,7 +239,7 @@ class AgentRegistry:
             if state == AgentState.COMPLETED
         ]
 
-    def get_failed_agents(self) -> List[AgentType]:
+    def get_failed_agents(self) -> list[AgentType]:
         """获取所有已失败的 Agent 类型"""
         return [
             agent_type

@@ -13,8 +13,8 @@ class RetryPolicy:
     base_delay_seconds: float = 0.25
     max_delay_seconds: float = 8.0
     exponential: bool = True
-    retryable_exceptions: Tuple[Type[BaseException], ...] = (Exception,)
-    non_retryable_markers: Tuple[str, ...] = (
+    retryable_exceptions: tuple[type[BaseException], ...] = (Exception,)
+    non_retryable_markers: tuple[str, ...] = (
         "invalid_request_error",
         "authentication_error",
         "permission_denied",
@@ -29,7 +29,7 @@ class RetryPolicy:
         self.base_delay_seconds = max(0.0, float(self.base_delay_seconds))
         self.max_delay_seconds = max(self.base_delay_seconds, float(self.max_delay_seconds))
 
-    def should_retry(self, attempt: int, error: Optional[BaseException] = None) -> bool:
+    def should_retry(self, attempt: int, error: BaseException | None = None) -> bool:
         if attempt >= self.max_attempts:
             return False
         if error is None:

@@ -34,9 +34,9 @@ class SourceSignal:
     location: str  # 入口位置（文件:行号）
     data_type: str  # 数据类型
     validation_status: str = "unknown"  # "validated", "unvalidated", "partially_validated"
-    description: Optional[str] = None
+    description: str | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "type": self.type,
             "location": self.location,
@@ -54,7 +54,7 @@ class Precondition:
     required: bool = True
     current_status: str = "unknown"  # "met", "not_met", "unknown"
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "type": self.type,
             "description": self.description,
@@ -69,11 +69,11 @@ class BoundaryCrossing:
     from_zone: str  # 来源区域
     to_zone: str  # 目标区域
     boundary_type: str  # 边界类型
-    validation_mechanism: Optional[str] = None  # 验证机制
+    validation_mechanism: str | None = None  # 验证机制
     bypass_possible: bool = False  # 是否可能绕过
     boundary_status: str = "observed"
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "from_zone": self.from_zone,
             "to_zone": self.to_zone,
@@ -91,10 +91,10 @@ class ImpactHypothesis:
     description: str
     severity: str = "medium"  # low, medium, high, critical
     confidence: float = 0.5
-    affected_assets: List[str] = field(default_factory=list)
+    affected_assets: list[str] = field(default_factory=list)
     exploitation_complexity: str = "medium"  # low, medium, high
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "impact_type": self.impact_type.value,
             "description": self.description,
@@ -114,7 +114,7 @@ class EvidencePredicate:
     strength: float = 0.5  # 证据强度 0.0-1.0
     supports: bool = True  # True: 支持漏洞存在, False: 反驳漏洞存在
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "predicate_type": self.predicate_type,
             "description": self.description,
@@ -134,16 +134,16 @@ class RiskChain:
     finding_id: str
     vulnerability_type: str
     source_signal: SourceSignal
-    preconditions: List[Precondition] = field(default_factory=list)
-    boundary_path: List[BoundaryCrossing] = field(default_factory=list)
+    preconditions: list[Precondition] = field(default_factory=list)
+    boundary_path: list[BoundaryCrossing] = field(default_factory=list)
     boundary_gap: bool = False
     impact_hypothesis: ImpactHypothesis = None
-    evidence_predicates: List[EvidencePredicate] = field(default_factory=list)
+    evidence_predicates: list[EvidencePredicate] = field(default_factory=list)
 
     # 元数据
     overall_confidence: float = 0.5
     exploitability: str = "medium"  # low, medium, high
-    description: Optional[str] = None
+    description: str | None = None
 
     def __post_init__(self):
         if self.impact_hypothesis is None:
@@ -152,7 +152,7 @@ class RiskChain:
                 description="Unknown impact",
             )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """转换为字典"""
         return {
             "finding_id": self.finding_id,
@@ -245,7 +245,7 @@ class RiskChainBuilder:
     def __init__(self, runtime_surface):
         self.runtime_surface = runtime_surface
 
-    def build_risk_chains(self, findings: List[Dict[str, Any]]) -> List[RiskChain]:
+    def build_risk_chains(self, findings: list[dict[str, Any]]) -> list[RiskChain]:
         """
         构建风险链
 
@@ -276,7 +276,7 @@ class RiskChainBuilder:
 
         return risk_chains
 
-    def _build_single_chain(self, finding: Dict[str, Any]) -> Optional[RiskChain]:
+    def _build_single_chain(self, finding: dict[str, Any]) -> RiskChain | None:
         """构建单个风险链"""
         finding_id = finding.get("id", "unknown")
         vuln_type = finding.get("vulnerability_type", "unknown")
@@ -313,7 +313,7 @@ class RiskChainBuilder:
 
         return chain
 
-    def _identify_source_signal(self, finding: Dict[str, Any]) -> SourceSignal:
+    def _identify_source_signal(self, finding: dict[str, Any]) -> SourceSignal:
         """识别攻击入口"""
         vuln_type = finding.get("vulnerability_type", "")
         file_path = finding.get("file_path", "")
@@ -352,7 +352,7 @@ class RiskChainBuilder:
                 validation_status="unknown",
             )
 
-    def _identify_preconditions(self, finding: Dict[str, Any]) -> List[Precondition]:
+    def _identify_preconditions(self, finding: dict[str, Any]) -> list[Precondition]:
         """识别前置条件"""
         preconditions = []
 
@@ -379,7 +379,7 @@ class RiskChainBuilder:
 
         return preconditions
 
-    def _build_boundary_path(self, finding: Dict[str, Any]) -> List[BoundaryCrossing]:
+    def _build_boundary_path(self, finding: dict[str, Any]) -> list[BoundaryCrossing]:
         """构建边界穿越路径"""
         boundary_path = []
 
@@ -398,7 +398,7 @@ class RiskChainBuilder:
         # 如果没有找到边界，创建一个默认边界
         return boundary_path
 
-    def _assess_impact(self, finding: Dict[str, Any]) -> ImpactHypothesis:
+    def _assess_impact(self, finding: dict[str, Any]) -> ImpactHypothesis:
         """评估影响"""
         vuln_type = finding.get("vulnerability_type", "")
         severity = finding.get("severity", "medium")
@@ -428,7 +428,7 @@ class RiskChainBuilder:
             exploitation_complexity="medium",
         )
 
-    def _collect_evidence(self, finding: Dict[str, Any]) -> List[EvidencePredicate]:
+    def _collect_evidence(self, finding: dict[str, Any]) -> list[EvidencePredicate]:
         """收集证据"""
         evidence_predicates = []
 

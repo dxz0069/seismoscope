@@ -33,7 +33,7 @@ class PatchConstraint:
     description: str
     required: bool = True
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {"type": self.type, "description": self.description, "required": self.required}
 
 
@@ -47,7 +47,7 @@ class RetestStep:
     predicate: str = ""
     control_id: str = ""
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "step_number": self.step_number,
             "description": self.description,
@@ -80,24 +80,24 @@ class RemediationBundle:
     line_end: int
     ai_patch_prompt: str
     patch_strategy: PatchStrategy
-    patch_constraints: List[PatchConstraint] = field(default_factory=list)
-    retest_plan: List[RetestStep] = field(default_factory=list)
-    acceptance_criteria: List[str] = field(default_factory=list)
+    patch_constraints: list[PatchConstraint] = field(default_factory=list)
+    retest_plan: list[RetestStep] = field(default_factory=list)
+    acceptance_criteria: list[str] = field(default_factory=list)
     before_code: str = ""
     after_code: str = ""
-    evidence: List[Dict[str, Any]] = field(default_factory=list)
-    evidence_bundle: Optional[Dict[str, Any]] = None
-    risk_chain: Optional[Dict[str, Any]] = None
+    evidence: list[dict[str, Any]] = field(default_factory=list)
+    evidence_bundle: dict[str, Any] | None = None
+    risk_chain: dict[str, Any] | None = None
     verification_status: str = "needs_evidence"
     expected_surface_change: str = ""
-    change_scope: Dict[str, Any] = field(default_factory=dict)
-    approval_gate: Dict[str, Any] = field(default_factory=dict)
-    baseline_snapshot_ref: Optional[Dict[str, Any]] = None
-    surface_node_ids: List[str] = field(default_factory=list)
-    risk_hypothesis_ids: List[str] = field(default_factory=list)
-    runtime_risk_context: Dict[str, Any] = field(default_factory=dict)
+    change_scope: dict[str, Any] = field(default_factory=dict)
+    approval_gate: dict[str, Any] = field(default_factory=dict)
+    baseline_snapshot_ref: dict[str, Any] | None = None
+    surface_node_ids: list[str] = field(default_factory=list)
+    risk_hypothesis_ids: list[str] = field(default_factory=list)
+    runtime_risk_context: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         tests = [item.to_dict() for item in self.retest_plan]
         return {
             "schema": "vibe-sec.remediation-bundle",
@@ -151,7 +151,7 @@ class RemediationBundle:
         }
 
 
-PROFILES: Dict[str, RemediationProfile] = {
+PROFILES: dict[str, RemediationProfile] = {
     "sql_injection": RemediationProfile(
         PatchStrategy.PARAMETERIZED_QUERY,
         "Remove SQL structure control from untrusted data.",
@@ -299,7 +299,7 @@ GENERIC_PROFILE = RemediationProfile(
 class RemediationAgent(BaseAgent):
     def __init__(
         self,
-        config: Optional[AgentConfig] = None,
+        config: AgentConfig | None = None,
         llm_service=None,
         tools=None,
         event_emitter=None,
@@ -312,7 +312,7 @@ class RemediationAgent(BaseAgent):
         )
         super().__init__(config=config, llm_service=llm_service, tools=tools, event_emitter=event_emitter)
 
-    async def run(self, payload: Dict[str, Any]) -> AgentResult:
+    async def run(self, payload: dict[str, Any]) -> AgentResult:
         findings = list(payload.get("verified_findings", []) or [])
         snapshot_ref = self._capture_baseline_snapshot(payload)
         bundles = [
@@ -340,9 +340,9 @@ class RemediationAgent(BaseAgent):
 
     def _generate_remediation_bundle(
         self,
-        finding: Dict[str, Any],
+        finding: dict[str, Any],
         *,
-        baseline_snapshot_ref: Optional[Dict[str, Any]] = None,
+        baseline_snapshot_ref: dict[str, Any] | None = None,
     ) -> RemediationBundle:
         vuln_type = str(finding.get("vulnerability_type", "unknown")).lower()
         profile = PROFILES.get(vuln_type, GENERIC_PROFILE)
@@ -426,7 +426,7 @@ class RemediationAgent(BaseAgent):
         )
 
     @staticmethod
-    def _approval_gate(finding: Dict[str, Any]) -> Dict[str, Any]:
+    def _approval_gate(finding: dict[str, Any]) -> dict[str, Any]:
         """Require an explicit human decision before an agent changes high-impact boundaries."""
         severity = str(finding.get("severity", "medium")).lower()
         vulnerability_type = str(finding.get("vulnerability_type", "")).lower()
@@ -453,7 +453,7 @@ class RemediationAgent(BaseAgent):
         }
 
     @staticmethod
-    def _capture_baseline_snapshot(payload: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    def _capture_baseline_snapshot(payload: dict[str, Any]) -> dict[str, Any] | None:
         project_path = str(payload.get("project_path", ""))
         if not project_path:
             return None
@@ -482,7 +482,7 @@ class RemediationAgent(BaseAgent):
             return None
 
     @staticmethod
-    def _build_change_scope(finding: Dict[str, Any]) -> Dict[str, Any]:
+    def _build_change_scope(finding: dict[str, Any]) -> dict[str, Any]:
         affected = str(finding.get("file_path", "")).replace("\\", "/").lstrip("./")
         related = [
             str(item).replace("\\", "/").lstrip("./")
@@ -521,11 +521,11 @@ class RemediationAgent(BaseAgent):
 
     @staticmethod
     def _build_patch_prompt(
-        finding: Dict[str, Any],
+        finding: dict[str, Any],
         profile: RemediationProfile,
         status: str,
         predicate: str,
-        approval_gate: Dict[str, Any],
+        approval_gate: dict[str, Any],
     ) -> str:
         evidence_gaps = list((finding.get("evidence_bundle") or {}).get("gaps", []) or [])
         lines = [
@@ -559,8 +559,8 @@ class RemediationAgent(BaseAgent):
         return "\n".join(lines)
 
     @staticmethod
-    def _count_by_strategy(bundles: List[RemediationBundle]) -> Dict[str, int]:
-        counts: Dict[str, int] = {}
+    def _count_by_strategy(bundles: list[RemediationBundle]) -> dict[str, int]:
+        counts: dict[str, int] = {}
         for bundle in bundles:
             key = bundle.patch_strategy.value
             counts[key] = counts.get(key, 0) + 1

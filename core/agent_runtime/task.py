@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime, timezone, UTC
 from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
@@ -13,30 +13,30 @@ from .state_machine import AgentRuntimeState, StateTransition, TaskStateMachine
 
 
 def _utc_now() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 @dataclass
 class AgentTask:
     task_id: str = field(default_factory=lambda: f"task-{uuid4().hex[:16]}")
     agent_name: str = "agent"
-    parent_task_id: Optional[str] = None
+    parent_task_id: str | None = None
     phase: str = ""
-    input_payload: Dict[str, Any] = field(default_factory=dict)
+    input_payload: dict[str, Any] = field(default_factory=dict)
     attempt: int = 0
     max_attempts: int = 3
     status: AgentRuntimeState = AgentRuntimeState.CREATED
-    handoff: Optional[TaskHandoff] = None
-    completion_contract: Dict[str, Any] = field(default_factory=dict)
-    evidence_refs: List[str] = field(default_factory=list)
+    handoff: TaskHandoff | None = None
+    completion_contract: dict[str, Any] = field(default_factory=dict)
+    evidence_refs: list[str] = field(default_factory=list)
     next_action: str = ""
     created_at: str = field(default_factory=_utc_now)
     updated_at: str = field(default_factory=_utc_now)
     turn_count: int = 0
     total_tokens: int = 0
-    last_error: Optional[str] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    state_history: List[Dict[str, Any]] = field(default_factory=list)
+    last_error: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
+    state_history: list[dict[str, Any]] = field(default_factory=list)
 
     def state_machine(self, sink=None) -> TaskStateMachine:
         return TaskStateMachine(
@@ -57,7 +57,7 @@ class AgentTask:
             AgentRuntimeState.STOPPED,
         }
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return sanitize_for_persistence({
             "task_id": self.task_id,
             "agent_name": self.agent_name,
@@ -81,7 +81,7 @@ class AgentTask:
         })
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "AgentTask":
+    def from_dict(cls, data: dict[str, Any]) -> AgentTask:
         handoff = data.get("handoff")
         return cls(
             task_id=str(data.get("task_id") or f"task-{uuid4().hex[:16]}"),

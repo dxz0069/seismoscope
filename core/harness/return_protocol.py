@@ -1,14 +1,15 @@
 """Stable payload returned to a coding agent or Skill host."""
 
-from typing import Any, Dict, Iterable, List
+from typing import Any, Dict, List
+from collections.abc import Iterable
 
 
 def build_return_packages(
-    findings: Iterable[Dict[str, Any]],
-    remediation_bundles: Iterable[Dict[str, Any]],
-) -> List[Dict[str, Any]]:
+    findings: Iterable[dict[str, Any]],
+    remediation_bundles: Iterable[dict[str, Any]],
+) -> list[dict[str, Any]]:
     bundles = {bundle.get("finding_id"): bundle for bundle in remediation_bundles}
-    returned: List[Dict[str, Any]] = []
+    returned: list[dict[str, Any]] = []
     for finding in findings:
         finding_id = finding.get("id", "")
         bundle = bundles.get(finding_id, {})

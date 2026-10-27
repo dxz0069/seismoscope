@@ -27,7 +27,7 @@ class ExecutionResult:
     stderr: str
     exit_code: int
     execution_time: float
-    error: Optional[str] = None
+    error: str | None = None
     status: str = "completed"
     output_truncated: bool = False
 
@@ -35,7 +35,7 @@ class ExecutionResult:
 class DockerExecutor:
     """Execute an approved argument vector in a resource-bounded container."""
 
-    _daemon_cache: Dict[str, tuple[float, bool]] = {}
+    _daemon_cache: dict[str, tuple[float, bool]] = {}
 
     def __init__(
         self,
@@ -86,7 +86,7 @@ class DockerExecutor:
         self,
         code: str,
         timeout: int = 30,
-        env_vars: Optional[Dict[str, str]] = None,
+        env_vars: dict[str, str] | None = None,
     ) -> ExecutionResult:
         return await self._execute_in_docker(
             ["python", "-I", "-c", str(code)],
@@ -98,7 +98,7 @@ class DockerExecutor:
         self,
         code: str,
         timeout: int = 30,
-        env_vars: Optional[Dict[str, str]] = None,
+        env_vars: dict[str, str] | None = None,
     ) -> ExecutionResult:
         return await self._execute_in_docker(
             ["node", "--disable-proto=delete", "-e", str(code)],
@@ -108,11 +108,11 @@ class DockerExecutor:
 
     async def execute_command(
         self,
-        command: List[str],
+        command: list[str],
         timeout: int = 30,
-        env_vars: Optional[Dict[str, str]] = None,
+        env_vars: dict[str, str] | None = None,
         *,
-        project_path: Optional[str] = None,
+        project_path: str | None = None,
     ) -> ExecutionResult:
         return await self._execute_in_docker(
             command,
@@ -123,11 +123,11 @@ class DockerExecutor:
 
     async def _execute_in_docker(
         self,
-        command: List[str],
-        volumes: Optional[Dict[str, Any]] = None,
+        command: list[str],
+        volumes: dict[str, Any] | None = None,
         timeout: int = 30,
-        env_vars: Optional[Dict[str, str]] = None,
-        project_path: Optional[str] = None,
+        env_vars: dict[str, str] | None = None,
+        project_path: str | None = None,
     ) -> ExecutionResult:
         if volumes:
             return ExecutionResult(
@@ -171,12 +171,12 @@ class DockerExecutor:
         self,
         vuln_type: str,
         code: str,
-        exploit_code: Optional[str] = None,
+        exploit_code: str | None = None,
         *,
         oracle_id: str = "",
         target_path: str = "target.py",
-        project_path: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        project_path: str | None = None,
+    ) -> dict[str, Any]:
         """Run an explicit harness; execution alone can never verify a finding."""
         if not exploit_code or not str(exploit_code).strip():
             return {

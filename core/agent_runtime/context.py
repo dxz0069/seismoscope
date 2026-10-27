@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, Iterable, List
+from typing import Any, Dict, List
+from collections.abc import Iterable
 
 from ..llm_service import LLMMessage
 
@@ -13,9 +14,9 @@ class ContextWindow:
     max_messages: int = 80
     max_chars: int = 120_000
     compacted_count: int = 0
-    compaction_events: List[Dict[str, Any]] = field(default_factory=list)
+    compaction_events: list[dict[str, Any]] = field(default_factory=list)
 
-    def compact(self, messages: Iterable[LLMMessage]) -> List[LLMMessage]:
+    def compact(self, messages: Iterable[LLMMessage]) -> list[LLMMessage]:
         items = list(messages)
         if not items:
             return items
@@ -27,7 +28,7 @@ class ContextWindow:
         non_system = [item for item in items if item.role != "system"]
         blocks = self._protocol_blocks(non_system)
         message_budget = max(1, self.max_messages - len(system) - 1)
-        kept_blocks: List[List[LLMMessage]] = []
+        kept_blocks: list[list[LLMMessage]] = []
         kept_count = 0
         for block in reversed(blocks):
             if kept_blocks and kept_count + len(block) > message_budget:
@@ -66,8 +67,8 @@ class ContextWindow:
         return result
 
     @staticmethod
-    def _protocol_blocks(messages: List[LLMMessage]) -> List[List[LLMMessage]]:
-        blocks: List[List[LLMMessage]] = []
+    def _protocol_blocks(messages: list[LLMMessage]) -> list[list[LLMMessage]]:
+        blocks: list[list[LLMMessage]] = []
         index = 0
         while index < len(messages):
             message = messages[index]
@@ -96,7 +97,7 @@ class ContextWindow:
         return blocks
 
     @staticmethod
-    def _make_protocol_safe(block: List[LLMMessage]) -> List[LLMMessage]:
+    def _make_protocol_safe(block: list[LLMMessage]) -> list[LLMMessage]:
         if block and block[0].role == "assistant" and block[0].tool_calls:
             expected = {str(call.get("id")) for call in block[0].tool_calls if call.get("id")}
             found = {str(item.tool_call_id) for item in block[1:] if item.tool_call_id}
@@ -105,7 +106,7 @@ class ContextWindow:
         return block
 
     @staticmethod
-    def _is_protocol_safe(messages: List[LLMMessage]) -> bool:
+    def _is_protocol_safe(messages: list[LLMMessage]) -> bool:
         for index, message in enumerate(messages):
             if message.role == "tool":
                 if index == 0 or messages[index - 1].role not in {"assistant", "tool"}:
@@ -122,7 +123,7 @@ class ContextWindow:
                     return False
         return True
 
-    def _truncate_contents(self, messages: List[LLMMessage]) -> List[LLMMessage]:
+    def _truncate_contents(self, messages: list[LLMMessage]) -> list[LLMMessage]:
         per_message = max(16, self.max_chars // max(1, len(messages)))
         truncated = []
         for message in messages:
@@ -139,10 +140,10 @@ class ContextWindow:
         return truncated
 
     @staticmethod
-    def _char_count(messages: List[LLMMessage]) -> int:
+    def _char_count(messages: list[LLMMessage]) -> int:
         return sum(len(str(item.content or "")) for item in messages)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "max_messages": self.max_messages,
             "max_chars": self.max_chars,
@@ -151,7 +152,7 @@ class ContextWindow:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "ContextWindow":
+    def from_dict(cls, data: dict[str, Any]) -> ContextWindow:
         return cls(
             max_messages=int(data.get("max_messages", 80)),
             max_chars=int(data.get("max_chars", 120_000)),
