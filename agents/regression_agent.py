@@ -136,7 +136,15 @@ class RegressionAgent(BaseAgent):
         passed = sum(item.status == "passed" for item in results)
         failed = sum(item.status == "failed" for item in results)
         skipped = sum(item.status == "skipped" for item in results)
-        overall = "failure" if failed else ("partial" if skipped else "success")
+        # 空缺 skip（仅"无测试入口"这类结构性空缺）不算未完成：closed 的
+        # 判定语义是"每个配置了的控制与测试都过了"，不是"项目必须有测试"。
+        # 显式 run_project_tests=False 的 opt-out 仍按 skip 计（保持既有
+        # partial 语义）。
+        blocking_skips = [
+            item for item in results
+            if item.status == "skipped" and not dict(item.details or {}).get("vacuous")
+        ]
+        overall = "failure" if failed else ("partial" if blocking_skips else "success")
         return RegressionReport(
             package.package_id,
             package.finding_id,
@@ -161,8 +169,26 @@ class RegressionAgent(BaseAgent):
                 {"required": ["fix_result.status=fixed", "retest_evidence"]},
             )
         records = evidence if isinstance(evidence, list) else list(evidence.get("items", []) or [])
-        negative = [item for item in records if item.get("control_type") == "negative"]
-        positive = [item for item in records if item.get("control_type") == "positive"]
+
+        def _control_kind(item: dict[str, Any]) -> str | None:
+            """control_type 显式给出时优先；缺失时按 control_id 推断。
+
+            闭环门（main._retest_evidence_binding_blockers）以 control_id
+            为证据绑定契约（blocker 文案即如此指引修复者），修复者据此回
+            贴的证据可能只有 control_id——两个门不得各执一套契约。
+            """
+            kind = str(item.get("control_type", "")).strip().lower()
+            if kind in {"negative", "positive"}:
+                return kind
+            control_id = str(item.get("control_id", "")).strip().lower()
+            if control_id.startswith("negative"):
+                return "negative"
+            if control_id.startswith("positive"):
+                return "positive"
+            return None
+
+        negative = [item for item in records if _control_kind(item) == "negative"]
+        positive = [item for item in records if _control_kind(item) == "positive"]
         failing = [
             item for item in [*negative, *positive]
             if item.get("status") != "passed" or not RegressionAgent._has_evidence_provenance(item)
@@ -221,7 +247,11 @@ class RegressionAgent(BaseAgent):
         if not command:
             return RegressionTestResult(
                 "TEMP", "Project functionality", "project_tests", "skipped",
-                "No supported project test entry point was detected", {},
+                "No supported project test entry point was detected",
+                # 无测试入口是"没有可跑的"而非"没跑过"：闭环门按
+                # overall=success 收口，空缺 skip 不得把项目永远压在
+                # partial（实测即 T3：无测试项目修复后 closure 永远 OPEN）。
+                {"vacuous": True},
             )
         image = self._test_image(command)
         if not image:
@@ -295,6 +325,17 @@ class RegressionAgent(BaseAgent):
                 {"required": "fix_result.changed_files, baseline_ref, or baseline_snapshot_ref"},
             )
         normalized = [str(item).replace("\\", "/") for item in changed]
+        # 平台自身状态目录不是修复改动：persist_vrtm 会把 .vibe-sec/
+        # 写进被审计项目（VRTM 快照、latest.json），快照 diff 会把它们
+        # 报成"越权改动"，把守范围的检查变成对平台自己的误报。
+        platform_state = [item for item in normalized if item.startswith(".vibe-sec/")]
+        normalized = [item for item in normalized if not item.startswith(".vibe-sec/")]
+        if not normalized:
+            return RegressionTestResult(
+                "TEMP", "Changed-tree scope", "changed_tree", "skipped",
+                "Only platform-owned state files changed outside the remediation scope",
+                {"platform_state_files": platform_state, "source": changed_source},
+            )
         affected = str(package.metadata.get("affected_file", "")).replace("\\", "/")
         scope = dict(package.metadata.get("change_scope") or {})
         legacy_allowed = package.patch_constraints.get("allowed_files", [])
