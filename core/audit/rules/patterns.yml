@@ -74,11 +74,18 @@ agent_vulnerability_patterns:
   severity: high
   description: 可能的提示词注入风险：用户输入被拼接到提示词中
   patterns:
-  - (user_input|user_message|query).*?\.format\(
-  - (prompt|message)\s*\+\s*(user|input|query)
-  - f["\'].*?(user_input|query|message).*?["\']
-  - (?<!ignore\s)(?<!do\snot\sfollow).*system.*prompt
-  - (\w+)\s*\+\s*(user|input|query|message)
+  # 注入短语本体：指令覆写话术本身就是独立风险信号（不限来源）
+  - (?:ignore|disregard|forget|override|bypass)\s+(?:all\s+|any\s+|the\s+|your\s+|these\s+|previous\s+|prior\s+|above\s+|earlier\s+|system\s+)*[a-z_ ]{0,30}(?:instructions?|prompts?|rules?|directions?|context)
+  - (?:system\s+prompt|instructions?)\s*[:=]?\s*["'][^\n]{0,40}(?:ignore|disregard|override|forget)
+  # f-string / 模板字符串直接插值用户输入变量（污点源内联）
+  - f["'][^\n]*\{[^}\n"']*(?:user_input|user_message)[^}\n"']*\}
+  - '["''`][^\n]*\$\{[^}\n]*(?:user_input|user_message)[^}\n]*\}'
+  # f-string 插 message/query：仅当行内另有外部输入入口（污点门控）
+  - f["'][^\n]*\{[^}\n"']*(?:message|query|messages)[^}\n"']*\}[^\n]*\b(?:request|args|params|payload|body)\b
+  - \b(?:request|args|params|payload|body)\b[^\n]*f["'][^\n]*\{[^}\n"']*(?:message|query|messages)
+  # 字符串拼接 / format：仅限显式用户输入变量
+  - (?:prompt|message)\s*\+\s*(?:user_input|user_message|request\w*\s*\.|req\w*\s*\.)
+  - (?:user_input|user_message)\s*\.\s*format\(
 - vulnerability_type: mcp_insecurity
   severity: high
   description: MCP 工具安全风险：缺少安全控制机制

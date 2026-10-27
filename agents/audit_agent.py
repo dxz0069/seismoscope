@@ -269,14 +269,18 @@ class AuditAgent(BaseAgent):
         self.agent_vulnerability_patterns = {
             "prompt_injection": {
                 "patterns": [
-                    # 直接的提示词注入风险
-                    r'(user_input|user_message|query).*?\.format\(',
-                    r'(prompt|message)\s*\+\s*(user|input|query)',
-                    r'f["\'].*?(user_input|query|message).*?["\']',
-                    # 缺少系统提示保护
-                    r'(?<!ignore\s)(?<!do\snot\sfollow).*system.*prompt',
-                    # 动态提示词构建
-                    r'(\w+)\s*\+\s*(user|input|query|message)',
+                    # 注入短语本体：指令覆写话术本身就是独立风险信号（不限来源）
+                    r'(?:ignore|disregard|forget|override|bypass)\s+(?:all\s+|any\s+|the\s+|your\s+|these\s+|previous\s+|prior\s+|above\s+|earlier\s+|system\s+)*[a-z_ ]{0,30}(?:instructions?|prompts?|rules?|directions?|context)',
+                    r'(?:system\s+prompt|instructions?)\s*[:=]?\s*["\'][^\n]{0,40}(?:ignore|disregard|override|forget)',
+                    # f-string / 模板字符串直接插值用户输入变量（污点源内联）
+                    r'f["\'][^\n]*\{[^}\n"\']*(?:user_input|user_message)[^}\n"\']*\}',
+                    r'["\'`][^\n]*\$\{[^}\n]*(?:user_input|user_message)[^}\n]*\}',
+                    # f-string 插 message/query：仅当行内另有外部输入入口（污点门控）
+                    r'f["\'][^\n]*\{[^}\n"\']*(?:message|query|messages)[^}\n"\']*\}[^\n]*\b(?:request|args|params|payload|body)\b',
+                    r'\b(?:request|args|params|payload|body)\b[^\n]*f["\'][^\n]*\{[^}\n"\']*(?:message|query|messages)',
+                    # 字符串拼接 / format：仅限显式用户输入变量
+                    r'(?:prompt|message)\s*\+\s*(?:user_input|user_message|request\w*\s*\.|req\w*\s*\.)',
+                    r'(?:user_input|user_message)\s*\.\s*format\(',
                 ],
                 "severity": Severity.HIGH,
                 "description": "可能的提示词注入风险：用户输入被拼接到提示词中",

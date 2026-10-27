@@ -140,9 +140,11 @@ def test_audit_lanes_are_parallel_child_tasks(tmp_path):
     assert result["audit_summary"]["execution_mode"] == "parallel_lanes"
     # 计数与 tests/fixtures 植入漏洞对齐：api_key 不再被相邻 password 合并、
     # MCP 字典语法通配权限与 f-string XSS 为 v0.7.0 新增检出。
+    # agent 8→5：prompt_injection 规则加污点门控后，fixture 里 3 条
+    # system_prompt 提及类（类型声明/常量赋值）噪声不再报出。
     assert result["audit_lanes"] == {
         "web_audit": 6,
-        "agent_audit": 8,
+        "agent_audit": 5,
         "secrets_audit": 4,
         "mcp_audit": 2,
     }
