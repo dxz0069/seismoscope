@@ -22,6 +22,7 @@ from pathlib import Path
 
 from core.audit.path_exclusion import is_excluded, resolve_excludes
 from core.audit.escape_semantics import find_lookahead_bypasses
+from core.audit.rules_registry import as_agent_rule_map, load_pattern_rules
 
 
 # 泛化 JS exec/execSync 汇点模式（区分于 launch-editor 的精确模式，需模板插值污点门控）
@@ -352,6 +353,20 @@ class AuditAgent(BaseAgent):
                 "description": "硬编码的 API Key 或密钥",
             },
         }
+
+        # 外置规则（默认 YAML / VIBE_SEC_RULES_PATH 自定义）：加载成功则
+        # 覆盖内置组；文件缺失或损坏时保持内置——规则文件问题不中断审计。
+        external_rules = load_pattern_rules()
+        if external_rules:
+            for group_attr, group_name in (
+                ("web_vulnerability_patterns", "web_vulnerability_patterns"),
+                ("agent_vulnerability_patterns", "agent_vulnerability_patterns"),
+                ("workflow_vulnerability_patterns", "workflow_vulnerability_patterns"),
+                ("secret_patterns", "secret_patterns"),
+            ):
+                loaded = external_rules.get(group_name)
+                if loaded:
+                    setattr(self, group_attr, as_agent_rule_map(loaded))
 
     @staticmethod
     def _llm_failure_category(error: Any) -> str:
