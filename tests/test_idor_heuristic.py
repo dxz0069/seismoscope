@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import asyncio
 import re
-import tempfile
-from pathlib import Path
 
 from agents.audit_agent import AuditAgent
 from main import run_audit
