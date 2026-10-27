@@ -2,15 +2,15 @@
 
 from .base import (
     BasePlugin,
-    PluginMetadata,
-    PluginType,
-    PluginRegistry,
-    plugin_registry,
-    register_plugin,
     DetectionRulePlugin,
+    PluginMetadata,
+    PluginRegistry,
+    PluginType,
+    RemediationPlugin,
     ReportFormatPlugin,
     VerificationPlugin,
-    RemediationPlugin,
+    plugin_registry,
+    register_plugin,
 )
 from .loader import PluginLoader, plugin_loader
 

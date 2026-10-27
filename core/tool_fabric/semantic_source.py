@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import ast
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional
-
+from typing import Any
 
 SOURCE_NAME_MARKERS = {
     "request", "req", "user_input", "user_data", "query", "payload", "event",
@@ -52,13 +52,13 @@ class FunctionRecord:
     file_path: str
     line_start: int
     line_end: int
-    parameters: List[str] = field(default_factory=list)
-    calls: List[Dict[str, Any]] = field(default_factory=list)
-    sources: List[Dict[str, Any]] = field(default_factory=list)
-    sinks: List[Dict[str, Any]] = field(default_factory=list)
-    guards: List[Dict[str, Any]] = field(default_factory=list)
+    parameters: list[str] = field(default_factory=list)
+    calls: list[dict[str, Any]] = field(default_factory=list)
+    sources: list[dict[str, Any]] = field(default_factory=list)
+    sinks: list[dict[str, Any]] = field(default_factory=list)
+    guards: list[dict[str, Any]] = field(default_factory=list)
 
-    def summary(self) -> Dict[str, Any]:
+    def summary(self) -> dict[str, Any]:
         return {
             "id": self.record_id,
             "name": self.name,
@@ -75,18 +75,18 @@ class FunctionRecord:
 
 @dataclass
 class PythonSemanticIndex:
-    records: List[FunctionRecord]
+    records: list[FunctionRecord]
     files_indexed: int
-    parse_errors: List[Dict[str, str]] = field(default_factory=list)
+    parse_errors: list[dict[str, str]] = field(default_factory=list)
     truncated: bool = False
 
     def __post_init__(self) -> None:
         self.by_id = {record.record_id: record for record in self.records}
-        self.by_simple_name: Dict[str, List[FunctionRecord]] = {}
+        self.by_simple_name: dict[str, list[FunctionRecord]] = {}
         for record in self.records:
             self.by_simple_name.setdefault(record.name, []).append(record)
 
-    def resolve_call(self, call_name: str) -> List[FunctionRecord]:
+    def resolve_call(self, call_name: str) -> list[FunctionRecord]:
         return self.by_simple_name.get(call_name.rsplit(".", 1)[-1], [])[:8]
 
 
@@ -97,8 +97,8 @@ def build_python_semantic_index(
     max_files: int = 2_000,
     max_file_bytes: int = 512_000,
 ) -> PythonSemanticIndex:
-    records: List[FunctionRecord] = []
-    parse_errors: List[Dict[str, str]] = []
+    records: list[FunctionRecord] = []
+    parse_errors: list[dict[str, str]] = []
     files_indexed = 0
     truncated = False
     for target in source_files:
@@ -127,7 +127,7 @@ def trace_python_flow(
     line: int = 0,
     max_depth: int = 4,
     max_paths: int = 40,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     normalized = file_path.replace("\\", "/")
     seeds = [record for record in index.records if record.file_path == normalized]
     if symbol:
@@ -153,10 +153,10 @@ def trace_python_flow(
         for target in index.resolve_call(call["name"])
     )[:100]
 
-    paths: List[Dict[str, Any]] = []
+    paths: list[dict[str, Any]] = []
     unresolved = set()
     for seed in seeds:
-        queue: List[tuple[FunctionRecord, List[FunctionRecord], List[Dict[str, Any]], int]] = [
+        queue: list[tuple[FunctionRecord, list[FunctionRecord], list[dict[str, Any]], int]] = [
             (seed, [seed], [], 0)
         ]
         while queue and len(paths) < max_paths:
@@ -214,8 +214,8 @@ def trace_python_flow(
     }
 
 
-def _records_for_module(file_path: str, tree: ast.Module) -> List[FunctionRecord]:
-    records: List[FunctionRecord] = []
+def _records_for_module(file_path: str, tree: ast.Module) -> list[FunctionRecord]:
+    records: list[FunctionRecord] = []
     module = ".".join(Path(file_path).with_suffix("").parts)
 
     def visit(nodes: Iterable[ast.stmt], prefix: str = "") -> None:
@@ -286,7 +286,7 @@ def _call_name(node: ast.AST) -> str:
     return ""
 
 
-def _sink_kind(call_name: str) -> Optional[str]:
+def _sink_kind(call_name: str) -> str | None:
     if call_name in SINKS:
         return SINKS[call_name]
     simple = call_name.rsplit(".", 1)[-1]
@@ -295,7 +295,7 @@ def _sink_kind(call_name: str) -> Optional[str]:
     return None
 
 
-def _unique_records(records: Iterable[FunctionRecord]) -> List[FunctionRecord]:
+def _unique_records(records: Iterable[FunctionRecord]) -> list[FunctionRecord]:
     result = []
     seen = set()
     for record in records:
@@ -306,7 +306,7 @@ def _unique_records(records: Iterable[FunctionRecord]) -> List[FunctionRecord]:
     return result
 
 
-def _dedupe_observations(items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def _dedupe_observations(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
     result = []
     seen = set()
     for item in items:

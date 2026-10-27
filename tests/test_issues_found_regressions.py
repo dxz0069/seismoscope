@@ -3,10 +3,10 @@ import json
 
 import core.surface.runtime_surface as runtime_surface_module
 import core.tool_fabric.framework_semantics as framework_semantics_module
-from agents.verification_agent import VerificationAgent
 from agents.audit_agent import AuditAgent, AuditState
-from core.agents.registry import AgentRegistry
+from agents.verification_agent import VerificationAgent
 from core.agent_runtime.completion import FinalizeFindingContract
+from core.agents.registry import AgentRegistry
 from core.audit.react_review import ReActFindingReviewer
 from core.llm_service import MockLLMService
 from core.orchestrator.orchestrator import OrchestrationConfig, OrchestratorAgent

@@ -1,8 +1,9 @@
 """Logical audit lanes used by the deterministic merge stage."""
 
 from collections import defaultdict
+from collections.abc import Iterable
 from enum import Enum
-from typing import Any, Dict, Iterable, List
+from typing import Any
 
 
 class AuditLane(str, Enum):
@@ -13,7 +14,7 @@ class AuditLane(str, Enum):
     WORKFLOW = "workflow_audit"
 
 
-def classify_lane(finding: Dict[str, Any]) -> str:
+def classify_lane(finding: dict[str, Any]) -> str:
     value = str(finding.get("vulnerability_type", "")).lower()
     if value in {"prompt_injection", "excessive_agency", "unsafe_output_handling", "agent_insecurity"}:
         return AuditLane.AGENT.value
@@ -26,8 +27,8 @@ def classify_lane(finding: Dict[str, Any]) -> str:
     return AuditLane.WEB.value
 
 
-def group_findings_by_lane(findings: Iterable[Dict[str, Any]]) -> Dict[str, List[Dict[str, Any]]]:
-    grouped: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
+def group_findings_by_lane(findings: Iterable[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
+    grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for finding in findings:
         lane = finding.get("lane") or classify_lane(finding)
         finding["lane"] = lane

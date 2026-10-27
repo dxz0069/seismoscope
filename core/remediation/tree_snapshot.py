@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Any, Dict, Iterable
-
+from typing import Any
 
 IGNORED_PARTS = {
     ".git", ".hg", ".svn", "node_modules", "vendor", "venv", ".venv",
@@ -15,11 +15,11 @@ IGNORED_PARTS = {
 }
 
 
-def build_tree_snapshot(project_root: str, *, max_files: int = 20_000) -> Dict[str, Any]:
+def build_tree_snapshot(project_root: str, *, max_files: int = 20_000) -> dict[str, Any]:
     root = Path(project_root).resolve()
     if not root.is_dir():
         raise ValueError("project_root must be an existing directory")
-    files: Dict[str, Dict[str, Any]] = {}
+    files: dict[str, dict[str, Any]] = {}
     truncated = False
     for target in _iter_files(root):
         if len(files) >= max(1, int(max_files)):
@@ -42,7 +42,7 @@ def build_tree_snapshot(project_root: str, *, max_files: int = 20_000) -> Dict[s
     }
 
 
-def load_snapshot_ref(snapshot_ref: Dict[str, Any]) -> Dict[str, Any]:
+def load_snapshot_ref(snapshot_ref: dict[str, Any]) -> dict[str, Any]:
     path = Path(str(snapshot_ref.get("path", ""))).resolve()
     expected = str(snapshot_ref.get("sha256", ""))
     if not path.is_file():
@@ -62,7 +62,7 @@ def load_snapshot_ref(snapshot_ref: Dict[str, Any]) -> Dict[str, Any]:
     return payload
 
 
-def diff_tree_snapshot(project_root: str, snapshot: Dict[str, Any]) -> Dict[str, Any]:
+def diff_tree_snapshot(project_root: str, snapshot: dict[str, Any]) -> dict[str, Any]:
     current = build_tree_snapshot(project_root, max_files=max(20_000, int(snapshot.get("file_count", 0)) + 1))
     if current.get("truncated"):
         raise ValueError("Current project tree exceeds the snapshot comparison budget")
@@ -104,6 +104,6 @@ def _file_sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def _tree_digest(files: Dict[str, Any]) -> str:
+def _tree_digest(files: dict[str, Any]) -> str:
     canonical = json.dumps(files, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()

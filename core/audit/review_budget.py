@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Any, Dict, Iterable, Set
+from collections.abc import Iterable
+from typing import Any
 
 
 class SharedReviewBudget:
@@ -24,8 +25,8 @@ class SharedReviewBudget:
         self._claimed = 0
         self._lock = asyncio.Lock()
         self._selection_condition = asyncio.Condition()
-        self._registrations: Dict[str, list[Dict[str, Any]]] = {}
-        self._selected_by_lane: Dict[str, Set[str]] = {}
+        self._registrations: dict[str, list[dict[str, Any]]] = {}
+        self._selected_by_lane: dict[str, set[str]] = {}
         self._selection_finalized = False
 
     @property
@@ -43,8 +44,8 @@ class SharedReviewBudget:
     async def select_for_lane(
         self,
         lane: str,
-        candidates: Iterable[Dict[str, Any]],
-    ) -> Set[str]:
+        candidates: Iterable[dict[str, Any]],
+    ) -> set[str]:
         """Wait for every lane, then select the globally highest-risk candidates."""
         if not self.uses_global_selection:
             return set()
@@ -90,7 +91,7 @@ class SharedReviewBudget:
         self._remaining = self.limit - self._claimed
         self._selection_finalized = True
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "limit": self.limit,
             "claimed": self._claimed,

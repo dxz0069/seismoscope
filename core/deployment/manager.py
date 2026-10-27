@@ -10,9 +10,10 @@ import shutil
 import subprocess
 import sys
 import urllib.request
-from datetime import datetime, timezone
+from collections.abc import Iterable
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any
 
 from ..languages.tree_sitter_gateway import status as tree_sitter_status
 from ..languages.tree_sitter_gateway import warmup as tree_sitter_warmup
@@ -26,8 +27,8 @@ class DeploymentManager:
     def __init__(
         self,
         *,
-        root: Optional[str] = None,
-        manifest_path: Optional[str] = None,
+        root: str | None = None,
+        manifest_path: str | None = None,
         docker_binary: str = "docker",
     ):
         self.root = Path(root).resolve() if root else Path(__file__).resolve().parents[2]
@@ -38,7 +39,7 @@ class DeploymentManager:
         self.manifest = self._load_manifest()
         self.images = {str(item["id"]): dict(item) for item in self.manifest["images"]}
 
-    def doctor(self) -> Dict[str, Any]:
+    def doctor(self) -> dict[str, Any]:
         docker = self._docker_status()
         image_results = [self._inspect_image(item) for item in self.manifest["images"]]
         required = [item for item in image_results if item["default_install"]]
@@ -83,14 +84,14 @@ class DeploymentManager:
     def setup(
         self,
         *,
-        include: Optional[Iterable[str]] = None,
+        include: Iterable[str] | None = None,
         include_codeql: bool = False,
         force: bool = False,
         dry_run: bool = False,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         selected = self._selected_images(include, include_codeql)
         before = self.doctor()
-        actions: List[Dict[str, Any]] = []
+        actions: list[dict[str, Any]] = []
         docker = before["docker"]
         if not docker["daemon_available"]:
             return {
@@ -179,9 +180,9 @@ class DeploymentManager:
 
     def _selected_images(
         self,
-        include: Optional[Iterable[str]],
+        include: Iterable[str] | None,
         include_codeql: bool,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         requested = list(dict.fromkeys(str(item) for item in (include or []) if str(item)))
         if requested:
             unknown = sorted(set(requested) - set(self.images))
@@ -204,7 +205,7 @@ class DeploymentManager:
                         changed = True
         return [item for item in self.manifest["images"] if item["id"] in selected_ids]
 
-    def _inspect_image(self, item: Dict[str, Any]) -> Dict[str, Any]:
+    def _inspect_image(self, item: dict[str, Any]) -> dict[str, Any]:
         requirement = ImageRequirement(
             str(item["image"]),
             set(item.get("capabilities", [])),
@@ -218,7 +219,7 @@ class DeploymentManager:
             **result.to_dict(),
         }
 
-    def _docker_status(self) -> Dict[str, Any]:
+    def _docker_status(self) -> dict[str, Any]:
         binary = shutil.which(self.docker_binary)
         if not binary:
             return {
@@ -246,7 +247,7 @@ class DeploymentManager:
             "error": "" if completed.returncode == 0 else completed.stderr.strip(),
         }
 
-    def _prepare_artifact(self, artifact: Dict[str, Any]) -> Dict[str, Any]:
+    def _prepare_artifact(self, artifact: dict[str, Any]) -> dict[str, Any]:
         target = (self.root / str(artifact["path"])).resolve()
         target.relative_to(self.root)
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -280,12 +281,12 @@ class DeploymentManager:
             )
         return {"path": str(target), "status": "downloaded", "sha256": actual}
 
-    def _write_state(self, report: Dict[str, Any]) -> None:
+    def _write_state(self, report: dict[str, Any]) -> None:
         state_dir = self.root / ".vibe-sec"
         state_dir.mkdir(parents=True, exist_ok=True)
         payload = {
             "schema_version": "vibe-sec.install-state.v1",
-            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(UTC).isoformat(),
             "release": self.manifest.get("release"),
             "status": report.get("status"),
             "selected": report.get("selected", []),
@@ -295,7 +296,7 @@ class DeploymentManager:
             json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8",
         )
 
-    def _load_manifest(self) -> Dict[str, Any]:
+    def _load_manifest(self) -> dict[str, Any]:
         try:
             payload = json.loads(self.manifest_path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError) as exc:

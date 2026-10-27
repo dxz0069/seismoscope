@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import json
 import tempfile
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
 
 from ..agent_runtime import (
     AgentTask,
@@ -16,36 +17,36 @@ from ..agent_runtime import (
     ReActHandler,
 )
 from ..agent_runtime.guard import AgentGuard
-from ..llm_service import LLMMessage
 from ..llm_errors import classify_llm_failure
+from ..llm_service import LLMMessage
 from ..reasoning.reasoning_guard import ReasoningGuard
 from ..runtime.permission_policy import PermissionPolicy
 from ..tool_fabric import (
     ArtifactStore,
     BanditAdapter,
-    CodeQLAdapter,
     CallableToolAdapter,
+    CodeQLAdapter,
+    GitleaksAdapter,
+    SemgrepAdapter,
     ToolGateway,
     ToolResult,
     ToolRiskClass,
     ToolSignal,
     ToolSpec,
+    TrivyAdapter,
     build_source_registry,
     register_container_scanners,
     source_tool_specs,
-    GitleaksAdapter,
-    SemgrepAdapter,
-    TrivyAdapter,
 )
 
 
 @dataclass
 class ReActReviewResult:
     status: str
-    output: Dict[str, Any] = field(default_factory=dict)
-    task: Optional[AgentTask] = None
-    tool_records: List[Dict[str, Any]] = field(default_factory=list)
-    error: Optional[str] = None
+    output: dict[str, Any] = field(default_factory=dict)
+    task: AgentTask | None = None
+    tool_records: list[dict[str, Any]] = field(default_factory=list)
+    error: str | None = None
 
 
 class AuditEvidenceTools:
@@ -54,17 +55,17 @@ class AuditEvidenceTools:
     def __init__(
         self,
         project_path: str,
-        surface_graph: Optional[Dict[str, Any]] = None,
-        threat_model: Optional[Dict[str, Any]] = None,
+        surface_graph: dict[str, Any] | None = None,
+        threat_model: dict[str, Any] | None = None,
         enable_container_tools: bool = False,
         allow_dependency_network: bool = False,
     ):
         self.project_root = Path(project_path).resolve()
         self.surface_graph = dict(surface_graph or {})
         self.threat_model = dict(threat_model or {})
-        self._result_cache: Dict[str, Dict[str, Any]] = {}
+        self._result_cache: dict[str, dict[str, Any]] = {}
         registry = build_source_registry()
-        self.scanner_preflight: Dict[str, Dict[str, object]] = {}
+        self.scanner_preflight: dict[str, dict[str, object]] = {}
         if enable_container_tools:
             self.scanner_preflight = register_container_scanners(registry)
         registry.register(CallableToolAdapter(
@@ -112,14 +113,14 @@ class AuditEvidenceTools:
             policy=policy,
         )
 
-    def schemas_for_agent(self) -> List[Dict[str, Any]]:
+    def schemas_for_agent(self) -> list[dict[str, Any]]:
         """Return schemas for tools that are actually registered after preflight."""
         schemas = self.gateway.registry.openai_schemas()
         schemas.append(self.schemas(include_container_tools=False)[-1])
         return schemas
 
     @staticmethod
-    def schemas(*, include_container_tools: bool = False) -> List[Dict[str, Any]]:
+    def schemas(*, include_container_tools: bool = False) -> list[dict[str, Any]]:
         schemas = [spec.to_openai_schema() for spec in source_tool_specs()]
         if include_container_tools:
             schemas.extend([
@@ -204,9 +205,9 @@ class AuditEvidenceTools:
     async def execute(
         self,
         name: str,
-        arguments: Dict[str, Any],
-        context: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        arguments: dict[str, Any],
+        context: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         signature = json.dumps([name, arguments], sort_keys=True, default=str)
         if signature in self._result_cache:
             return await self.gateway.record_duplicate(name, arguments, context)
@@ -238,7 +239,7 @@ class AuditEvidenceTools:
             )],
         )
 
-    def _inspect_surface(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
+    def _inspect_surface(self, arguments: dict[str, Any]) -> dict[str, Any]:
         nodes = list(self.surface_graph.get("nodes", []))
         edges = list(self.surface_graph.get("edges", []))
         file_path = str(arguments.get("file_path", ""))
@@ -257,7 +258,7 @@ class AuditEvidenceTools:
         ][:60]
         return {"nodes": selected, "edges": related_edges, "node_count": len(selected)}
 
-    def _inspect_hypothesis(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
+    def _inspect_hypothesis(self, arguments: dict[str, Any]) -> dict[str, Any]:
         target = str(arguments.get("hypothesis_id", ""))
         for hypothesis in self.threat_model.get("hypotheses", []):
             if hypothesis.get("id") == target:
@@ -279,12 +280,12 @@ class ReActFindingReviewer:
         llm_service,
         *,
         project_path: str,
-        surface_graph: Optional[Dict[str, Any]] = None,
-        threat_model: Optional[Dict[str, Any]] = None,
+        surface_graph: dict[str, Any] | None = None,
+        threat_model: dict[str, Any] | None = None,
         max_turns: int = 15,
         timeout_seconds: int = 180,
-        checkpoint_sink: Optional[Callable[..., Any]] = None,
-        transition_sink: Optional[Callable[..., Any]] = None,
+        checkpoint_sink: Callable[..., Any] | None = None,
+        transition_sink: Callable[..., Any] | None = None,
         enable_container_tools: bool = False,
         allow_dependency_network: bool = False,
     ):
@@ -302,7 +303,7 @@ class ReActFindingReviewer:
         self.checkpoint_sink = checkpoint_sink
         self.transition_sink = transition_sink
 
-    async def review(self, candidate: Dict[str, Any], *, hypothesis: Optional[Dict[str, Any]] = None) -> ReActReviewResult:
+    async def review(self, candidate: dict[str, Any], *, hypothesis: dict[str, Any] | None = None) -> ReActReviewResult:
         candidate = dict(candidate)
         task = AgentTask(
             agent_name="audit_finding_reviewer",
@@ -381,13 +382,13 @@ class ReActFindingReviewer:
 
     @staticmethod
     def _bind_review_result(
-        candidate: Dict[str, Any],
-        hypothesis: Optional[Dict[str, Any]],
+        candidate: dict[str, Any],
+        hypothesis: dict[str, Any] | None,
         runtime_status: str,
-        model_output: Dict[str, Any],
-        records: List[Dict[str, Any]],
-        runtime_error: Optional[str],
-    ) -> tuple[str, Dict[str, Any]]:
+        model_output: dict[str, Any],
+        records: list[dict[str, Any]],
+        runtime_error: str | None,
+    ) -> tuple[str, dict[str, Any]]:
         successful_records = [
             record for record in records
             if record.get("allowed")
@@ -434,7 +435,7 @@ class ReActFindingReviewer:
             marker in str(runtime_error or "").lower()
             for marker in ("maximum turn", "timeout", "stopped", "token budget")
         )
-        operational_gaps: List[str] = []
+        operational_gaps: list[str] = []
         if degraded:
             operational_gap = (
                 (
@@ -517,7 +518,7 @@ class ReActFindingReviewer:
         return ("degraded" if degraded else "completed"), output
 
     @staticmethod
-    def _build_prompt(candidate: Dict[str, Any], hypothesis: Optional[Dict[str, Any]]) -> str:
+    def _build_prompt(candidate: dict[str, Any], hypothesis: dict[str, Any] | None) -> str:
         return json.dumps(
             {
                 "task": "Review one security candidate through evidence collection.",

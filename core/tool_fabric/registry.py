@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import inspect
-from typing import Any, Awaitable, Callable, Dict, List, Optional, Protocol
+from collections.abc import Awaitable, Callable
+from typing import Any, Protocol
 
 from .models import ToolRequest, ToolResult, ToolSpec
 
@@ -34,8 +35,8 @@ class CallableToolAdapter:
 
 class ToolRegistry:
     def __init__(self):
-        self._adapters: Dict[str, ToolAdapter] = {}
-        self._aliases: Dict[str, str] = {}
+        self._adapters: dict[str, ToolAdapter] = {}
+        self._aliases: dict[str, str] = {}
 
     def register(self, adapter: ToolAdapter) -> None:
         name = adapter.spec.name
@@ -47,13 +48,13 @@ class ToolRegistry:
                 raise ValueError(f"Tool alias already registered: {alias}")
             self._aliases[alias] = name
 
-    def get(self, name: str) -> Optional[ToolAdapter]:
+    def get(self, name: str) -> ToolAdapter | None:
         return self._adapters.get(self._aliases.get(name, name))
 
-    def specs(self) -> List[ToolSpec]:
+    def specs(self) -> list[ToolSpec]:
         return [adapter.spec for adapter in self._adapters.values()]
 
-    def openai_schemas(self, *, names: Optional[List[str]] = None) -> List[Dict[str, Any]]:
+    def openai_schemas(self, *, names: list[str] | None = None) -> list[dict[str, Any]]:
         selected = set(names or [])
         return [
             spec.to_openai_schema()

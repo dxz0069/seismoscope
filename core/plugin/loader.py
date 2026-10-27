@@ -5,12 +5,10 @@
 """
 
 import importlib.util
-from pathlib import Path
-from typing import List
 import logging
+from pathlib import Path
 
 from .base import BasePlugin, PluginRegistry, plugin_registry
-
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +64,7 @@ class PluginLoader:
 
         return plugin
 
-    def load_from_directory(self, directory: str) -> List[BasePlugin]:
+    def load_from_directory(self, directory: str) -> list[BasePlugin]:
         """
         从目录加载所有插件
 

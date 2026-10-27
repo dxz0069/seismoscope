@@ -5,9 +5,9 @@ from __future__ import annotations
 import hashlib
 import json
 import re
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 from uuid import uuid4
 
 from ..sanitization import sanitize_for_persistence
@@ -28,9 +28,9 @@ class ArtifactStore:
         *,
         producer: str,
         artifact_type: str = "tool_output",
-        file_name: Optional[str] = None,
+        file_name: str | None = None,
         media_type: str = "text/plain",
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
     ) -> ArtifactRef:
         return self.put_bytes(
             content.encode("utf-8", errors="replace"),
@@ -47,8 +47,8 @@ class ArtifactStore:
         *,
         producer: str,
         artifact_type: str = "tool_output",
-        file_name: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        file_name: str | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> ArtifactRef:
         content = json.dumps(
             sanitize_for_persistence(payload), ensure_ascii=False, indent=2, default=str,
@@ -68,9 +68,9 @@ class ArtifactStore:
         *,
         producer: str,
         artifact_type: str,
-        file_name: Optional[str] = None,
+        file_name: str | None = None,
         media_type: str = "application/octet-stream",
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
     ) -> ArtifactRef:
         artifact_id = f"artifact-{uuid4().hex}"
         suffix = Path(file_name or "output.bin").suffix or ".bin"
@@ -94,12 +94,12 @@ class ArtifactStore:
     def list_artifacts(
         self,
         *,
-        artifact_type: Optional[str] = None,
-        producer: Optional[str] = None,
+        artifact_type: str | None = None,
+        producer: str | None = None,
         include_deleted: bool = False,
-    ) -> List[Dict[str, Any]]:
-        active: Dict[str, Dict[str, Any]] = {}
-        deleted: Dict[str, Dict[str, Any]] = {}
+    ) -> list[dict[str, Any]]:
+        active: dict[str, dict[str, Any]] = {}
+        deleted: dict[str, dict[str, Any]] = {}
         for record in self._manifest_records():
             if record.get("event") == "created" and isinstance(record.get("artifact"), dict):
                 artifact = dict(record["artifact"])
@@ -125,11 +125,11 @@ class ArtifactStore:
         max_age_days: float,
         *,
         dry_run: bool = True,
-        now: Optional[datetime] = None,
-    ) -> Dict[str, Any]:
+        now: datetime | None = None,
+    ) -> dict[str, Any]:
         if float(max_age_days) < 0:
             raise ValueError("max_age_days must be non-negative")
-        cutoff = (now or datetime.now(timezone.utc)) - timedelta(days=float(max_age_days))
+        cutoff = (now or datetime.now(UTC)) - timedelta(days=float(max_age_days))
         candidates = []
         for artifact in self.list_artifacts():
             try:
@@ -137,7 +137,7 @@ class ArtifactStore:
             except ValueError:
                 continue
             if created_at.tzinfo is None:
-                created_at = created_at.replace(tzinfo=timezone.utc)
+                created_at = created_at.replace(tzinfo=UTC)
             if created_at <= cutoff:
                 candidates.append(artifact)
         deleted = []
@@ -154,7 +154,7 @@ class ArtifactStore:
                 self._append_manifest({
                     "event": "deleted",
                     "artifact_id": artifact_id,
-                    "deleted_at": datetime.now(timezone.utc).isoformat(),
+                    "deleted_at": datetime.now(UTC).isoformat(),
                     "reason": f"retention exceeded {max_age_days:g} days",
                 })
                 deleted.append(artifact_id)
@@ -165,7 +165,7 @@ class ArtifactStore:
             "deleted_ids": deleted,
         }
 
-    def _manifest_records(self) -> List[Dict[str, Any]]:
+    def _manifest_records(self) -> list[dict[str, Any]]:
         if not self.manifest_path.is_file():
             return []
         records = []
@@ -179,7 +179,7 @@ class ArtifactStore:
                     records.append(value)
         return records
 
-    def _append_manifest(self, record: Dict[str, Any]) -> None:
+    def _append_manifest(self, record: dict[str, Any]) -> None:
         with self.manifest_path.open("a", encoding="utf-8") as handle:
             handle.write(json.dumps(
                 sanitize_for_persistence(record), ensure_ascii=False, default=str,

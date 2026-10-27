@@ -6,8 +6,9 @@ import asyncio
 import inspect
 import json
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, Optional
+from typing import Any
 
 from ..agents.base import AgentResult, TaskHandoff
 from .completion import CompletionValidationResult, CompletionValidator
@@ -21,25 +22,25 @@ from .task import AgentTask
 @dataclass
 class ToolCall:
     name: str
-    arguments: Dict[str, Any] = field(default_factory=dict)
-    call_id: Optional[str] = None
+    arguments: dict[str, Any] = field(default_factory=dict)
+    call_id: str | None = None
 
 
 @dataclass
 class TaskTurn:
-    output: Dict[str, Any] = field(default_factory=dict)
+    output: dict[str, Any] = field(default_factory=dict)
     done: bool = False
-    next_state: Optional[AgentRuntimeState] = None
-    tool_call: Optional[ToolCall] = None
+    next_state: AgentRuntimeState | None = None
+    tool_call: ToolCall | None = None
     tool_calls: list[ToolCall] = field(default_factory=list)
-    handoff: Optional[TaskHandoff] = None
+    handoff: TaskHandoff | None = None
     tokens_used: int = 0
     retryable: bool = True
     reason: str = ""
-    terminal_action: Optional[str] = None
+    terminal_action: str | None = None
 
     @classmethod
-    def from_any(cls, raw: Any) -> "TaskTurn":
+    def from_any(cls, raw: Any) -> TaskTurn:
         if isinstance(raw, cls):
             return raw
         if isinstance(raw, AgentResult):
@@ -121,7 +122,7 @@ class TaskTurn:
         )
 
     @staticmethod
-    def _parse_tool_call(value: Any) -> Optional[ToolCall]:
+    def _parse_tool_call(value: Any) -> ToolCall | None:
         if isinstance(value, ToolCall):
             return value
         if isinstance(value, str):
@@ -139,16 +140,16 @@ class TaskTurn:
 class TaskLoopResult:
     status: str
     task: AgentTask
-    output: Dict[str, Any] = field(default_factory=dict)
+    output: dict[str, Any] = field(default_factory=dict)
     turns: int = 0
-    error: Optional[str] = None
-    completion: Optional[CompletionValidationResult] = None
+    error: str | None = None
+    completion: CompletionValidationResult | None = None
 
 
 class LoopDetector:
     def __init__(self, repeat_limit: int = 3):
         self.repeat_limit = max(1, int(repeat_limit))
-        self._counts: Dict[str, int] = {}
+        self._counts: dict[str, int] = {}
 
     def observe(self, value: Any) -> int:
         try:
@@ -159,7 +160,7 @@ class LoopDetector:
         return self._counts[key]
 
 
-Handler = Callable[[AgentTask, Dict[str, Any]], Any]
+Handler = Callable[[AgentTask, dict[str, Any]], Any]
 
 
 class AgentTaskLoop:
@@ -168,17 +169,17 @@ class AgentTaskLoop:
     def __init__(
         self,
         *,
-        retry_policy: Optional[RetryPolicy] = None,
-        completion_validator: Optional[CompletionValidator] = None,
-        guard: Optional[AgentGuard] = None,
+        retry_policy: RetryPolicy | None = None,
+        completion_validator: CompletionValidator | None = None,
+        guard: AgentGuard | None = None,
         max_turns: int = 20,
         max_tokens: int = 0,
         timeout_seconds: float = 0,
         loop_repeat_limit: int = 3,
         max_completion_nudges: int = 2,
-        require_terminal_action: Optional[bool] = None,
-        checkpoint_sink: Optional[Callable[..., Any]] = None,
-        transition_sink: Optional[Callable[..., Any]] = None,
+        require_terminal_action: bool | None = None,
+        checkpoint_sink: Callable[..., Any] | None = None,
+        transition_sink: Callable[..., Any] | None = None,
     ):
         self.retry_policy = retry_policy or RetryPolicy()
         self.completion_validator = completion_validator or CompletionValidator()
@@ -210,8 +211,8 @@ class AgentTaskLoop:
         task: AgentTask,
         handler: Handler,
         *,
-        context: Optional[Dict[str, Any]] = None,
-        tool_executor: Optional[Callable[..., Any]] = None,
+        context: dict[str, Any] | None = None,
+        tool_executor: Callable[..., Any] | None = None,
         resume: bool = False,
     ) -> TaskLoopResult:
         if task.status == AgentRuntimeState.PAUSED and not resume:
@@ -235,7 +236,7 @@ class AgentTaskLoop:
             handler.restore_state(saved_handler_state)
         detector = LoopDetector(self.loop_repeat_limit)
         started = time.monotonic()
-        output: Dict[str, Any] = {}
+        output: dict[str, Any] = {}
         completion = None
 
         if machine.state == AgentRuntimeState.CREATED:
@@ -447,7 +448,7 @@ class AgentTaskLoop:
         task: AgentTask,
         state: AgentRuntimeState,
         reason: str,
-        data: Optional[Dict[str, Any]] = None,
+        data: dict[str, Any] | None = None,
     ) -> None:
         machine.transition(state, reason=reason, data=data)
         task.sync_state(machine)
@@ -457,7 +458,7 @@ class AgentTaskLoop:
         if self.transition_sink:
             self.transition_sink(transition)
 
-    def _checkpoint(self, task: AgentTask, reason: str, data: Optional[Dict[str, Any]] = None) -> None:
+    def _checkpoint(self, task: AgentTask, reason: str, data: dict[str, Any] | None = None) -> None:
         if not self.checkpoint_sink:
             return
         payload = {"reason": reason, "task": task.to_dict(), **dict(data or {})}
@@ -487,7 +488,7 @@ class AgentTaskLoop:
             task.metadata["handler_state"] = handler.to_state()
 
     @staticmethod
-    def _persist_runtime_context(task: AgentTask, context: Dict[str, Any]) -> None:
+    def _persist_runtime_context(task: AgentTask, context: dict[str, Any]) -> None:
         safe_context = {}
         for key in (
             "tool_results",
@@ -514,18 +515,18 @@ class AgentTaskLoop:
         task.metadata["loop_context"] = safe_context
 
     @staticmethod
-    def _tool_call_to_dict(value: ToolCall) -> Dict[str, Any]:
+    def _tool_call_to_dict(value: ToolCall) -> dict[str, Any]:
         return {
             "name": value.name,
             "arguments": value.arguments,
             "id": value.call_id,
         }
 
-    async def _invoke_handler(self, handler: Handler, task: AgentTask, context: Dict[str, Any]) -> Any:
+    async def _invoke_handler(self, handler: Handler, task: AgentTask, context: dict[str, Any]) -> Any:
         result = handler(task, context)
         return await result if inspect.isawaitable(result) else result
 
-    async def _invoke_tool(self, executor: Callable[..., Any], call: ToolCall, context: Dict[str, Any]) -> Any:
+    async def _invoke_tool(self, executor: Callable[..., Any], call: ToolCall, context: dict[str, Any]) -> Any:
         if call is None:
             raise RuntimeError("Missing pending tool call")
         if hasattr(executor, "execute"):

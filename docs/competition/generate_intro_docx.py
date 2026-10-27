@@ -1,8 +1,10 @@
 """Generate Word version of project introduction."""
-import re, os
+import os
+import re
+
 from docx import Document
-from docx.shared import Pt, Inches, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.shared import Inches, Pt, RGBColor
 
 doc = Document()
 style = doc.styles['Normal']
@@ -13,13 +15,13 @@ style.paragraph_format.space_after = Pt(3)
 style.paragraph_format.line_spacing = 1.25
 
 for lvl, sz in [(1, 16), (2, 13), (3, 11)]:
-    s = doc.styles['Heading %d' % lvl]
+    s = doc.styles[f'Heading {lvl}']
     s.font.name = 'SimHei'
     s.font.size = Pt(sz)
     s.font.bold = True
     s.font.color.rgb = RGBColor(0, 0, 0)
 
-with open('作品简介.md', 'r', encoding='utf-8') as f:
+with open('作品简介.md', encoding='utf-8') as f:
     lines = f.readlines()
 
 for line in lines:
@@ -58,4 +60,4 @@ for line in lines:
 
 fp = '作品简介-v2.docx'
 doc.save(fp)
-print('Saved: %s (%d KB)' % (fp, os.path.getsize(fp) / 1024))
+print(f'Saved: {fp} ({os.path.getsize(fp) / 1024:.0f} KB)')

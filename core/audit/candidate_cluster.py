@@ -4,18 +4,18 @@ from __future__ import annotations
 
 import hashlib
 from collections import defaultdict
+from collections.abc import Iterable
 from copy import deepcopy
-from typing import Any, Dict, Iterable, List, Optional
-
+from typing import Any
 
 SEVERITY_RANK = {"info": 0, "low": 1, "medium": 2, "high": 3, "critical": 4}
 
 
 def cluster_candidates(
-    candidates: Iterable[Dict[str, Any]],
+    candidates: Iterable[dict[str, Any]],
     *,
     line_tolerance: int = 5,
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """Merge same-file/type candidates whose source ranges overlap or are close.
 
     Complexity: O(n) average case using a (file_path, vulnerability_type) bucket
@@ -24,8 +24,8 @@ def cluster_candidates(
     cost effectively linear for realistic scan outputs.
     """
     # bucket: (normalised_path, normalised_vuln_type) → list of cluster dicts
-    buckets: Dict[tuple, List[Dict[str, Any]]] = defaultdict(list)
-    result_order: List[Dict[str, Any]] = []  # preserves insertion order
+    buckets: dict[tuple, list[dict[str, Any]]] = defaultdict(list)
+    result_order: list[dict[str, Any]] = []  # preserves insertion order
 
     for raw in candidates:
         candidate = deepcopy(raw)
@@ -54,7 +54,7 @@ def cluster_candidates(
     return result_order
 
 
-def _same_cluster(left: Dict[str, Any], right: Dict[str, Any], tolerance: int) -> bool:
+def _same_cluster(left: dict[str, Any], right: dict[str, Any], tolerance: int) -> bool:
     if _normalized(left.get("vulnerability_type")) != _normalized(right.get("vulnerability_type")):
         return False
     if _path(left.get("file_path")) != _path(right.get("file_path")):
@@ -64,7 +64,7 @@ def _same_cluster(left: Dict[str, Any], right: Dict[str, Any], tolerance: int) -
     return left_start <= right_end + tolerance and right_start <= left_end + tolerance
 
 
-def _merge_into(target: Dict[str, Any], incoming: Dict[str, Any]) -> None:
+def _merge_into(target: dict[str, Any], incoming: dict[str, Any]) -> None:
     target_start, target_end = _range(target)
     incoming_start, incoming_end = _range(incoming)
     target["line_start"] = min(target_start, incoming_start)
@@ -119,7 +119,7 @@ def _merge_into(target: Dict[str, Any], incoming: Dict[str, Any]) -> None:
     target["discovery_metadata"] = metadata
 
 
-def _stable_id(candidate: Dict[str, Any], anchor_line: Optional[int] = None) -> str:
+def _stable_id(candidate: dict[str, Any], anchor_line: int | None = None) -> str:
     """Generate a stable id anchored to the *original* line_start.
 
     The id is computed once at cluster creation time and never changes even
@@ -136,7 +136,7 @@ def _stable_id(candidate: Dict[str, Any], anchor_line: Optional[int] = None) -> 
     return "discovery-" + hashlib.sha256(identity.encode("utf-8")).hexdigest()[:16]
 
 
-def _range(candidate: Dict[str, Any]) -> tuple[int, int]:
+def _range(candidate: dict[str, Any]) -> tuple[int, int]:
     start = max(1, int(candidate.get("line_start", 1) or 1))
     end = max(start, int(candidate.get("line_end", start) or start))
     return start, end
@@ -157,7 +157,7 @@ def _confidence(value: Any) -> float:
         return 0.5
 
 
-def _unique_dicts(values: Iterable[Any]) -> List[Any]:
+def _unique_dicts(values: Iterable[Any]) -> list[Any]:
     seen = set()
     result = []
     for value in values:

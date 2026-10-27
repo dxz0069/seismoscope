@@ -11,16 +11,15 @@ import os
 import sys
 import uuid
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 from core.agents.base import AgentConfig, AgentType
 from core.agents.registry import AgentRegistry
-from core.orchestrator.orchestrator import OrchestratorAgent, OrchestrationConfig
 from core.llm_service import MockLLMService
+from core.orchestrator.orchestrator import OrchestrationConfig, OrchestratorAgent
 from core.policy.trigger_policy import TriggerPolicy
 from core.session.models import RunSession
 from core.session.store import SessionStore
-
 
 logging.basicConfig(
     level=logging.INFO,
@@ -47,12 +46,12 @@ def setup_agent_registry(llm_service=None, event_emitter=None) -> AgentRegistry:
     Returns:
         注册了所有 Agent 的注册表
     """
-    from agents.recon_agent import ReconAgent
-    from agents.surface_agent import SurfaceAgent
     from agents.audit_agent import AuditAgent
-    from agents.verification_agent import VerificationAgent
-    from agents.remediation_agent import RemediationAgent
+    from agents.recon_agent import ReconAgent
     from agents.regression_agent import RegressionAgent
+    from agents.remediation_agent import RemediationAgent
+    from agents.surface_agent import SurfaceAgent
+    from agents.verification_agent import VerificationAgent
 
     registry = AgentRegistry()
 
@@ -129,31 +128,31 @@ def setup_agent_registry(llm_service=None, event_emitter=None) -> AgentRegistry:
 async def run_audit(
     project_path: str,
     *,
-    audit_scope: Optional[Dict[str, bool]] = None,
+    audit_scope: dict[str, bool] | None = None,
     output_format: str = "markdown",
     use_llm: bool = False,
-    api_key: Optional[str] = None,
-    llm_config: Optional[Dict[str, Any]] = None,
+    api_key: str | None = None,
+    llm_config: dict[str, Any] | None = None,
     llm_deep_analysis_limit: int = 2,
-    react_review_limit: Optional[int] = None,
-    discovery_target_limit: Optional[int] = None,
-    react_max_turns: Optional[int] = None,
-    max_verification_count: Optional[int] = None,
-    verification_fraction: Optional[float] = None,
-    enable_react_discovery: Optional[bool] = None,
+    react_review_limit: int | None = None,
+    discovery_target_limit: int | None = None,
+    react_max_turns: int | None = None,
+    max_verification_count: int | None = None,
+    verification_fraction: float | None = None,
+    enable_react_discovery: bool | None = None,
     verbose: bool = False,
-    session_dir: Optional[str] = None,
+    session_dir: str | None = None,
     enable_container_tools: bool = False,
     allow_dependency_network: bool = False,
-    changed_files: Optional[list[str]] = None,
+    changed_files: list[str] | None = None,
     trigger: str = "explicit",
     persist_vrtm: bool = False,
-    verification_authorization: Optional[Dict[str, Any]] = None,
+    verification_authorization: dict[str, Any] | None = None,
     enable_react_audit: bool = False,
     enable_react_verification: bool = False,
-    session_metadata: Optional[Dict[str, Any]] = None,
-    exclude_patterns: Optional[list[str]] = None,
-) -> Dict[str, Any]:
+    session_metadata: dict[str, Any] | None = None,
+    exclude_patterns: list[str] | None = None,
+) -> dict[str, Any]:
     """
     执行安全审查
 
@@ -358,7 +357,7 @@ async def run_audit(
     return result.data
 
 
-def _normalize_changed_files(project_path: str, changed_files: Optional[list[str]]) -> list[str]:
+def _normalize_changed_files(project_path: str, changed_files: list[str] | None) -> list[str]:
     root = Path(project_path).resolve()
     normalized = []
     for value in changed_files or []:
@@ -376,23 +375,23 @@ def _normalize_changed_files(project_path: str, changed_files: Optional[list[str
 async def run_skill_audit(
     project_path: str,
     *,
-    changed_files: Optional[list[str]] = None,
+    changed_files: list[str] | None = None,
     suggest_only: bool = False,
     use_llm: bool = False,
-    session_dir: Optional[str] = None,
+    session_dir: str | None = None,
     enable_container_tools: bool = False,
     allow_dependency_network: bool = False,
-    verification_authorization: Optional[Dict[str, Any]] = None,
+    verification_authorization: dict[str, Any] | None = None,
     llm_review_candidate_limit: int = 2,
     llm_verification_limit: int = 2,
     llm_max_turns: int = 4,
     llm_discovery_target_limit: int = 0,
     full_result: bool = False,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Stable Skill-host contract for trigger decisions and remediation return."""
     normalized = _normalize_changed_files(project_path, changed_files)
     decision = TriggerPolicy(project_path).evaluate(normalized, explicit=not suggest_only)
-    envelope: Dict[str, Any] = {
+    envelope: dict[str, Any] = {
         "contract_version": "vibe-sec.skill-result.v2",
         "project_path": str(Path(project_path).resolve()),
         "trigger_decision": decision.to_dict(),
@@ -455,7 +454,7 @@ async def run_skill_audit(
     return envelope
 
 
-def _compact_skill_result(result: Dict[str, Any]) -> Dict[str, Any]:
+def _compact_skill_result(result: dict[str, Any]) -> dict[str, Any]:
     from core.tool_fabric import ArtifactStore
 
     session = dict(result.get("session") or {})
@@ -529,7 +528,7 @@ def _compact_skill_result(result: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def _mark_skill_packages_dispatched(result: Dict[str, Any]) -> None:
+def _mark_skill_packages_dispatched(result: dict[str, Any]) -> None:
     """Record that packages have entered the coding context; no fix is implied."""
     session_id = str(dict(result.get("session") or {}).get("session_id") or "")
     for bundle in result.get("remediation_bundles", []) or []:
@@ -545,8 +544,8 @@ def _mark_skill_packages_dispatched(result: Dict[str, Any]) -> None:
 
 
 def _record_skill_return_session(
-    result: Dict[str, Any], compact: Dict[str, Any], session_dir: str,
-) -> Dict[str, Any]:
+    result: dict[str, Any], compact: dict[str, Any], session_dir: str,
+) -> dict[str, Any]:
     """Append the Skill return boundary after artifacts and dispatch state exist."""
     session_data = dict(result.get("session") or {})
     if not session_data:
@@ -584,16 +583,16 @@ def _record_skill_return_session(
 
 async def run_retest(
     project_path: str,
-    remediation_packages: list[Dict[str, Any]],
+    remediation_packages: list[dict[str, Any]],
     *,
     run_project_tests: bool = True,
-    test_command: Optional[list[str]] = None,
-    baseline_ref: Optional[str] = None,
+    test_command: list[str] | None = None,
+    baseline_ref: str | None = None,
     update_vrtm: bool = True,
-    session_dir: Optional[str] = None,
-    session_id: Optional[str] = None,
-    approval_paths: Optional[list[str]] = None,
-) -> Dict[str, Any]:
+    session_dir: str | None = None,
+    session_id: str | None = None,
+    approval_paths: list[str] | None = None,
+) -> dict[str, Any]:
     """Run Harness-controlled post-fix checks and persist the closure decision."""
     resolved_project = os.path.abspath(project_path)
     if not os.path.isdir(resolved_project):
@@ -692,8 +691,8 @@ async def run_retest(
 
 
 def _load_retest_session(
-    project_path: str, *, session_id: Optional[str], session_dir: Optional[str],
-) -> tuple[Optional[SessionStore], Optional[RunSession]]:
+    project_path: str, *, session_id: str | None, session_dir: str | None,
+) -> tuple[SessionStore | None, RunSession | None]:
     if not session_id:
         return None, None
     store = SessionStore(session_dir or _default_skill_session_dir())
@@ -704,7 +703,7 @@ def _load_retest_session(
 
 
 def _validate_retest_packages_for_session(
-    packages: list[Dict[str, Any]], session: RunSession,
+    packages: list[dict[str, Any]], session: RunSession,
 ) -> None:
     known_ids = {
         str(item.get("package_id", ""))
@@ -730,10 +729,10 @@ def _validate_retest_packages_for_session(
 
 def _load_retest_approvals(
     approval_paths: list[str], project_path: str, *, session_id: str, package_ids: list[str],
-) -> Dict[str, Dict[str, Any]]:
+) -> dict[str, dict[str, Any]]:
     from core.remediation import load_remediation_approval
 
-    approvals: Dict[str, Dict[str, Any]] = {}
+    approvals: dict[str, dict[str, Any]] = {}
     expected_ids = {item for item in package_ids if item}
     for path in approval_paths:
         # The raw JSON is used only to select the package. The signed loader
@@ -752,9 +751,9 @@ def _load_retest_approvals(
 
 
 def _evaluate_retest_closure(
-    packages: list[Dict[str, Any]], reports: list[Dict[str, Any]], *,
-    session_id: Optional[str], approvals: Dict[str, Dict[str, Any]],
-) -> list[Dict[str, Any]]:
+    packages: list[dict[str, Any]], reports: list[dict[str, Any]], *,
+    session_id: str | None, approvals: dict[str, dict[str, Any]],
+) -> list[dict[str, Any]]:
     reports_by_id = {str(item.get("package_id", "")): item for item in reports}
     records = []
     for package in packages:
@@ -788,7 +787,7 @@ def _evaluate_retest_closure(
     return records
 
 
-def _retest_evidence_binding_blockers(package: Dict[str, Any]) -> list[str]:
+def _retest_evidence_binding_blockers(package: dict[str, Any]) -> list[str]:
     """Require post-fix controls to identify the package predicate they satisfy."""
     fix_result = dict(package.get("fix_result") or {})
     evidence = list(fix_result.get("retest_evidence") or [])
@@ -820,7 +819,7 @@ def _retest_evidence_binding_blockers(package: Dict[str, Any]) -> list[str]:
     return blockers
 
 
-def _has_retest_evidence_provenance(record: Dict[str, Any]) -> bool:
+def _has_retest_evidence_provenance(record: dict[str, Any]) -> bool:
     return bool(str(record.get("predicate", "")).strip()) and any(
         record.get(key)
         for key in (
@@ -830,7 +829,7 @@ def _has_retest_evidence_provenance(record: Dict[str, Any]) -> bool:
     )
 
 
-def _trusted_mitigation_finding(package: Dict[str, Any]) -> Dict[str, Any]:
+def _trusted_mitigation_finding(package: dict[str, Any]) -> dict[str, Any]:
     metadata = dict(package.get("metadata") or {})
     scope = dict(package.get("change_scope") or metadata.get("change_scope") or {})
     evidence = list(dict(package.get("fix_result") or {}).get("retest_evidence") or [])
@@ -854,9 +853,9 @@ def _trusted_mitigation_finding(package: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _load_retest_vrtm_baseline(
-    service: Any, session: Optional[RunSession], packages: list[Dict[str, Any]],
-) -> Optional[Dict[str, Any]]:
-    snapshot: Dict[str, Any] = {}
+    service: Any, session: RunSession | None, packages: list[dict[str, Any]],
+) -> dict[str, Any] | None:
+    snapshot: dict[str, Any] = {}
     if session:
         snapshot = dict(dict(session.metadata.get("vrtm") or {}).get("snapshot") or {})
     if not snapshot:
@@ -873,7 +872,7 @@ def _load_retest_vrtm_baseline(
         raise ValueError(f"VRTM baseline snapshot is unavailable for retest: {exc}") from exc
 
 
-def _accepted_retest_finding_ids(vrtm_model: Dict[str, Any]) -> set[str]:
+def _accepted_retest_finding_ids(vrtm_model: dict[str, Any]) -> set[str]:
     application = dict(vrtm_model.get("retest_observation_application") or {})
     accepted = set(application.get("accepted_observation_ids", []) or [])
     if not accepted:
@@ -889,7 +888,7 @@ def _accepted_retest_finding_ids(vrtm_model: Dict[str, Any]) -> set[str]:
 
 
 def _finalize_vrtm_closure(
-    records: list[Dict[str, Any]], *, accepted_finding_ids: set[str],
+    records: list[dict[str, Any]], *, accepted_finding_ids: set[str],
     surface_requires_review: bool, vrtm_disabled: bool = False,
 ) -> None:
     for record in records:
@@ -918,7 +917,7 @@ def _finalize_vrtm_closure(
         }
 
 
-def _closure_summary(records: list[Dict[str, Any]]) -> Dict[str, Any]:
+def _closure_summary(records: list[dict[str, Any]]) -> dict[str, Any]:
     packages = [
         {
             "package_id": item["package_id"],
@@ -939,8 +938,8 @@ def _closure_summary(records: list[Dict[str, Any]]) -> Dict[str, Any]:
 
 
 def _record_retest_session(
-    session: RunSession, *, reports: list[Dict[str, Any]], closure: Dict[str, Any],
-    vrtm_model: Optional[Dict[str, Any]], packages: list[Dict[str, Any]],
+    session: RunSession, *, reports: list[dict[str, Any]], closure: dict[str, Any],
+    vrtm_model: dict[str, Any] | None, packages: list[dict[str, Any]],
 ) -> None:
     status_by_id = {item["package_id"]: item for item in closure.get("packages", []) or []}
     package_states = []
@@ -979,12 +978,12 @@ def _record_retest_session(
 async def run_vrtm_model(
     project_path: str,
     *,
-    declaration_path: Optional[str] = None,
-    observations: Optional[list[Dict[str, Any]]] = None,
-    baseline: Optional[str] = None,
-    store_dir: Optional[str] = None,
+    declaration_path: str | None = None,
+    observations: list[dict[str, Any]] | None = None,
+    baseline: str | None = None,
+    store_dir: str | None = None,
     persist: bool = True,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Build a standalone, versioned VRTM model without running the audit pipeline."""
     from core.vrtm import VRTMModelStore, VRTMService
 
@@ -1029,8 +1028,8 @@ def initialize_vrtm_declaration(project_path: str, *, force: bool = False) -> st
     return str(target)
 
 
-def _load_vrtm_observations(paths: list[str]) -> list[Dict[str, Any]]:
-    values: list[Dict[str, Any]] = []
+def _load_vrtm_observations(paths: list[str]) -> list[dict[str, Any]]:
+    values: list[dict[str, Any]] = []
     for path in paths:
         payload = json.loads(Path(path).read_text(encoding="utf-8"))
         items = payload if isinstance(payload, list) else payload.get("observations", []) if isinstance(payload, dict) else None
@@ -1040,7 +1039,7 @@ def _load_vrtm_observations(paths: list[str]) -> list[Dict[str, Any]]:
     return values
 
 
-def format_result(result: Dict[str, Any], format_type: str = "markdown") -> str:
+def format_result(result: dict[str, Any], format_type: str = "markdown") -> str:
     """生成格式化的报告"""
     from core.reporting.output_formatter import OutputFormatter
 
@@ -1048,7 +1047,7 @@ def format_result(result: Dict[str, Any], format_type: str = "markdown") -> str:
     return formatter.format(result, format_type)
 
 
-def _persist_full_audit_result(result: Dict[str, Any]):
+def _persist_full_audit_result(result: dict[str, Any]):
     """把完整审计结果归档到本地 ArtifactStore，供瘦身报告回读。"""
     from core.tool_fabric import ArtifactStore
 
@@ -1063,7 +1062,7 @@ def _persist_full_audit_result(result: Dict[str, Any]):
     )
 
 
-def _slim_audit_payload(result: Dict[str, Any], full_artifact: Any) -> Dict[str, Any]:
+def _slim_audit_payload(result: dict[str, Any], full_artifact: Any) -> dict[str, Any]:
     """紧凑版 JSON 报告：只保留摘要与 finding 概要，完整结果经 ref 引用。
 
     真实仓库的全量 JSON 可达数百 MB（bundle/VRTM 全部内联），默认报告文件
@@ -1131,7 +1130,7 @@ def _extract_retest_packages(payload: Any) -> list:
     return []
 
 
-def _print_deployment_report(report: Dict[str, Any], *, as_json: bool) -> None:
+def _print_deployment_report(report: dict[str, Any], *, as_json: bool) -> None:
     if as_json:
         print(json.dumps(report, ensure_ascii=False, indent=2, default=str))
         return
@@ -1462,7 +1461,7 @@ def main():
         try:
             # PowerShell commonly writes JSON with a UTF-8 BOM. Accept it at
             # the CLI boundary while keeping the parsed payload unchanged.
-            with open(args.input, "r", encoding="utf-8-sig") as handle:
+            with open(args.input, encoding="utf-8-sig") as handle:
                 payload = json.load(handle)
             packages = _extract_retest_packages(payload)
             if not isinstance(packages, list):

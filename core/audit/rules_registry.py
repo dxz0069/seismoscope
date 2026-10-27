@@ -16,7 +16,7 @@ from __future__ import annotations
 import logging
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +40,7 @@ def _coerce_severity(value: str):
     return Severity(str(value).lower())
 
 
-def _validate_rule(entry: Any, index: int) -> Optional[Dict[str, Any]]:
+def _validate_rule(entry: Any, index: int) -> dict[str, Any] | None:
     if not isinstance(entry, dict):
         logger.warning("规则 #%d 不是映射，已跳过", index)
         return None
@@ -63,7 +63,7 @@ def _validate_rule(entry: Any, index: int) -> Optional[Dict[str, Any]]:
     }
 
 
-def load_pattern_rules(path: Optional[str] = None) -> Optional[Dict[str, List[Dict[str, Any]]]]:
+def load_pattern_rules(path: str | None = None) -> dict[str, list[dict[str, Any]]] | None:
     """读取并校验规则文件，返回 {组名: [规则]}；任何失败返回 None。"""
     import yaml
 
@@ -77,7 +77,7 @@ def load_pattern_rules(path: Optional[str] = None) -> Optional[Dict[str, List[Di
         logger.warning("规则文件 %s 结构非法，回落内置规则", target)
         return None
 
-    result: Dict[str, List[Dict[str, Any]]] = {}
+    result: dict[str, list[dict[str, Any]]] = {}
     valid_total = 0
     for group in RULE_GROUPS:
         entries = document.get(group) or []
@@ -98,7 +98,7 @@ def load_pattern_rules(path: Optional[str] = None) -> Optional[Dict[str, List[Di
     return result
 
 
-def as_agent_rule_map(rules: List[Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
+def as_agent_rule_map(rules: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
     """加载结果 -> audit_agent 使用的 {type: {patterns, severity, description}}。"""
     return {
         rule["vulnerability_type"]: {

@@ -59,6 +59,7 @@ def test_extract_retest_packages_supports_three_shapes(tmp_path):
 def test_persist_and_roundtrip_on_fixture_project(tmp_path):
     """端到端：fixtures 审计 → 瘦身载荷 → retest 提取能回读全部整改包。"""
     import asyncio
+
     from main import run_audit
 
     fixtures = pathlib.Path(__file__).parent / "fixtures"

@@ -7,10 +7,9 @@ import hmac
 import json
 import os
 import secrets
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, Optional
-
+from typing import Any
 
 AUTHORIZATION_SCHEMA = "vibe-sec.verification-authorization.v1"
 
@@ -18,16 +17,16 @@ AUTHORIZATION_SCHEMA = "vibe-sec.verification-authorization.v1"
 def issue_verification_authorization(
     project_path: str,
     *,
-    output_path: Optional[str] = None,
+    output_path: str | None = None,
     ttl_minutes: int = 15,
     allow_service_start: bool = False,
     allow_network: bool = False,
-    target_scope: Optional[list[str]] = None,
+    target_scope: list[str] | None = None,
     max_duration_seconds: int = 60,
     max_attempts: int = 3,
     max_requests: int = 100,
-    state_root: Optional[str] = None,
-) -> Dict[str, Any]:
+    state_root: str | None = None,
+) -> dict[str, Any]:
     project = Path(project_path).resolve()
     if not project.is_dir():
         raise ValueError(f"project_path must be an existing directory: {project_path}")
@@ -35,9 +34,9 @@ def issue_verification_authorization(
         raise ValueError("ttl_minutes must be between 1 and 1440")
     root = _state_root(state_root)
     root.mkdir(parents=True, exist_ok=True)
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     authorization_id = f"auth-{secrets.token_hex(12)}"
-    payload: Dict[str, Any] = {
+    payload: dict[str, Any] = {
         "schema": AUTHORIZATION_SCHEMA,
         "authorization_id": authorization_id,
         "project_root": str(project),
@@ -77,9 +76,9 @@ def load_verification_authorization(
     authorization_path: str,
     project_path: str,
     *,
-    state_root: Optional[str] = None,
-    now: Optional[datetime] = None,
-) -> Dict[str, Any]:
+    state_root: str | None = None,
+    now: datetime | None = None,
+) -> dict[str, Any]:
     project = Path(project_path).resolve()
     source = Path(authorization_path).resolve()
     _require_outside_project(source, project)
@@ -101,9 +100,9 @@ def load_verification_authorization(
         expires_at = datetime.fromisoformat(str(payload.get("expires_at", "")))
     except ValueError as exc:
         raise ValueError("Verification authorization expiry is invalid") from exc
-    current = now or datetime.now(timezone.utc)
+    current = now or datetime.now(UTC)
     if expires_at.tzinfo is None:
-        expires_at = expires_at.replace(tzinfo=timezone.utc)
+        expires_at = expires_at.replace(tzinfo=UTC)
     if current >= expires_at:
         raise ValueError("Verification authorization has expired")
     policy = dict(payload.get("policy") or {})
@@ -118,7 +117,7 @@ def load_verification_authorization(
     }
 
 
-def _state_root(value: Optional[str]) -> Path:
+def _state_root(value: str | None) -> Path:
     if value:
         return Path(value).resolve()
     configured = os.getenv("VIBE_SEC_STATE_HOME")
@@ -142,7 +141,7 @@ def _load_or_create_key(root: Path, *, create: bool = True) -> bytes:
     return key
 
 
-def _sign(payload: Dict[str, Any], key: bytes) -> str:
+def _sign(payload: dict[str, Any], key: bytes) -> str:
     unsigned = {key_name: value for key_name, value in payload.items() if key_name != "signature"}
     data = json.dumps(unsigned, sort_keys=True, separators=(",", ":"), ensure_ascii=True).encode("utf-8")
     return hmac.new(key, data, hashlib.sha256).hexdigest()

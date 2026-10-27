@@ -5,29 +5,29 @@ from __future__ import annotations
 import json
 import shutil
 import subprocess
+from collections.abc import Iterable
 from dataclasses import dataclass, field
-from typing import Dict, Iterable, Set
 
 
 @dataclass(frozen=True)
 class ImageRequirement:
     image: str
-    capabilities: Set[str]
+    capabilities: set[str]
     version: str = ""
-    tool_versions: Dict[str, str] = field(default_factory=dict)
+    tool_versions: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
 class ImagePreflightResult:
     image: str
     available: bool
-    capabilities: Set[str] = field(default_factory=set)
+    capabilities: set[str] = field(default_factory=set)
     version: str = ""
     image_id: str = ""
     reason: str = ""
-    tool_versions: Dict[str, str] = field(default_factory=dict)
+    tool_versions: dict[str, str] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, object]:
+    def to_dict(self) -> dict[str, object]:
         return {
             "image": self.image,
             "available": self.available,
@@ -133,7 +133,7 @@ class ContainerImagePreflight:
         )
 
 
-def _capability_set(value: str | Iterable[str]) -> Set[str]:
+def _capability_set(value: str | Iterable[str]) -> set[str]:
     if isinstance(value, str):
         values = value.split(",")
     else:

@@ -5,10 +5,8 @@ Vibe Sec Platform — PermissionPolicy 权限策略引擎
 借鉴 lz-secure 的 harness.py 设计。
 """
 
-from typing import Dict, List, Optional
-from dataclasses import dataclass
 import logging
-
+from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +16,7 @@ class PermissionCheckResult:
     """权限检查结果"""
     allowed: bool
     reason: str
-    policy_applied: Optional[str] = None
+    policy_applied: str | None = None
 
 
 class PermissionPolicy:
@@ -54,10 +52,10 @@ class PermissionPolicy:
     def __init__(
         self,
         *,
-        allowed_domains: Optional[List[str]] = None,
-        denied_tools: Optional[List[str]] = None,
-        denied_tool_prefixes: Optional[List[str]] = None,
-        denied_actions: Optional[List[str]] = None,
+        allowed_domains: list[str] | None = None,
+        denied_tools: list[str] | None = None,
+        denied_tool_prefixes: list[str] | None = None,
+        denied_actions: list[str] | None = None,
         max_file_size_mb: float = 10.0,
         allow_network_access: bool = True,
         allow_file_write: bool = True,
@@ -183,7 +181,7 @@ class PermissionPolicy:
         """添加禁止的动作"""
         self.denied_actions.add(action.lower())
 
-    def get_summary(self) -> Dict[str, any]:
+    def get_summary(self) -> dict[str, any]:
         """获取策略摘要"""
         return {
             "allowed_domains": list(self.allowed_domains),

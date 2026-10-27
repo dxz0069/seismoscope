@@ -8,12 +8,12 @@ Vibe Sec Platform — Recon Agent
 4. 构建项目画像
 """
 
-import os
-import re
 import json
 import logging
-from typing import Any, Dict, List, Optional
+import os
+import re
 from pathlib import Path
+from typing import Any
 
 from core.agents.base import (
     AgentConfig,
@@ -23,7 +23,6 @@ from core.agents.base import (
     BaseAgent,
 )
 from core.tool_fabric.dependency_inspection import inspect_dependencies
-
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +49,7 @@ class ReconAgent(BaseAgent):
 
     def __init__(
         self,
-        config: Optional[AgentConfig] = None,
+        config: AgentConfig | None = None,
         llm_service=None,
         tools=None,
         event_emitter=None,
@@ -170,7 +169,7 @@ class ReconAgent(BaseAgent):
             ],
         }
 
-    async def run(self, payload: Dict[str, Any]) -> AgentResult:
+    async def run(self, payload: dict[str, Any]) -> AgentResult:
         """
         执行信息收集
 
@@ -260,7 +259,7 @@ class ReconAgent(BaseAgent):
             logger.error(f"Recon failed: {e}", exc_info=True)
             return AgentResult.failure_result(f"Reconnaissance failed: {str(e)}")
 
-    async def _scan_project_structure(self, project_path: str) -> Dict[str, Any]:
+    async def _scan_project_structure(self, project_path: str) -> dict[str, Any]:
         """扫描项目结构"""
         logger.info(f"Scanning project structure: {project_path}")
 
@@ -298,7 +297,7 @@ class ReconAgent(BaseAgent):
 
         return structure
 
-    async def _detect_tech_stack(self, project_path: str, structure: Dict) -> Dict[str, Any]:
+    async def _detect_tech_stack(self, project_path: str, structure: dict) -> dict[str, Any]:
         """检测技术栈"""
         logger.info("Detecting tech stack")
 
@@ -317,7 +316,7 @@ class ReconAgent(BaseAgent):
                 for file in files:
                     file_path = os.path.join(root, file)
                     try:
-                        with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                        with open(file_path, encoding='utf-8', errors='ignore') as f:
                             content = f.read(1024)  # 只读取前 1KB
 
                         for pattern in patterns:
@@ -339,7 +338,7 @@ class ReconAgent(BaseAgent):
 
                     file_path = os.path.join(root, file)
                     try:
-                        with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                        with open(file_path, encoding='utf-8', errors='ignore') as f:
                             content = f.read(2048)  # 读取前 2KB
 
                         for pattern in patterns:
@@ -387,9 +386,9 @@ class ReconAgent(BaseAgent):
     async def _identify_entry_points(
         self,
         project_path: str,
-        structure: Dict,
-        tech_stack: Dict,
-    ) -> List[str]:
+        structure: dict,
+        tech_stack: dict,
+    ) -> list[str]:
         """识别入口点"""
         logger.info("Identifying entry points")
 
@@ -425,7 +424,7 @@ class ReconAgent(BaseAgent):
                     if file.endswith('.py'):
                         file_path = os.path.join(root, file)
                         try:
-                            with open(file_path, 'r', encoding='utf-8') as f:
+                            with open(file_path, encoding='utf-8') as f:
                                 content = f.read()
                             if re.search(r'@(app|router)\.(get|post|put|delete|patch)', content):
                                 rel_path = os.path.relpath(file_path, project_path)
@@ -436,7 +435,7 @@ class ReconAgent(BaseAgent):
 
         return entry_points[:10]  # 最多返回10个入口点
 
-    async def _analyze_dependencies_legacy(self, project_path: str, tech_stack: Dict) -> Dict[str, Any]:
+    async def _analyze_dependencies_legacy(self, project_path: str, tech_stack: dict) -> dict[str, Any]:
         """分析依赖关系"""
         logger.info("Analyzing dependencies")
 
@@ -451,7 +450,7 @@ class ReconAgent(BaseAgent):
             req_file = os.path.join(project_path, "requirements.txt")
             if os.path.exists(req_file):
                 try:
-                    with open(req_file, 'r') as f:
+                    with open(req_file) as f:
                         for line in f:
                             line = line.strip()
                             if line and not line.startswith('#'):
@@ -465,7 +464,7 @@ class ReconAgent(BaseAgent):
             package_file = os.path.join(project_path, "package.json")
             if os.path.exists(package_file):
                 try:
-                    with open(package_file, 'r') as f:
+                    with open(package_file) as f:
                         package_data = json.load(f)
                     dependencies["direct"].extend(package_data.get("dependencies", {}).keys())
                     dependencies["dev"].extend(package_data.get("devDependencies", {}).keys())
@@ -474,13 +473,13 @@ class ReconAgent(BaseAgent):
 
         return dependencies
 
-    async def _analyze_dependencies(self, project_path: str, tech_stack: Dict) -> Dict[str, Any]:
+    async def _analyze_dependencies(self, project_path: str, tech_stack: dict) -> dict[str, Any]:
         """Build one structured dependency profile shared with audit tooling."""
         del tech_stack
         logger.info("Analyzing structured dependency manifests")
         inventory = inspect_dependencies(Path(project_path), max_packages=2_000, max_manifests=200)
-        direct: List[str] = []
-        dev: List[str] = []
+        direct: list[str] = []
+        dev: list[str] = []
         for item in inventory["dependencies"]:
             name = str(item.get("name", ""))
             scope = str(item.get("scope", "")).lower()
@@ -502,12 +501,12 @@ class ReconAgent(BaseAgent):
     def _detect_execution_hints(
         self,
         project_path: str,
-        tech_stack: Dict[str, Any],
-        entry_points: List[str],
-    ) -> Dict[str, Any]:
+        tech_stack: dict[str, Any],
+        entry_points: list[str],
+    ) -> dict[str, Any]:
         root = Path(project_path)
-        startup: List[Dict[str, Any]] = []
-        tests: List[Dict[str, Any]] = []
+        startup: list[dict[str, Any]] = []
+        tests: list[dict[str, Any]] = []
         frameworks = set(tech_stack.get("frameworks", []))
 
         python_entry = next((item for item in entry_points if item.endswith(".py")), None)
@@ -567,12 +566,12 @@ class ReconAgent(BaseAgent):
 
     @staticmethod
     def _execution_hint(
-        command: List[str],
+        command: list[str],
         source: str,
         kind: str,
-        default_url: Optional[str],
+        default_url: str | None,
         confidence: float,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         return {
             "command": command,
             "source": source,
@@ -582,7 +581,7 @@ class ReconAgent(BaseAgent):
             "requires_explicit_authorization": True,
         }
 
-    async def _generate_insights(self, project_profile: Dict) -> List[str]:
+    async def _generate_insights(self, project_profile: dict) -> list[str]:
         """使用 LLM 生成项目洞察"""
         if not self.llm_service:
             return []

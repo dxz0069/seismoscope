@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import PurePosixPath
-from typing import Any, Dict, List, Protocol
+from typing import Any, Protocol
 from urllib.parse import urlparse
 
 from ..sanitization import redact_sensitive_text, sanitize_for_persistence
@@ -351,7 +351,7 @@ class TrivyAdapter:
             payload = _parse_json(run.stdout or "{}", "Trivy")
         except ValueError as exc:
             raise _scanner_failure("trivy", run, artifact, error=str(exc)) from exc
-        signals: List[ToolSignal] = []
+        signals: list[ToolSignal] = []
         for result in list(payload.get("Results", []) or []):
             target = _host_path(result.get("Target"))
             for item in list(result.get("Vulnerabilities", []) or []):
@@ -468,7 +468,7 @@ class CodeQLAdapter:
             payload = _parse_json(run.stdout or "{}", "CodeQL")
         except ValueError as exc:
             raise _scanner_failure("codeql", run, artifact, error=str(exc)) from exc
-        signals: List[ToolSignal] = []
+        signals: list[ToolSignal] = []
         for sarif_run in list(payload.get("runs", []) or []):
             for item in list(sarif_run.get("results", []) or []):
                 location = ((item.get("locations") or [{}])[0].get("physicalLocation") or {})
@@ -591,7 +591,7 @@ def register_container_scanners(
     codeql_profile: ContainerProfile | None = None,
     preflight: ContainerImagePreflight | None = None,
     verify_images: bool | None = None,
-) -> Dict[str, Dict[str, object]]:
+) -> dict[str, dict[str, object]]:
     custom_runner = runner is not None
     runner = runner or ContainerToolRunner()
     profile = profile or ContainerProfile()
@@ -639,7 +639,7 @@ def register_active_scanners(
     profile: ContainerProfile | None = None,
     preflight: ContainerImagePreflight | None = None,
     verify_image: bool | None = None,
-) -> Dict[str, object]:
+) -> dict[str, object]:
     """Trusted control-plane hook; callers must also configure target/network policy."""
     custom_runner = runner is not None
     runner = runner or ContainerToolRunner()
@@ -728,7 +728,7 @@ def _scanner_artifact(
     scanner: str,
     run: ContainerRunResult,
     *,
-    metadata: Dict[str, Any] | None = None,
+    metadata: dict[str, Any] | None = None,
 ):
     raw = run.stdout or run.stderr or run.error or ""
     try:
@@ -747,7 +747,7 @@ def _scanner_artifact(
     )
 
 
-def _scanner_result(scanner: str, signals: List[ToolSignal], artifact: Any, **extra: Any) -> ToolResult:
+def _scanner_result(scanner: str, signals: list[ToolSignal], artifact: Any, **extra: Any) -> ToolResult:
     return ToolResult(
         output={
             "scanner": scanner,
@@ -790,7 +790,7 @@ def _scanner_failure(
     )
 
 
-def _valid_trivy_database(value: Dict[str, Any]) -> bool:
+def _valid_trivy_database(value: dict[str, Any]) -> bool:
     return bool(
         value.get("Version")
         and value.get("UpdatedAt")

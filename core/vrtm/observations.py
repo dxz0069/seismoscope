@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from hashlib import sha1
-from typing import Any, Dict, Iterable, List, Tuple
+from typing import Any
 
 from ..harness.models import RuntimeSurfaceGraph
-
 
 VULNERABILITY_TECHNIQUES = {
     "prompt_injection": "T-PROMPT-INJECTION",
@@ -37,35 +37,35 @@ VULNERABILITY_NODE_PREFERENCES = {
 
 
 def observations_from_audit(
-    findings: Iterable[Dict[str, Any]],
+    findings: Iterable[dict[str, Any]],
     graph: RuntimeSurfaceGraph,
-    threat_model: Dict[str, Any],
+    threat_model: dict[str, Any],
     *,
     run_id: str,
-) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     return _from_findings(findings, graph, threat_model, phase="audit", run_id=run_id)
 
 
 def observations_from_verification(
-    findings: Iterable[Dict[str, Any]],
+    findings: Iterable[dict[str, Any]],
     graph: RuntimeSurfaceGraph,
-    threat_model: Dict[str, Any],
+    threat_model: dict[str, Any],
     *,
     run_id: str,
-) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     return _from_findings(findings, graph, threat_model, phase="verification", run_id=run_id)
 
 
 def _from_findings(
-    findings: Iterable[Dict[str, Any]],
+    findings: Iterable[dict[str, Any]],
     graph: RuntimeSurfaceGraph,
-    threat_model: Dict[str, Any],
+    threat_model: dict[str, Any],
     *,
     phase: str,
     run_id: str,
-) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
-    observations: List[Dict[str, Any]] = []
-    diagnostics: List[Dict[str, Any]] = []
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    observations: list[dict[str, Any]] = []
+    diagnostics: list[dict[str, Any]] = []
     for finding in findings:
         finding_id = str(finding.get("id", ""))
         target = _target_node(finding, graph)
@@ -127,7 +127,7 @@ def _from_findings(
     return observations, diagnostics
 
 
-def _target_node(finding: Dict[str, Any], graph: RuntimeSurfaceGraph) -> Any:
+def _target_node(finding: dict[str, Any], graph: RuntimeSurfaceGraph) -> Any:
     # A retest is bound to the model that generated the remediation package.
     # Prefer that stable binding when the node survives the post-fix rebuild;
     # otherwise fall back to source provenance rather than inventing a link.
@@ -157,8 +157,8 @@ def _target_node(finding: Dict[str, Any], graph: RuntimeSurfaceGraph) -> Any:
 
 
 def _hypothesis_ids(
-    finding: Dict[str, Any], target_id: str, threat_model: Dict[str, Any],
-) -> List[str]:
+    finding: dict[str, Any], target_id: str, threat_model: dict[str, Any],
+) -> list[str]:
     known_ids = {
         str(item) for item in finding.get("risk_hypothesis_ids", []) or [] if str(item)
     }
@@ -183,7 +183,7 @@ def _hypothesis_ids(
     return values
 
 
-def _evidence_binding(finding: Dict[str, Any], phase: str) -> Tuple[str, str, str]:
+def _evidence_binding(finding: dict[str, Any], phase: str) -> tuple[str, str, str]:
     finding_id = str(finding.get("id", "unknown"))
     if phase == "verification" and finding.get("verification_status") in {"verified", "rejected"}:
         return "verified", "verification_pipeline", f"verification-result:{finding_id}"

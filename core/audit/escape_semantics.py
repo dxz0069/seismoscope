@@ -23,7 +23,7 @@
 from __future__ import annotations
 
 import re
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 #: 锚点：源码中出现在正则字面量内的 </script（转义写法 <\/script）
 _SCRIPT_CLOSE_ANCHOR = re.compile(r"<\\/script", re.IGNORECASE)
@@ -32,7 +32,7 @@ _SCRIPT_CLOSE_ANCHOR = re.compile(r"<\\/script", re.IGNORECASE)
 _LOOKAHEAD = re.compile(r"\(\?=([^()]*)\)")
 
 
-def _literal_span(content: str, anchor_start: int) -> Optional[Tuple[int, int]]:
+def _literal_span(content: str, anchor_start: int) -> tuple[int, int] | None:
     """从 </script 锚点回溯正则字面量的起止（感知字符类与转义）。
 
     返回 (开斜杠索引, 结束索引含 flags)；跨行或无法闭合时返回 None。
@@ -68,9 +68,9 @@ def _literal_span(content: str, anchor_start: int) -> Optional[Tuple[int, int]]:
     return open_idx, end
 
 
-def find_lookahead_bypasses(content: str) -> List[Dict[str, Any]]:
+def find_lookahead_bypasses(content: str) -> list[dict[str, Any]]:
     """返回转义正则缺端锚的候选列表（1 起始行号、证据与原因）。"""
-    candidates: List[Dict[str, Any]] = []
+    candidates: list[dict[str, Any]] = []
     seen_literals = set()
     for anchor in _SCRIPT_CLOSE_ANCHOR.finditer(content):
         span = _literal_span(content, anchor.start())
@@ -94,7 +94,7 @@ def find_lookahead_bypasses(content: str) -> List[Dict[str, Any]]:
     return candidates
 
 
-def _bypass_reason(literal: str) -> Optional[str]:
+def _bypass_reason(literal: str) -> str | None:
     """判定一个 script 闭合标签中和正则的绕过形态，返回原因或 None。
 
     形态一（环视缺端锚，PSECBUGS-118415）：有环视分支但环视体无 ``$``/``\\z``

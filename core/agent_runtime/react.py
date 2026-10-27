@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Iterable
 from dataclasses import dataclass, field
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any
 
 from ..llm_service import LLMMessage
 from .context import ContextWindow
@@ -13,7 +14,7 @@ from .context import ContextWindow
 @dataclass
 class ReActConfig:
     system_prompt: str = ""
-    model: Optional[str] = None
+    model: str | None = None
     temperature: float = 0.1
     max_tokens: int = 8192
     terminal_tools: Iterable[str] = field(
@@ -39,9 +40,9 @@ class ReActHandler:
         self,
         llm_service,
         *,
-        initial_messages: Optional[List[LLMMessage]] = None,
-        tool_schemas: Optional[List[Dict[str, Any]]] = None,
-        config: Optional[ReActConfig] = None,
+        initial_messages: list[LLMMessage] | None = None,
+        tool_schemas: list[dict[str, Any]] | None = None,
+        config: ReActConfig | None = None,
     ):
         self.llm_service = llm_service
         self.config = config or ReActConfig()
@@ -58,7 +59,7 @@ class ReActHandler:
         self._finalization_nudged = False
         self._terminal_json_fallback_requested = False
 
-    async def __call__(self, task, context: Dict[str, Any]) -> Dict[str, Any]:
+    async def __call__(self, task, context: dict[str, Any]) -> dict[str, Any]:
         self._append_context_messages(task, context)
         terminal_schemas = self._terminal_schemas()
         force_terminal = self._should_force_terminal(task, context) and bool(terminal_schemas)
@@ -114,7 +115,7 @@ class ReActHandler:
             else terminal_schemas if force_terminal
             else self.tool_schemas
         )
-        provider_options: Dict[str, Any] = {}
+        provider_options: dict[str, Any] = {}
         if available_schemas:
             provider_options["parallel_tool_calls"] = False
         # DeepSeek's OpenAI-compatible endpoint accepts tool definitions but
@@ -205,7 +206,7 @@ class ReActHandler:
             "reason": "model requested another turn",
         }
 
-    def _terminal_schemas(self) -> List[Dict[str, Any]]:
+    def _terminal_schemas(self) -> list[dict[str, Any]]:
         terminal_names = set(self.config.terminal_tools)
         return [
             schema for schema in self.tool_schemas
@@ -222,7 +223,7 @@ class ReActHandler:
         provider = str(getattr(self.llm_service, "provider", "")).strip().lower()
         return provider == "deepseek"
 
-    def _should_force_terminal(self, task, context: Dict[str, Any]) -> bool:
+    def _should_force_terminal(self, task, context: dict[str, Any]) -> bool:
         tool_result_count = len(list(context.get("tool_results", [])))
         minimum = max(0, int(self.config.minimum_tool_results_before_terminal))
         if tool_result_count < minimum:
@@ -234,7 +235,7 @@ class ReActHandler:
             or (turn_limit and int(getattr(task, "turn_count", 0)) >= turn_limit)
         )
 
-    def _append_context_messages(self, task, context: Dict[str, Any]) -> None:
+    def _append_context_messages(self, task, context: dict[str, Any]) -> None:
         for key in (
             "guard_feedback",
             "completion_feedback",
@@ -269,7 +270,7 @@ class ReActHandler:
         return getattr(response, key, default)
 
     @staticmethod
-    def _normalize_tool_call(raw: Dict[str, Any]) -> Dict[str, Any]:
+    def _normalize_tool_call(raw: dict[str, Any]) -> dict[str, Any]:
         function = raw.get("function", raw)
         name = str(function.get("name", raw.get("name", "")))
         call_id = raw.get("id") or function.get("id")
@@ -282,7 +283,7 @@ class ReActHandler:
         return {"id": call_id, "name": name, "arguments": dict(arguments or {})}
 
     @staticmethod
-    def _parse_json(content: str) -> Optional[Dict[str, Any]]:
+    def _parse_json(content: str) -> dict[str, Any] | None:
         text = str(content or "").strip()
         if text.startswith("```"):
             text = text.strip("`").split("\n", 1)[-1].strip()
@@ -292,7 +293,7 @@ class ReActHandler:
             return None
         return value if isinstance(value, dict) else None
 
-    def to_state(self) -> Dict[str, Any]:
+    def to_state(self) -> dict[str, Any]:
         return {
             "messages": [message.to_dict() for message in self.messages],
             "consumed_tool_results": self._consumed_tool_results,
@@ -302,7 +303,7 @@ class ReActHandler:
             "context_window": self.context_window.to_dict(),
         }
 
-    def restore_state(self, data: Dict[str, Any]) -> None:
+    def restore_state(self, data: dict[str, Any]) -> None:
         self.messages = [
             LLMMessage(
                 role=str(item.get("role", "user")),

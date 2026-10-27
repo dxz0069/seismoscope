@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import inspect
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
 
 from ..runtime.permission_policy import PermissionPolicy
 
@@ -13,16 +14,16 @@ from ..runtime.permission_policy import PermissionPolicy
 @dataclass
 class ToolExecutionRecord:
     tool_name: str
-    arguments: Dict[str, Any]
+    arguments: dict[str, Any]
     allowed: bool
     policy_reason: str
     status: str = "blocked"
     output: Any = None
-    error: Optional[str] = None
+    error: str | None = None
     duration_ms: int = 0
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "tool_name": self.tool_name,
             "arguments": self.arguments,
@@ -44,18 +45,18 @@ class PermissionedToolExecutor:
         executor: Callable[..., Any],
         *,
         policy: PermissionPolicy,
-        audit_sink: Optional[Callable[[ToolExecutionRecord], Any]] = None,
-        confirmation_callback: Optional[Callable[[str, Dict[str, Any]], Any]] = None,
-        require_confirmation_for: Optional[List[str]] = None,
+        audit_sink: Callable[[ToolExecutionRecord], Any] | None = None,
+        confirmation_callback: Callable[[str, dict[str, Any]], Any] | None = None,
+        require_confirmation_for: list[str] | None = None,
     ):
         self.executor = executor
         self.policy = policy
         self.audit_sink = audit_sink
         self.confirmation_callback = confirmation_callback
         self.require_confirmation_for = {item.lower() for item in (require_confirmation_for or [])}
-        self.records: List[ToolExecutionRecord] = []
+        self.records: list[ToolExecutionRecord] = []
 
-    async def execute(self, *, name: str, arguments: Dict[str, Any], context: Optional[Dict[str, Any]] = None):
+    async def execute(self, *, name: str, arguments: dict[str, Any], context: dict[str, Any] | None = None):
         del context
         arguments = dict(arguments or {})
         check = self.policy.check(

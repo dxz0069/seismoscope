@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any
 
 try:
     from tree_sitter_language_pack import get_parser
@@ -12,28 +13,26 @@ except ImportError:  # pragma: no cover - dependency failures remain explicit in
     get_parser = None
 
 from ..languages.tree_sitter_gateway import node_line, node_line_span, parser_for
-
 from .semantic_javascript import JS_SINKS
-from .semantic_source import FunctionRecord, GUARD_MARKERS, SOURCE_NAME_MARKERS
-
+from .semantic_source import GUARD_MARKERS, SOURCE_NAME_MARKERS, FunctionRecord
 
 TYPESCRIPT_EXTENSIONS = {".ts", ".tsx", ".mts", ".cts"}
 
 
 @dataclass
 class TypeScriptSemanticIndex:
-    records: List[FunctionRecord]
+    records: list[FunctionRecord]
     files_indexed: int
-    parse_errors: List[Dict[str, str]] = field(default_factory=list)
+    parse_errors: list[dict[str, str]] = field(default_factory=list)
     truncated: bool = False
 
     def __post_init__(self) -> None:
         self.by_id = {record.record_id: record for record in self.records}
-        self.by_simple_name: Dict[str, List[FunctionRecord]] = {}
+        self.by_simple_name: dict[str, list[FunctionRecord]] = {}
         for record in self.records:
             self.by_simple_name.setdefault(record.name, []).append(record)
 
-    def resolve_call(self, call_name: str) -> List[FunctionRecord]:
+    def resolve_call(self, call_name: str) -> list[FunctionRecord]:
         return self.by_simple_name.get(call_name.rsplit(".", 1)[-1], [])[:8]
 
 
@@ -57,8 +56,8 @@ def build_typescript_semantic_index(
             "file_path": "",
             "error": "tree-sitter parsers unavailable (not cached and download blocked)",
         }])
-    records: List[FunctionRecord] = []
-    parse_errors: List[Dict[str, str]] = []
+    records: list[FunctionRecord] = []
+    parse_errors: list[dict[str, str]] = []
     files_indexed = 0
     truncated = False
     for target in source_files:
@@ -94,7 +93,7 @@ def trace_typescript_flow(
     line: int = 0,
     max_depth: int = 4,
     max_paths: int = 40,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     normalized = file_path.replace("\\", "/")
     seeds = [record for record in index.records if record.file_path == normalized]
     if symbol:
@@ -114,10 +113,10 @@ def trace_typescript_flow(
         target for seed in seeds for call in seed.calls for target in index.resolve_call(call["name"])
     )[:100]
 
-    paths: List[Dict[str, Any]] = []
+    paths: list[dict[str, Any]] = []
     unresolved = set()
     for seed in seeds:
-        queue: List[tuple[FunctionRecord, List[FunctionRecord], List[Dict[str, Any]], int]] = [
+        queue: list[tuple[FunctionRecord, list[FunctionRecord], list[dict[str, Any]], int]] = [
             (seed, [seed], [], 0)
         ]
         while queue and len(paths) < max_paths:
@@ -176,7 +175,7 @@ def trace_typescript_flow(
     }
 
 
-def _records_for_tree(file_path: str, content: bytes, root: Any) -> List[FunctionRecord]:
+def _records_for_tree(file_path: str, content: bytes, root: Any) -> list[FunctionRecord]:
     records = []
     module = ".".join(Path(file_path).with_suffix("").parts)
     for node in _walk(root):
@@ -298,7 +297,7 @@ def _text(content: bytes, node: Any) -> str:
     return content[node.start_byte:node.end_byte].decode("utf-8", errors="replace")
 
 
-def _sink_kind(call_name: str) -> Optional[str]:
+def _sink_kind(call_name: str) -> str | None:
     if call_name in JS_SINKS:
         return JS_SINKS[call_name]
     simple = call_name.rsplit(".", 1)[-1]
@@ -307,7 +306,7 @@ def _sink_kind(call_name: str) -> Optional[str]:
     return None
 
 
-def _unique_records(records: Iterable[FunctionRecord]) -> List[FunctionRecord]:
+def _unique_records(records: Iterable[FunctionRecord]) -> list[FunctionRecord]:
     output = []
     seen = set()
     for record in records:
@@ -317,7 +316,7 @@ def _unique_records(records: Iterable[FunctionRecord]) -> List[FunctionRecord]:
     return output
 
 
-def _dedupe(values: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def _dedupe(values: list[dict[str, Any]]) -> list[dict[str, Any]]:
     output = []
     seen = set()
     for value in values:

@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Iterable
 from dataclasses import dataclass, field
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any
 
 from .loop import AgentTaskLoop, TaskLoopResult
 from .task import AgentTask
@@ -14,18 +15,18 @@ from .task import AgentTask
 class GraphTask:
     task: AgentTask
     handler: Any
-    depends_on: List[str] = field(default_factory=list)
-    context: Dict[str, Any] = field(default_factory=dict)
+    depends_on: list[str] = field(default_factory=list)
+    context: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
 class TaskGraphResult:
     status: str
-    tasks: Dict[str, TaskLoopResult]
-    errors: Dict[str, str] = field(default_factory=dict)
+    tasks: dict[str, TaskLoopResult]
+    errors: dict[str, str] = field(default_factory=dict)
 
     @property
-    def completed(self) -> List[TaskLoopResult]:
+    def completed(self) -> list[TaskLoopResult]:
         return [item for item in self.tasks.values() if item.status == "completed"]
 
 
@@ -35,17 +36,17 @@ class TaskGraphController:
     def __init__(self, *, max_concurrency: int = 4, loop_factory=None):
         self.max_concurrency = max(1, int(max_concurrency))
         self.loop_factory = loop_factory or (lambda: AgentTaskLoop())
-        self._nodes: Dict[str, GraphTask] = {}
+        self._nodes: dict[str, GraphTask] = {}
         self._stop_requested = False
-        self._active_loops: Dict[str, AgentTaskLoop] = {}
+        self._active_loops: dict[str, AgentTaskLoop] = {}
 
     def add_task(
         self,
         task: AgentTask,
         handler,
         *,
-        depends_on: Optional[Iterable[str]] = None,
-        context: Optional[Dict[str, Any]] = None,
+        depends_on: Iterable[str] | None = None,
+        context: dict[str, Any] | None = None,
     ) -> None:
         if task.task_id in self._nodes:
             raise ValueError(f"Duplicate graph task: {task.task_id}")
@@ -61,10 +62,10 @@ class TaskGraphController:
         for loop in self._active_loops.values():
             loop.request_stop()
 
-    async def run(self, *, context: Optional[Dict[str, Any]] = None) -> TaskGraphResult:
+    async def run(self, *, context: dict[str, Any] | None = None) -> TaskGraphResult:
         self._validate_dependencies()
-        results: Dict[str, TaskLoopResult] = {}
-        errors: Dict[str, str] = {}
+        results: dict[str, TaskLoopResult] = {}
+        errors: dict[str, str] = {}
         pending = set(self._nodes)
         semaphore = asyncio.Semaphore(self.max_concurrency)
 

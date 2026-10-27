@@ -6,9 +6,10 @@ import asyncio
 import inspect
 import json
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
 from urllib.parse import urlparse
 
 from ..runtime.permission_policy import PermissionPolicy
@@ -31,7 +32,7 @@ class ToolExecutionContext:
     artifact_store: ArtifactStore
     session_id: str
     task_id: str
-    metadata: Dict[str, Any]
+    metadata: dict[str, Any]
 
 
 class ToolGateway:
@@ -45,9 +46,9 @@ class ToolGateway:
         *,
         project_root: str,
         artifact_store: ArtifactStore,
-        policy: Optional[PermissionPolicy] = None,
+        policy: PermissionPolicy | None = None,
         max_inline_output_bytes: int = 64_000,
-        audit_sink: Optional[Callable[[ToolExecution], Any]] = None,
+        audit_sink: Callable[[ToolExecution], Any] | None = None,
     ):
         self.registry = registry
         self.project_root = Path(project_root).resolve()
@@ -55,7 +56,7 @@ class ToolGateway:
         self.policy = policy or PermissionPolicy(allow_network_access=False, allow_file_write=False)
         self.max_inline_output_bytes = max(1_024, int(max_inline_output_bytes))
         self.audit_sink = audit_sink
-        self.executions: List[ToolExecution] = []
+        self.executions: list[ToolExecution] = []
 
     async def execute(self, request: ToolRequest) -> ToolExecution:
         started = time.monotonic()
@@ -127,7 +128,7 @@ class ToolGateway:
             )
             self._bind_result(execution, result)
             self._limit_inline_output(execution)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             execution.status = ToolExecutionStatus.TIMED_OUT
             execution.error = f"Tool timed out after {adapter.spec.timeout_seconds:g}s"
         except ToolAdapterError as exc:
@@ -143,9 +144,9 @@ class ToolGateway:
     async def execute_for_agent(
         self,
         name: str,
-        arguments: Dict[str, Any],
-        context: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        arguments: dict[str, Any],
+        context: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         context = dict(context or {})
         execution = await self.execute(ToolRequest(
             tool_name=name,
@@ -162,9 +163,9 @@ class ToolGateway:
     async def record_duplicate(
         self,
         name: str,
-        arguments: Dict[str, Any],
-        context: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        arguments: dict[str, Any],
+        context: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """Persist a cache hit as an auditable non-execution terminal state."""
         started = time.monotonic()
         context = dict(context or {})
@@ -190,7 +191,7 @@ class ToolGateway:
         )
         return (await self._finish(execution, started)).to_dict()
 
-    def _validate_scope(self, arguments: Dict[str, Any]) -> Optional[str]:
+    def _validate_scope(self, arguments: dict[str, Any]) -> str | None:
         for key, raw_value in arguments.items():
             if key not in self.PATH_ARGUMENTS or raw_value in (None, ""):
                 continue

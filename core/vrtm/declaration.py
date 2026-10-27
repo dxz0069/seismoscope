@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
+import json
+import re
 from dataclasses import dataclass, field
 from hashlib import sha256
-import json
 from pathlib import Path
-import re
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import yaml
 
@@ -17,8 +17,7 @@ from ..harness.models import (
     RuntimeSurfaceNode,
     stable_id,
 )
-from ..harness.vrtm import EvidenceLevel, NODE_GROUPS, RELATION_SEMANTICS, enrich_runtime_graph
-
+from ..harness.vrtm import NODE_GROUPS, RELATION_SEMANTICS, EvidenceLevel, enrich_runtime_graph
 
 DECLARATION_SCHEMA = "vibe-sec.vrtm.declaration.v1"
 _REFERENCE_PATTERN = re.compile(r"^[A-Za-z0-9_.:/-]{1,160}$")
@@ -31,11 +30,11 @@ class DeclarationError(ValueError):
 @dataclass
 class VRTMDeclaration:
     source_path: str
-    scope: Dict[str, Any] = field(default_factory=dict)
-    nodes: List[Dict[str, Any]] = field(default_factory=list)
-    edges: List[Dict[str, Any]] = field(default_factory=list)
-    assumptions: List[str] = field(default_factory=list)
-    exclusions: List[Dict[str, Any]] = field(default_factory=list)
+    scope: dict[str, Any] = field(default_factory=dict)
+    nodes: list[dict[str, Any]] = field(default_factory=list)
+    edges: list[dict[str, Any]] = field(default_factory=list)
+    assumptions: list[str] = field(default_factory=list)
+    exclusions: list[dict[str, Any]] = field(default_factory=list)
 
     def content_digest(self) -> str:
         payload = {
@@ -50,7 +49,7 @@ class VRTMDeclaration:
         return sha256(encoded).hexdigest()
 
     @classmethod
-    def load(cls, path: str) -> "VRTMDeclaration":
+    def load(cls, path: str) -> VRTMDeclaration:
         source = Path(path).resolve()
         try:
             value = _strict_yaml_load(source.read_text(encoding="utf-8")) or {}
@@ -72,7 +71,7 @@ class VRTMDeclaration:
         return declaration
 
     @classmethod
-    def discover(cls, project_path: str, explicit_path: Optional[str] = None) -> Optional["VRTMDeclaration"]:
+    def discover(cls, project_path: str, explicit_path: str | None = None) -> VRTMDeclaration | None:
         if explicit_path:
             return cls.load(explicit_path)
         root = Path(project_path).resolve()
@@ -126,12 +125,12 @@ class VRTMDeclaration:
                 raise DeclarationError(f"edges[{index}].confidence must be between 0 and 1")
             _object(edge.get("attributes"), f"edges[{index}].attributes")
 
-    def merge_into(self, graph: RuntimeSurfaceGraph) -> Dict[str, Any]:
+    def merge_into(self, graph: RuntimeSurfaceGraph) -> dict[str, Any]:
         known_ids = {node.node_id for node in graph.nodes}
         references = {node.node_id: node.node_id for node in graph.nodes}
-        added_nodes: List[str] = []
-        added_edges: List[str] = []
-        diagnostics: List[Dict[str, Any]] = []
+        added_nodes: list[str] = []
+        added_edges: list[str] = []
+        diagnostics: list[dict[str, Any]] = []
 
         for value in self.nodes:
             key = str(value.get("key") or value.get("id"))
@@ -224,7 +223,7 @@ class VRTMDeclaration:
         }
 
 
-def _object(value: Any, field_name: str) -> Dict[str, Any]:
+def _object(value: Any, field_name: str) -> dict[str, Any]:
     if value is None:
         return {}
     if not isinstance(value, dict):
@@ -232,7 +231,7 @@ def _object(value: Any, field_name: str) -> Dict[str, Any]:
     return dict(value)
 
 
-def _object_list(value: Any, field_name: str) -> List[Dict[str, Any]]:
+def _object_list(value: Any, field_name: str) -> list[dict[str, Any]]:
     if value is None:
         return []
     if not isinstance(value, list) or any(not isinstance(item, dict) for item in value):
@@ -240,7 +239,7 @@ def _object_list(value: Any, field_name: str) -> List[Dict[str, Any]]:
     return [dict(item) for item in value]
 
 
-def _string_list(value: Any, field_name: str) -> List[str]:
+def _string_list(value: Any, field_name: str) -> list[str]:
     if value is None:
         return []
     if not isinstance(value, list) or any(not isinstance(item, str) for item in value):
@@ -252,8 +251,8 @@ class _UniqueKeyLoader(yaml.SafeLoader):
     pass
 
 
-def _construct_unique_mapping(loader: yaml.SafeLoader, node: yaml.MappingNode, deep: bool = False) -> Dict[str, Any]:
-    mapping: Dict[str, Any] = {}
+def _construct_unique_mapping(loader: yaml.SafeLoader, node: yaml.MappingNode, deep: bool = False) -> dict[str, Any]:
+    mapping: dict[str, Any] = {}
     for key_node, value_node in node.value:
         key = loader.construct_object(key_node, deep=deep)
         if key in mapping:

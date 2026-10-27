@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 import hashlib
+from collections.abc import Iterable
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any
 
 from ..tool_fabric.dependency_inspection import is_dependency_file
 from ..tool_fabric.source_tools import IGNORED_DIRECTORIES, SOURCE_EXTENSIONS
-
 
 LANE_NODE_TYPES = {
     "web_audit": {"entry_point", "code_block", "trust_boundary", "permission"},
@@ -33,13 +33,13 @@ class AuditTarget:
     target_id: str
     lane: str
     objective: str
-    seed_files: List[str] = field(default_factory=list)
-    hypothesis_ids: List[str] = field(default_factory=list)
-    reasons: List[str] = field(default_factory=list)
+    seed_files: list[str] = field(default_factory=list)
+    hypothesis_ids: list[str] = field(default_factory=list)
+    reasons: list[str] = field(default_factory=list)
     priority: int = 50
     expected_tool_calls: int = 6
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -51,13 +51,13 @@ class AuditTargetPlanner:
         self,
         *,
         lane: str,
-        candidates: Optional[Iterable[Dict[str, Any]]] = None,
-        surface_graph: Optional[Dict[str, Any]] = None,
-        threat_model: Optional[Dict[str, Any]] = None,
-        changed_files: Optional[Iterable[str]] = None,
+        candidates: Iterable[dict[str, Any]] | None = None,
+        surface_graph: dict[str, Any] | None = None,
+        threat_model: dict[str, Any] | None = None,
+        changed_files: Iterable[str] | None = None,
         max_targets: int = 3,
         files_per_target: int = 8,
-    ) -> List[AuditTarget]:
+    ) -> list[AuditTarget]:
         max_targets = max(1, min(12, int(max_targets)))
         files_per_target = max(1, min(30, int(files_per_target)))
         candidates = list(candidates or [])
@@ -87,7 +87,7 @@ class AuditTargetPlanner:
             if _valid_relative(item) in inventory_set
         )
 
-        groups: List[tuple[str, List[str], List[str], List[str], int]] = []
+        groups: list[tuple[str, list[str], list[str], list[str], int]] = []
         if changed_files:
             groups.append((
                 "Audit changed files first, then trace their callers, callees, guards, configuration, and impact sinks.",
@@ -123,7 +123,7 @@ class AuditTargetPlanner:
                 50,
             ))
 
-        targets: List[AuditTarget] = []
+        targets: list[AuditTarget] = []
         for objective, files, target_hypotheses, reasons, priority in groups:
             chunks = list(_chunks(files, files_per_target)) or [[]]
             for chunk in chunks:
@@ -142,7 +142,7 @@ class AuditTargetPlanner:
         targets.sort(key=lambda item: (-item.priority, item.target_id))
         return targets[:max_targets]
 
-    def source_inventory(self, *, limit: int = 100_000) -> List[str]:
+    def source_inventory(self, *, limit: int = 100_000) -> list[str]:
         """Return a deterministic bounded inventory for coverage accounting."""
         files = []
         for path in self.project_root.rglob("*"):
@@ -163,10 +163,10 @@ def _valid_relative(value: Any) -> str:
     return "" if not text or text.startswith("../") or "/../" in text else text
 
 
-def _unique(values: Iterable[str]) -> List[str]:
+def _unique(values: Iterable[str]) -> list[str]:
     return list(dict.fromkeys(value for value in values if value))
 
 
-def _chunks(values: List[str], size: int):
+def _chunks(values: list[str], size: int):
     for index in range(0, len(values), size):
         yield values[index:index + size]

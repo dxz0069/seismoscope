@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict
+from typing import Any
 
 
 @dataclass
@@ -11,7 +11,7 @@ class GuardDecision:
     allowed: bool
     action: str = "continue"
     reason: str = ""
-    details: Dict[str, Any] = field(default_factory=dict)
+    details: dict[str, Any] = field(default_factory=dict)
 
 
 class AgentGuard:
@@ -20,7 +20,7 @@ class AgentGuard:
     def __init__(self, reasoning_guard=None):
         self.reasoning_guard = reasoning_guard
 
-    def evaluate(self, output: Dict[str, Any], context: Dict[str, Any]) -> GuardDecision:
+    def evaluate(self, output: dict[str, Any], context: dict[str, Any]) -> GuardDecision:
         if self.reasoning_guard is None:
             return GuardDecision(allowed=True)
 

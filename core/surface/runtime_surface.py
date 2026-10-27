@@ -13,10 +13,11 @@ import json
 import logging
 import os
 import re
+from collections.abc import Iterable
 from dataclasses import asdict, dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any
 
 from ..tool_fabric.framework_semantics import analyze_framework_semantics
 
@@ -33,7 +34,6 @@ except ImportError:  # pragma: no cover - declared dependency, failure is record
     yaml = None
 
 from ..sanitization import redact_sensitive_text
-
 
 logger = logging.getLogger(__name__)
 
@@ -80,15 +80,15 @@ class PageEntry:
     file_path: str
     line_start: int
     line_end: int
-    handler_function: Optional[str] = None
-    parameters: List[Dict[str, Any]] = field(default_factory=list)
+    handler_function: str | None = None
+    parameters: list[dict[str, Any]] = field(default_factory=list)
     authentication_required: bool = False
     # ``False`` only says extraction did not see a local guard.  The state
     # records whether that is unknown, declared, or backed by runtime evidence.
     authentication_state: str = "unknown"
-    description: Optional[str] = None
+    description: str | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         value = asdict(self)
         value["entry_type"] = self.entry_type.value
         return value
@@ -103,9 +103,9 @@ class PromptConfig:
     line_start: int
     has_input_validation: bool = False
     has_injection_protection: bool = False
-    description: Optional[str] = None
+    description: str | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         value = asdict(self)
         value["content"] = redact_sensitive_text(self.content[:200])
         return value
@@ -119,11 +119,11 @@ class ModelInvocation:
     file_path: str
     line_start: int
     line_end: int
-    prompt_refs: List[str] = field(default_factory=list)
+    prompt_refs: list[str] = field(default_factory=list)
     tool_enabled: bool = False
     streaming: bool = False
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -133,12 +133,12 @@ class ToolProfile:
     description: str
     file_path: str
     line_start: int
-    permissions: List[str] = field(default_factory=list)
+    permissions: list[str] = field(default_factory=list)
     requires_confirmation: bool = False
-    dangerous_operations: List[str] = field(default_factory=list)
+    dangerous_operations: list[str] = field(default_factory=list)
     risk_level: str = "medium"
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -153,13 +153,13 @@ class McpCapability:
     line_end: int
     registration: str
     dynamic_registration: bool = False
-    transport: Optional[str] = None
-    uri_template: Optional[str] = None
-    permissions: List[str] = field(default_factory=list)
+    transport: str | None = None
+    uri_template: str | None = None
+    permissions: list[str] = field(default_factory=list)
     authorization: str = "unknown"
-    consequential_operations: List[str] = field(default_factory=list)
+    consequential_operations: list[str] = field(default_factory=list)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -170,9 +170,9 @@ class PermissionProfile:
     file_path: str
     line_start: int
     enforced: bool = True
-    bypass_risks: List[str] = field(default_factory=list)
+    bypass_risks: list[str] = field(default_factory=list)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -185,9 +185,9 @@ class BrowserSink:
     line_end: int
     dangerous: bool = True
     sanitization_detected: bool = False
-    input_refs: List[str] = field(default_factory=list)
+    input_refs: list[str] = field(default_factory=list)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -202,7 +202,7 @@ class StorageAsset:
     sensitive: bool = False
     access_control: str = "unknown"
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -215,9 +215,9 @@ class ExternalContentInput:
     line_start: int
     line_end: int
     trust_zone: str = "untrusted"
-    target_refs: List[str] = field(default_factory=list)
+    target_refs: list[str] = field(default_factory=list)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -229,12 +229,12 @@ class WorkflowNode:
     file_path: str
     line_start: int
     line_end: int
-    trigger: Optional[str] = None
-    capabilities: List[str] = field(default_factory=list)
-    untrusted_inputs: List[str] = field(default_factory=list)
-    permissions: Dict[str, Any] = field(default_factory=dict)
+    trigger: str | None = None
+    capabilities: list[str] = field(default_factory=list)
+    untrusted_inputs: list[str] = field(default_factory=list)
+    permissions: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -244,11 +244,11 @@ class TrustBoundaryDefinition:
     description: str
     source: str
     target: str
-    file_path: Optional[str] = None
-    line_start: Optional[int] = None
-    validation_mechanism: Optional[str] = None
+    file_path: str | None = None
+    line_start: int | None = None
+    validation_mechanism: str | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         value = asdict(self)
         value["boundary_type"] = self.boundary_type.value
         return value
@@ -263,30 +263,30 @@ class CodeBlock:
     line_end: int
     contains_user_input: bool = False
     contains_dangerous_operations: bool = False
-    calls: List[str] = field(default_factory=list)
+    calls: list[str] = field(default_factory=list)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
 @dataclass
 class RuntimeSurface:
     project_path: str
-    page_entries: List[PageEntry] = field(default_factory=list)
-    prompt_configs: List[PromptConfig] = field(default_factory=list)
-    model_invocations: List[ModelInvocation] = field(default_factory=list)
-    tool_profiles: List[ToolProfile] = field(default_factory=list)
-    mcp_capabilities: List[McpCapability] = field(default_factory=list)
-    permission_profiles: List[PermissionProfile] = field(default_factory=list)
-    browser_sinks: List[BrowserSink] = field(default_factory=list)
-    storage_assets: List[StorageAsset] = field(default_factory=list)
-    external_content_inputs: List[ExternalContentInput] = field(default_factory=list)
-    workflow_nodes: List[WorkflowNode] = field(default_factory=list)
-    trust_boundaries: List[TrustBoundaryDefinition] = field(default_factory=list)
-    code_blocks: List[CodeBlock] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    page_entries: list[PageEntry] = field(default_factory=list)
+    prompt_configs: list[PromptConfig] = field(default_factory=list)
+    model_invocations: list[ModelInvocation] = field(default_factory=list)
+    tool_profiles: list[ToolProfile] = field(default_factory=list)
+    mcp_capabilities: list[McpCapability] = field(default_factory=list)
+    permission_profiles: list[PermissionProfile] = field(default_factory=list)
+    browser_sinks: list[BrowserSink] = field(default_factory=list)
+    storage_assets: list[StorageAsset] = field(default_factory=list)
+    external_content_inputs: list[ExternalContentInput] = field(default_factory=list)
+    workflow_nodes: list[WorkflowNode] = field(default_factory=list)
+    trust_boundaries: list[TrustBoundaryDefinition] = field(default_factory=list)
+    code_blocks: list[CodeBlock] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "project_path": self.project_path,
             "page_entries": [item.to_dict() for item in self.page_entries],
@@ -307,7 +307,7 @@ class RuntimeSurface:
     def to_json(self) -> str:
         return json.dumps(self.to_dict(), indent=2, ensure_ascii=False)
 
-    def get_summary(self) -> Dict[str, Any]:
+    def get_summary(self) -> dict[str, Any]:
         return {
             "total_entries": len(self.page_entries),
             "total_prompts": len(self.prompt_configs),
@@ -353,9 +353,9 @@ class RuntimeSurfaceBuilder:
             },
         }
         self._tree_sitter_failed = get_parser is None or not _NATIVE_TREE_SITTER_ENABLED
-        self._parser_cache: Dict[str, Any] = {}
+        self._parser_cache: dict[str, Any] = {}
 
-    async def build(self, recon_data: Optional[Dict[str, Any]] = None) -> RuntimeSurface:
+    async def build(self, recon_data: dict[str, Any] | None = None) -> RuntimeSurface:
         root = Path(self.project_path)
         if not root.is_dir():
             raise ValueError(f"Project path is not a directory: {self.project_path}")
@@ -403,7 +403,7 @@ class RuntimeSurfaceBuilder:
                 continue
             yield path
 
-    def _merge_framework_semantics(self, report: Dict[str, Any]) -> None:
+    def _merge_framework_semantics(self, report: dict[str, Any]) -> None:
         graph_frameworks = {"nest", "next", "spring", "go-http", "gin", "echo", "chi"}
         for item in report.get("observations", []) or []:
             if item.get("framework") not in graph_frameworks:
@@ -1006,7 +1006,7 @@ class RuntimeSurfaceBuilder:
                     authorization="enforced" if any(key in config for key in ("auth", "authentication", "headers")) else "unknown",
                 ))
 
-    def _extract_openapi(self, file_path: str, content: str, payload: Dict[str, Any]) -> None:
+    def _extract_openapi(self, file_path: str, content: str, payload: dict[str, Any]) -> None:
         root_security = payload.get("security")
         for route_path, path_item in payload["paths"].items():
             if not isinstance(route_path, str) or not isinstance(path_item, dict):
@@ -1065,7 +1065,7 @@ class RuntimeSurfaceBuilder:
                         target_refs=[handler_function] if handler_function else [],
                     ))
 
-    def _openapi_handler_target(self, operation_id: str, config_path: str) -> tuple[Optional[str], str, int]:
+    def _openapi_handler_target(self, operation_id: str, config_path: str) -> tuple[str | None, str, int]:
         if not operation_id:
             return None, config_path, 1
         module, separator, function_name = operation_id.rpartition(".")
@@ -1082,7 +1082,7 @@ class RuntimeSurfaceBuilder:
                 return handler_function, handler_path, block.line_start
         return handler_function, handler_path, 1
 
-    def _extract_workflow(self, file_path: str, content: str, payload: Dict[str, Any]) -> None:
+    def _extract_workflow(self, file_path: str, content: str, payload: dict[str, Any]) -> None:
         workflow_name = str(payload.get("name") or Path(file_path).stem)
         triggers = payload.get("on", payload.get(True, "unknown"))
         trigger_text = ",".join(triggers) if isinstance(triggers, list) else str(triggers)
@@ -1159,7 +1159,7 @@ class RuntimeSurfaceBuilder:
             setattr(self.surface, name, unique)
 
 
-def _python_name(node: Optional[ast.AST]) -> str:
+def _python_name(node: ast.AST | None) -> str:
     if isinstance(node, ast.Name):
         return node.id
     if isinstance(node, ast.Attribute):
@@ -1170,7 +1170,7 @@ def _python_name(node: Optional[ast.AST]) -> str:
     return ""
 
 
-def _python_literal(node: Optional[ast.AST]) -> str:
+def _python_literal(node: ast.AST | None) -> str:
     return str(node.value) if isinstance(node, ast.Constant) and isinstance(node.value, str) else ""
 
 
@@ -1188,7 +1188,7 @@ def _python_route_method(node: ast.AST) -> str:
     return "GET"
 
 
-def _openapi_parameters(value: Any) -> List[Dict[str, Any]]:
+def _openapi_parameters(value: Any) -> list[dict[str, Any]]:
     if not isinstance(value, list):
         return []
     parameters = []
@@ -1212,7 +1212,7 @@ def _openapi_parameters(value: Any) -> List[Dict[str, Any]]:
     return parameters
 
 
-def _python_external_source(name: str) -> Optional[str]:
+def _python_external_source(name: str) -> str | None:
     lowered = name.lower()
     if lowered.startswith(("request.args", "request.form", "request.json", "request.files", "request.body", "request.query_params")):
         return "http_request"
@@ -1225,7 +1225,7 @@ def _python_external_source(name: str) -> Optional[str]:
     return None
 
 
-def _python_storage(name: str, node: ast.Call) -> Optional[tuple[str, str, str]]:
+def _python_storage(name: str, node: ast.Call) -> tuple[str, str, str] | None:
     lowered = name.lower()
     if lowered in {"open", "path.open", "path.write_text", "path.read_text", "path.write_bytes", "path.read_bytes"}:
         first = _python_literal(node.args[0]) if node.args else "dynamic_file"
@@ -1291,7 +1291,7 @@ def _ts_function_name(source: bytes, node: Any) -> str:
     return ""
 
 
-def _ts_calls(source: bytes, node: Any) -> List[str]:
+def _ts_calls(source: bytes, node: Any) -> list[str]:
     if node is None:
         return []
     return [
@@ -1311,7 +1311,7 @@ def _ts_property_string(source: bytes, nodes: Iterable[Any], name: str) -> str:
     return ""
 
 
-def _javascript_external_source(expression: str) -> Optional[str]:
+def _javascript_external_source(expression: str) -> str | None:
     lowered = expression.lower()
     if lowered.startswith(("req.body", "req.query", "req.params", "request.body", "request.formdata")):
         return "http_request"
@@ -1322,7 +1322,7 @@ def _javascript_external_source(expression: str) -> Optional[str]:
     return None
 
 
-def _javascript_storage(name: str, args: List[Any], source: bytes) -> Optional[tuple[str, str, str]]:
+def _javascript_storage(name: str, args: list[Any], source: bytes) -> tuple[str, str, str] | None:
     lowered = name.lower()
     if lowered.startswith(("localstorage.", "sessionstorage.")):
         storage_type = "local_storage" if lowered.startswith("localstorage") else "session_storage"
@@ -1337,13 +1337,13 @@ def _javascript_storage(name: str, args: List[Any], source: bytes) -> Optional[t
     return None
 
 
-def _dangerous_names(names: Iterable[str]) -> List[str]:
+def _dangerous_names(names: Iterable[str]) -> list[str]:
     return sorted({
         name for name in names if any(marker in name.lower().replace("_", "") for marker in _DANGEROUS_OPERATIONS)
     })
 
 
-def _risk_level(operations: List[str]) -> str:
+def _risk_level(operations: list[str]) -> str:
     if any(any(marker in operation.lower() for marker in ("eval", "exec", "system", "spawn", "drop", "rmtree")) for operation in operations):
         return "critical"
     if operations:
@@ -1360,11 +1360,11 @@ def _contains_any(value: str, markers: Iterable[str]) -> bool:
     return any(marker in value for marker in markers)
 
 
-def _prompt_refs(text: str) -> List[str]:
+def _prompt_refs(text: str) -> list[str]:
     return sorted(set(re.findall(r"\b[A-Za-z_$][\w$]*(?:prompt|message|instruction)[\w$]*\b", text, re.IGNORECASE)))[:20]
 
 
-def _identifier_refs(text: str) -> List[str]:
+def _identifier_refs(text: str) -> list[str]:
     ignored = {"innerHTML", "outerHTML", "srcdoc", "document", "window", "sanitize", "DOMPurify"}
     return sorted({item for item in re.findall(r"\b[A-Za-z_$][\w$]*\b", text) if item not in ignored})[:20]
 
@@ -1384,7 +1384,7 @@ def _is_workflow_path(file_path: str) -> bool:
     return "/.github/workflows/" in normalized
 
 
-def _workflow_capabilities(value: Dict[str, Any]) -> List[str]:
+def _workflow_capabilities(value: dict[str, Any]) -> list[str]:
     text = json.dumps(value, default=str).lower()
     capabilities = []
     checks = {
@@ -1400,7 +1400,7 @@ def _workflow_capabilities(value: Dict[str, Any]) -> List[str]:
     return capabilities
 
 
-def _untrusted_workflow_inputs(text: str) -> List[str]:
+def _untrusted_workflow_inputs(text: str) -> list[str]:
     pattern = re.compile(r"\$\{\{\s*github\.(?:head_ref|event\.[^}\s]+)[^}]*}}", re.IGNORECASE)
     return sorted(set(match.group(0) for match in pattern.finditer(text)))
 
@@ -1412,7 +1412,7 @@ def _line_for_token(content: str, token: str) -> int:
     return content[: max(index, 0)].count("\n") + 1
 
 
-def _string_list(value: Any) -> List[str]:
+def _string_list(value: Any) -> list[str]:
     if isinstance(value, str):
         return [value]
     if isinstance(value, list):

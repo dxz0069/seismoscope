@@ -9,9 +9,9 @@
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Type
 from dataclasses import dataclass, field
 from enum import Enum
+from typing import Any
 
 
 class PluginType(Enum):
@@ -30,15 +30,15 @@ class PluginMetadata:
     author: str
     description: str
     plugin_type: PluginType
-    supported_vuln_types: List[str] = field(default_factory=list)
-    dependencies: List[str] = field(default_factory=list)
-    config_schema: Dict[str, Any] = field(default_factory=dict)
+    supported_vuln_types: list[str] = field(default_factory=list)
+    dependencies: list[str] = field(default_factory=list)
+    config_schema: dict[str, Any] = field(default_factory=dict)
 
 
 class BasePlugin(ABC):
     """插件基类"""
 
-    def __init__(self, metadata: PluginMetadata, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, metadata: PluginMetadata, config: dict[str, Any] | None = None):
         self.metadata = metadata
         self.config = config or {}
         self._initialized = False
@@ -70,7 +70,7 @@ class DetectionRulePlugin(BasePlugin):
     """漏洞检测规则插件"""
 
     @abstractmethod
-    async def detect(self, code: str, context: Dict[str, Any]) -> List[Dict[str, Any]]:
+    async def detect(self, code: str, context: dict[str, Any]) -> list[dict[str, Any]]:
         """
         检测漏洞
 
@@ -88,7 +88,7 @@ class ReportFormatPlugin(BasePlugin):
     """报告格式插件"""
 
     @abstractmethod
-    async def format(self, findings: List[Dict[str, Any]], metadata: Dict[str, Any]) -> str:
+    async def format(self, findings: list[dict[str, Any]], metadata: dict[str, Any]) -> str:
         """
         格式化报告
 
@@ -106,7 +106,7 @@ class VerificationPlugin(BasePlugin):
     """验证方式插件"""
 
     @abstractmethod
-    async def verify(self, finding: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, Any]:
+    async def verify(self, finding: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
         """
         验证漏洞
 
@@ -124,7 +124,7 @@ class RemediationPlugin(BasePlugin):
     """修复策略插件"""
 
     @abstractmethod
-    async def generate_remediation(self, finding: Dict[str, Any]) -> Dict[str, Any]:
+    async def generate_remediation(self, finding: dict[str, Any]) -> dict[str, Any]:
         """
         生成修复建议
 
@@ -141,8 +141,8 @@ class PluginRegistry:
     """插件注册表"""
 
     def __init__(self):
-        self._plugins: Dict[str, BasePlugin] = {}
-        self._plugins_by_type: Dict[PluginType, List[str]] = {
+        self._plugins: dict[str, BasePlugin] = {}
+        self._plugins_by_type: dict[PluginType, list[str]] = {
             PluginType.DETECTION_RULE: [],
             PluginType.REPORT_FORMAT: [],
             PluginType.VERIFICATION: [],
@@ -167,15 +167,15 @@ class PluginRegistry:
         del self._plugins[name]
         self._plugins_by_type[plugin.metadata.plugin_type].remove(name)
 
-    def get_plugin(self, name: str) -> Optional[BasePlugin]:
+    def get_plugin(self, name: str) -> BasePlugin | None:
         """获取插件"""
         return self._plugins.get(name)
 
-    def get_plugins_by_type(self, plugin_type: PluginType) -> List[BasePlugin]:
+    def get_plugins_by_type(self, plugin_type: PluginType) -> list[BasePlugin]:
         """按类型获取插件列表"""
         return [self._plugins[name] for name in self._plugins_by_type[plugin_type]]
 
-    def list_plugins(self) -> List[str]:
+    def list_plugins(self) -> list[str]:
         """列出所有插件"""
         return list(self._plugins.keys())
 
@@ -195,7 +195,7 @@ class PluginRegistry:
 plugin_registry = PluginRegistry()
 
 
-def register_plugin(plugin_class: Type[BasePlugin], config: Optional[Dict[str, Any]] = None) -> BasePlugin:
+def register_plugin(plugin_class: type[BasePlugin], config: dict[str, Any] | None = None) -> BasePlugin:
     """注册插件的装饰器"""
     def decorator(cls):
         # 创建插件实例

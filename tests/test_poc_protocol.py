@@ -4,8 +4,8 @@ import subprocess
 import sys
 
 from agents.verification_agent import VerificationAgent
-from core.verification.poc_protocol import bind_poc_verdict, validate_poc_plan
 from core.runtime.docker_executor import DockerExecutor
+from core.verification.poc_protocol import bind_poc_verdict, validate_poc_plan
 
 
 def _finding():
