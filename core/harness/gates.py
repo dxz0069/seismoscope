@@ -7,7 +7,7 @@ from typing import Any, Dict, Optional
 _PASSING_REGRESSION_STATUSES = {"passed", "success"}
 
 
-def normalize_regression_status(value: Optional[str]) -> Optional[str]:
+def normalize_regression_status(value: str | None) -> str | None:
     """Map legacy 'success' to the canonical 'passed'; leave other values as-is."""
     if value in _PASSING_REGRESSION_STATUSES:
         return "passed"
@@ -15,7 +15,7 @@ def normalize_regression_status(value: Optional[str]) -> Optional[str]:
 
 
 def can_close_finding(
-    finding: Dict[str, Any],
+    finding: dict[str, Any],
     *,
     require_retest: bool = True,
 ) -> bool:
@@ -52,7 +52,7 @@ def can_close_finding(
     return True
 
 
-def close_reason(finding: Dict[str, Any], *, require_retest: bool = True) -> str:
+def close_reason(finding: dict[str, Any], *, require_retest: bool = True) -> str:
     """Return a human-readable reason string for the closure decision.
 
     Returns an empty string when the finding CAN be closed (i.e. the gate

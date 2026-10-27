@@ -22,7 +22,7 @@ def suppression_store_path(project_path: str) -> Path:
     return _state_root() / "suppressions" / f"{key}.json"
 
 
-def load_suppressions(project_path: str) -> List[Dict[str, Any]]:
+def load_suppressions(project_path: str) -> list[dict[str, Any]]:
     path = suppression_store_path(project_path)
     if not path.is_file():
         return []
@@ -39,9 +39,9 @@ def add_suppression(
     *,
     vulnerability_type: str,
     file_path: str,
-    line: Optional[int] = None,
+    line: int | None = None,
     reason: str = "",
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     entry = {
         "id": f"sup-{hashlib.sha256(f'{vulnerability_type}|{file_path}|{line}'.encode('utf-8')).hexdigest()[:12]}",
         "vulnerability_type": vulnerability_type,
@@ -61,7 +61,7 @@ def add_suppression(
     return entry
 
 
-def match_suppression(finding: Dict[str, Any], entries: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+def match_suppression(finding: dict[str, Any], entries: list[dict[str, Any]]) -> dict[str, Any] | None:
     rel = str(finding.get("file_path", "")).replace("\\", "/")
     for entry in entries:
         if entry.get("vulnerability_type") and entry.get("vulnerability_type") != finding.get("vulnerability_type"):
@@ -77,14 +77,14 @@ def match_suppression(finding: Dict[str, Any], entries: List[Dict[str, Any]]) ->
 
 
 def apply_suppressions(
-    findings: List[Dict[str, Any]], project_path: str
-) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+    findings: list[dict[str, Any]], project_path: str
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """按本地抑制库过滤 finding，返回 (保留列表, 命中列表含抑制条目)。"""
     entries = load_suppressions(project_path)
     if not entries:
         return findings, []
-    kept: List[Dict[str, Any]] = []
-    suppressed: List[Dict[str, Any]] = []
+    kept: list[dict[str, Any]] = []
+    suppressed: list[dict[str, Any]] = []
     for finding in findings:
         entry = match_suppression(finding, entries)
         if entry is None:

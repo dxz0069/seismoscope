@@ -5,14 +5,14 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timezone, UTC
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
 
 class VRTMModelStore:
-    def __init__(self, project_path: str, root: Optional[str] = None):
+    def __init__(self, project_path: str, root: str | None = None):
         project = Path(project_path).resolve()
         self.root = Path(root).resolve() if root else self._default_root(project)
         self.snapshots = self.root / "snapshots"
@@ -27,7 +27,7 @@ class VRTMModelStore:
         project_id = hashlib.sha256(str(project).encode("utf-8")).hexdigest()[:24]
         return Path(state_root).resolve() / project_id
 
-    def save(self, result: Dict[str, Any]) -> Dict[str, Any]:
+    def save(self, result: dict[str, Any]) -> dict[str, Any]:
         fingerprint = str(result.get("model_fingerprint", ""))
         if not fingerprint:
             raise ValueError("VRTM result has no model fingerprint")
@@ -40,7 +40,7 @@ class VRTMModelStore:
             "fingerprint": fingerprint,
             "graph_fingerprint": result.get("graph_fingerprint"),
             "model_fingerprint": fingerprint,
-            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
             "path": str(snapshot_path),
         }
         if not snapshot_path.exists():
@@ -51,12 +51,12 @@ class VRTMModelStore:
         self._atomic_json(self.latest_path, payload)
         return dict(payload["snapshot"])
 
-    def load_latest(self) -> Optional[Dict[str, Any]]:
+    def load_latest(self) -> dict[str, Any] | None:
         if not self.latest_path.is_file():
             return None
         return self._read(self.latest_path)
 
-    def load(self, snapshot_id: str) -> Dict[str, Any]:
+    def load(self, snapshot_id: str) -> dict[str, Any]:
         if not snapshot_id or any(item in snapshot_id for item in ("/", "\\", "..")):
             raise ValueError("invalid VRTM snapshot id")
         path = self.snapshots / f"{snapshot_id}.json"
@@ -64,7 +64,7 @@ class VRTMModelStore:
             raise FileNotFoundError(f"VRTM snapshot not found: {snapshot_id}")
         return self._read(path)
 
-    def list_snapshots(self) -> List[Dict[str, Any]]:
+    def list_snapshots(self) -> list[dict[str, Any]]:
         if not self.snapshots.is_dir():
             return []
         values = []
@@ -78,7 +78,7 @@ class VRTMModelStore:
         return sorted(values, key=lambda item: str(item.get("created_at", "")), reverse=True)
 
     @staticmethod
-    def _read(path: Path) -> Dict[str, Any]:
+    def _read(path: Path) -> dict[str, Any]:
         try:
             value = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError) as exc:
@@ -88,7 +88,7 @@ class VRTMModelStore:
         return value
 
     @staticmethod
-    def _atomic_json(path: Path, value: Dict[str, Any]) -> None:
+    def _atomic_json(path: Path, value: dict[str, Any]) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
         temporary = path.with_suffix(path.suffix + f".{os.getpid()}.{uuid4().hex}.tmp")
         temporary.write_text(

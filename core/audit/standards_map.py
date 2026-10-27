@@ -18,7 +18,7 @@ _OwASP_LLM = "https://owasp.org/www-project-top-10-for-large-language-model-appl
 _OWASP_API = "https://owasp.org/www-project-api-security/"
 
 #: 漏洞类型 -> (CWE 编号或 None, 附加标签)
-VULNERABILITY_STANDARDS: Dict[str, tuple] = {
+VULNERABILITY_STANDARDS: dict[str, tuple] = {
     "sql_injection": ("CWE-89", ["owasp-api8-injection"]),
     "xss": ("CWE-79", ["owasp-api8-injection"]),
     "command_injection": ("CWE-78", ["owasp-api8-injection"]),
@@ -54,7 +54,7 @@ VULNERABILITY_STANDARDS: Dict[str, tuple] = {
 }
 
 
-def standards_for(vulnerability_type: str) -> Optional[Dict[str, Any]]:
+def standards_for(vulnerability_type: str) -> dict[str, Any] | None:
     """返回 {"id", "tags", "help_uri"}；未映射类型返回 None。"""
     entry = VULNERABILITY_STANDARDS.get(str(vulnerability_type).strip().lower())
     if entry is None:

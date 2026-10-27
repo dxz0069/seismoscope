@@ -78,7 +78,7 @@ def sanitize_for_persistence(value: Any) -> Any:
     if isinstance(value, Path):
         return str(value)
     if isinstance(value, dict):
-        sanitized: Dict[str, Any] = {}
+        sanitized: dict[str, Any] = {}
         for key, item in value.items():
             normalized_key = str(key)
             lowered = normalized_key.lower()

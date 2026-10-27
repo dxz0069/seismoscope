@@ -12,7 +12,8 @@ import json
 import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Dict, List, Optional
+from collections.abc import Callable
 
 from ..agent_runtime import (
     AgentTask,
@@ -43,10 +44,10 @@ from .types import canonical_vulnerability_type
 @dataclass
 class ReActVerificationResult:
     status: str
-    output: Dict[str, Any] = field(default_factory=dict)
-    task: Optional[AgentTask] = None
-    tool_records: List[Dict[str, Any]] = field(default_factory=list)
-    error: Optional[str] = None
+    output: dict[str, Any] = field(default_factory=dict)
+    task: AgentTask | None = None
+    tool_records: list[dict[str, Any]] = field(default_factory=list)
+    error: str | None = None
 
 
 class VerificationEvidenceTools:
@@ -55,16 +56,16 @@ class VerificationEvidenceTools:
     def __init__(
         self,
         project_path: str,
-        finding: Dict[str, Any],
+        finding: dict[str, Any],
         verifier: Any,
         *,
-        service_authorization: Optional[Dict[str, Any]] = None,
+        service_authorization: dict[str, Any] | None = None,
     ):
         self.project_root = Path(project_path).resolve()
         self.finding = dict(finding)
         self.verifier = verifier
         self.service_authorization = dict(service_authorization or {})
-        self._cache: Dict[str, Dict[str, Any]] = {}
+        self._cache: dict[str, dict[str, Any]] = {}
         registry = build_source_registry()
         registry.register(CallableToolAdapter(
             ToolSpec(
@@ -119,8 +120,8 @@ class VerificationEvidenceTools:
         )
 
     @staticmethod
-    def schemas() -> List[Dict[str, Any]]:
-        def function(name: str, description: str, properties: Dict[str, Any], required: List[str]):
+    def schemas() -> list[dict[str, Any]]:
+        def function(name: str, description: str, properties: dict[str, Any], required: list[str]):
             return {
                 "type": "function",
                 "function": {
@@ -230,9 +231,9 @@ class VerificationEvidenceTools:
     async def execute(
         self,
         name: str,
-        arguments: Dict[str, Any],
-        context: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        arguments: dict[str, Any],
+        context: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         signature = json.dumps([name, arguments], sort_keys=True, default=str)
         if signature in self._cache:
             return await self.gateway.record_duplicate(name, arguments, context)
@@ -366,7 +367,7 @@ class VerificationEvidenceTools:
             )],
         )
 
-    def _read_source(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
+    def _read_source(self, arguments: dict[str, Any]) -> dict[str, Any]:
         relative = str(arguments.get("file_path", ""))
         target = (self.project_root / relative).resolve()
         try:
@@ -404,9 +405,9 @@ class ReActVerificationReviewer:
         project_path: str,
         max_turns: int = 12,
         timeout_seconds: int = 180,
-        service_authorization: Optional[Dict[str, Any]] = None,
-        checkpoint_sink: Optional[Callable[..., Any]] = None,
-        transition_sink: Optional[Callable[..., Any]] = None,
+        service_authorization: dict[str, Any] | None = None,
+        checkpoint_sink: Callable[..., Any] | None = None,
+        transition_sink: Callable[..., Any] | None = None,
     ):
         self.llm_service = llm_service
         self.verifier = verifier
@@ -417,7 +418,7 @@ class ReActVerificationReviewer:
         self.checkpoint_sink = checkpoint_sink
         self.transition_sink = transition_sink
 
-    async def review(self, finding: Dict[str, Any]) -> ReActVerificationResult:
+    async def review(self, finding: dict[str, Any]) -> ReActVerificationResult:
         candidate = dict(finding)
         tools = VerificationEvidenceTools(
             self.project_path,
@@ -479,12 +480,12 @@ class ReActVerificationReviewer:
 
     @staticmethod
     def _bind(
-        candidate: Dict[str, Any],
+        candidate: dict[str, Any],
         runtime_status: str,
-        model_output: Dict[str, Any],
-        records: List[Dict[str, Any]],
-        runtime_error: Optional[str],
-    ) -> tuple[str, Dict[str, Any]]:
+        model_output: dict[str, Any],
+        records: list[dict[str, Any]],
+        runtime_error: str | None,
+    ) -> tuple[str, dict[str, Any]]:
         completed_evidence = [
             record for record in records
             if record.get("allowed")
@@ -509,7 +510,7 @@ class ReActVerificationReviewer:
         raw_bundle = raw_bundle if isinstance(raw_bundle, dict) else {}
         model_items = list(raw_bundle.get("items", []) or [])
         model_gaps = [str(item) for item in raw_bundle.get("gaps", []) or [] if str(item).strip()]
-        evidence_items: List[Dict[str, Any]] = []
+        evidence_items: list[dict[str, Any]] = []
         if model_items:
             evidence_items.append({"type": "llm_evidence_summary", "items": model_items})
         evidence_items.append({"type": "tool_execution_audit", "records": records})
@@ -533,7 +534,7 @@ class ReActVerificationReviewer:
         runtime_required = vuln_type in ReActVerificationReviewer.RUNTIME_REQUIRED
         harness_verified = runtime_supported
         static_only = static_confirmed and not runtime_supported
-        gaps: List[str] = []
+        gaps: list[str] = []
         if harness_verified and contradicting:
             harness_verified = False
             gaps.append("Verification predicates produced conflicting supporting and contradicting results")
@@ -571,7 +572,7 @@ class ReActVerificationReviewer:
         if requested_status in {"verified", "rejected"} and status == "needs_evidence":
             gaps.append("Model verdict was not supported by a completed Harness predicate")
 
-        operational_gaps: List[str] = []
+        operational_gaps: list[str] = []
         interrupted = runtime_status != "completed" and any(
             marker in str(runtime_error or "").lower()
             for marker in ("maximum turn", "timeout", "stopped", "token budget")
@@ -628,7 +629,7 @@ class ReActVerificationReviewer:
         return ("completed" if runtime_status == "completed" else "degraded"), output
 
     @staticmethod
-    def _prompt(finding: Dict[str, Any]) -> str:
+    def _prompt(finding: dict[str, Any]) -> str:
         return json.dumps({
             "task": "Verify one security finding with bounded evidence collection.",
             "required_loop": [

@@ -44,11 +44,11 @@ class MemoryCache:
     def __init__(self, max_size: int = 1000, default_ttl: int = 3600):
         self.max_size = max_size
         self.default_ttl = default_ttl
-        self._cache: Dict[str, CacheEntry] = {}
+        self._cache: dict[str, CacheEntry] = {}
         self._hits = 0
         self._misses = 0
 
-    def get(self, key: str) -> Optional[Any]:
+    def get(self, key: str) -> Any | None:
         """获取缓存值"""
         entry = self._cache.get(key)
         if entry is None:
@@ -63,7 +63,7 @@ class MemoryCache:
         self._hits += 1
         return entry.access()
 
-    def set(self, key: str, value: Any, ttl: Optional[int] = None) -> None:
+    def set(self, key: str, value: Any, ttl: int | None = None) -> None:
         """设置缓存值"""
         # 如果缓存已满，清理过期条目
         if len(self._cache) >= self.max_size:
@@ -101,7 +101,7 @@ class MemoryCache:
             for i in range(to_remove):
                 del self._cache[sorted_entries[i][0]]
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """获取缓存统计"""
         total = self._hits + self._misses
         hit_rate = self._hits / total if total > 0 else 0.0
@@ -127,14 +127,14 @@ class FileCache:
         key_hash = hashlib.md5(key.encode()).hexdigest()
         return self.cache_dir / f"{key_hash}.json"
 
-    def get(self, key: str) -> Optional[Any]:
+    def get(self, key: str) -> Any | None:
         """获取缓存值"""
         cache_path = self._get_cache_path(key)
         if not cache_path.exists():
             return None
 
         try:
-            with open(cache_path, 'r', encoding='utf-8') as f:
+            with open(cache_path, encoding='utf-8') as f:
                 data = json.load(f)
 
             # 检查是否过期
@@ -147,7 +147,7 @@ class FileCache:
             logger.warning(f"Failed to read cache file {cache_path}: {e}")
             return None
 
-    def set(self, key: str, value: Any, ttl: Optional[int] = None) -> None:
+    def set(self, key: str, value: Any, ttl: int | None = None) -> None:
         """设置缓存值"""
         cache_path = self._get_cache_path(key)
         ttl = ttl or self.default_ttl
@@ -185,7 +185,7 @@ class MultiLevelCache:
         self.memory_cache = memory_cache or MemoryCache()
         self.file_cache = file_cache or FileCache()
 
-    def get(self, key: str) -> Optional[Any]:
+    def get(self, key: str) -> Any | None:
         """获取缓存值（先查内存，再查文件）"""
         # 先查内存缓存
         value = self.memory_cache.get(key)
@@ -201,7 +201,7 @@ class MultiLevelCache:
 
         return None
 
-    def set(self, key: str, value: Any, ttl: Optional[int] = None) -> None:
+    def set(self, key: str, value: Any, ttl: int | None = None) -> None:
         """设置缓存值（同时写入内存和文件）"""
         self.memory_cache.set(key, value, ttl)
         self.file_cache.set(key, value, ttl)
@@ -217,7 +217,7 @@ class MultiLevelCache:
         self.memory_cache.clear()
         self.file_cache.clear()
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """获取缓存统计"""
         return {
             "memory": self.memory_cache.get_stats(),

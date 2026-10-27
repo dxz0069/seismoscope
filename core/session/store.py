@@ -53,12 +53,12 @@ class SessionStore:
             "status": session.status.value,
         }
 
-    def list_sessions(self) -> List[Path]:
+    def list_sessions(self) -> list[Path]:
         if not self.root.exists():
             return []
         return sorted(self.root.glob("run-*.jsonl"))
 
-    def load(self, session_id_or_path: Union[str, Path]) -> RunSession:
+    def load(self, session_id_or_path: str | Path) -> RunSession:
         """Load the newest snapshot, including sessions written by legacy JSONL stores."""
         candidate = Path(session_id_or_path)
         path = candidate if candidate.suffix == ".jsonl" else self.path_for(str(candidate))
@@ -73,6 +73,6 @@ class SessionStore:
             raise ValueError(f"Session snapshot is empty: {path}")
         return RunSession.from_dict(latest)
 
-    def latest_checkpoint(self, session_id_or_path: Union[str, Path]) -> Optional[Checkpoint]:
+    def latest_checkpoint(self, session_id_or_path: str | Path) -> Checkpoint | None:
         session = self.load(session_id_or_path)
         return session.checkpoints[-1] if session.checkpoints else None

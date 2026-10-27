@@ -53,11 +53,11 @@ class LLMMessage:
     """LLM 消息"""
     role: str  # "system", "user", "assistant", "tool"
     content: str
-    name: Optional[str] = None
-    tool_calls: Optional[List[Dict[str, Any]]] = None
-    tool_call_id: Optional[str] = None
+    name: str | None = None
+    tool_calls: list[dict[str, Any]] | None = None
+    tool_call_id: str | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """转换为字典"""
         msg = {"role": self.role, "content": self.content}
         if self.name:
@@ -73,9 +73,9 @@ class LLMMessage:
 class LLMResponse:
     """LLM 响应"""
     content: str
-    tool_calls: Optional[List[Dict[str, Any]]] = None
-    usage: Dict[str, int] = field(default_factory=dict)
-    finish_reason: Optional[str] = None
+    tool_calls: list[dict[str, Any]] | None = None
+    usage: dict[str, int] = field(default_factory=dict)
+    finish_reason: str | None = None
 
     @property
     def has_tool_calls(self) -> bool:
@@ -115,12 +115,12 @@ class LLMService(ABC):
     @abstractmethod
     async def chat(
         self,
-        messages: List[LLMMessage],
+        messages: list[LLMMessage],
         *,
-        model: Optional[str] = None,
+        model: str | None = None,
         temperature: float = 0.1,
         max_tokens: int = 8192,
-        tools: Optional[List[Dict[str, Any]]] = None,
+        tools: list[dict[str, Any]] | None = None,
         **kwargs
     ) -> LLMResponse:
         """
@@ -141,7 +141,7 @@ class LLMService(ABC):
 
     async def chat_with_retries(
         self,
-        messages: List[LLMMessage],
+        messages: list[LLMMessage],
         *,
         max_retries: int = 3,
         **kwargs
@@ -192,7 +192,7 @@ class OpenAIService(LLMService):
         self,
         api_key: str,
         model: str = "gpt-4",
-        base_url: Optional[str] = None,
+        base_url: str | None = None,
     ):
         super().__init__(provider="openai", model=model)
         self.api_key = normalize_llm_api_key(api_key)
@@ -201,7 +201,7 @@ class OpenAIService(LLMService):
         # 延迟导入，避免启动时就需要安装 openai
         try:
             from openai import AsyncOpenAI
-            options: Dict[str, Any] = {
+            options: dict[str, Any] = {
                 "api_key": self.api_key,
                 "timeout": LLM_REQUEST_TIMEOUT_SECONDS,
                 "max_retries": 1,
@@ -215,12 +215,12 @@ class OpenAIService(LLMService):
 
     async def chat(
         self,
-        messages: List[LLMMessage],
+        messages: list[LLMMessage],
         *,
-        model: Optional[str] = None,
+        model: str | None = None,
         temperature: float = 0.1,
         max_tokens: int = 8192,
-        tools: Optional[List[Dict[str, Any]]] = None,
+        tools: list[dict[str, Any]] | None = None,
         **kwargs
     ) -> LLMResponse:
         """发送 OpenAI 聊天请求"""
@@ -296,7 +296,7 @@ class AnthropicService(LLMService):
         self,
         api_key: str,
         model: str = "claude-3-opus-20240229",
-        base_url: Optional[str] = None,
+        base_url: str | None = None,
     ):
         super().__init__(provider="anthropic", model=model)
         self.api_key = normalize_llm_api_key(api_key)
@@ -305,7 +305,7 @@ class AnthropicService(LLMService):
         # 延迟导入，避免启动时就需要安装 anthropic
         try:
             from anthropic import AsyncAnthropic
-            options: Dict[str, Any] = {"api_key": self.api_key}
+            options: dict[str, Any] = {"api_key": self.api_key}
             if base_url:
                 options["base_url"] = base_url
             self.client = AsyncAnthropic(**options)
@@ -315,12 +315,12 @@ class AnthropicService(LLMService):
 
     async def chat(
         self,
-        messages: List[LLMMessage],
+        messages: list[LLMMessage],
         *,
-        model: Optional[str] = None,
+        model: str | None = None,
         temperature: float = 0.1,
         max_tokens: int = 8192,
-        tools: Optional[List[Dict[str, Any]]] = None,
+        tools: list[dict[str, Any]] | None = None,
         **kwargs
     ) -> LLMResponse:
         """发送 Anthropic 聊天请求"""
@@ -406,12 +406,12 @@ class DeepSeekService(LLMService):
 
     async def chat(
         self,
-        messages: List[LLMMessage],
+        messages: list[LLMMessage],
         *,
-        model: Optional[str] = None,
+        model: str | None = None,
         temperature: float = 0.1,
         max_tokens: int = 8192,
-        tools: Optional[List[Dict[str, Any]]] = None,
+        tools: list[dict[str, Any]] | None = None,
         **kwargs
     ) -> LLMResponse:
         """发送 DeepSeek 聊天请求"""
@@ -491,12 +491,12 @@ class ConfiguredLLMService(LLMService):
 
     async def chat(
         self,
-        messages: List[LLMMessage],
+        messages: list[LLMMessage],
         *,
-        model: Optional[str] = None,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        tools: Optional[List[Dict[str, Any]]] = None,
+        model: str | None = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        tools: list[dict[str, Any]] | None = None,
         **kwargs,
     ) -> LLMResponse:
         return await self._service.chat(
@@ -514,7 +514,7 @@ def create_configured_llm_service(
     provider: str,
     api_key: str,
     model_name: str,
-    api_base: Optional[str] = None,
+    api_base: str | None = None,
     temperature: float = 0.2,
     max_tokens: int = 4096,
 ) -> LLMService:
@@ -574,19 +574,19 @@ class MockLLMService(LLMService):
         ])
     """
 
-    def __init__(self, responses: Optional[List[LLMResponse]] = None):
+    def __init__(self, responses: list[LLMResponse] | None = None):
         super().__init__(provider="mock", model="mock-model")
         self.responses = responses or []
         self.call_count = 0
 
     async def chat(
         self,
-        messages: List[LLMMessage],
+        messages: list[LLMMessage],
         *,
-        model: Optional[str] = None,
+        model: str | None = None,
         temperature: float = 0.1,
         max_tokens: int = 8192,
-        tools: Optional[List[Dict[str, Any]]] = None,
+        tools: list[dict[str, Any]] | None = None,
         **kwargs
     ) -> LLMResponse:
         """返回预设的响应"""

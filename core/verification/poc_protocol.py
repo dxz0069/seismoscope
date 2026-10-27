@@ -28,7 +28,7 @@ class PoCVerdict(str, Enum):
 # Each oracle_id must have a matching entry in HARNESS_ORACLE_PREDICATES.
 # Callers that add new harness kinds should call register_oracle_profile()
 # rather than modifying this dict directly.
-HARNESS_ORACLE_PROFILES: Dict[tuple, str] = {
+HARNESS_ORACLE_PROFILES: dict[tuple, str] = {
     # ── Python harness ────────────────────────────────────────────────────
     (PoCHarnessKind.PYTHON.value, "command_injection"):      "python.command-sink-differential.v1",
     (PoCHarnessKind.PYTHON.value, "sql_injection"):          "python.sql-sink-differential.v1",
@@ -60,7 +60,7 @@ HARNESS_ORACLE_PROFILES: Dict[tuple, str] = {
     (PoCHarnessKind.WORKFLOW.value, "excessive_agency"):      "workflow.permission-scope-differential.v1",
 }
 
-HARNESS_ORACLE_PREDICATES: Dict[str, str] = {
+HARNESS_ORACLE_PREDICATES: dict[str, str] = {
     # Python
     "python.command-sink-differential.v1": (
         "The positive control causes a command sink call from bound target code and the negative control does not"
@@ -142,7 +142,7 @@ class SafetyEnvelope:
 
     authorized: bool = False
     non_production: bool = True
-    target_scope: List[str] = field(default_factory=list)
+    target_scope: list[str] = field(default_factory=list)
     allow_network: bool = False
     allow_service_start: bool = False
     allow_destructive_actions: bool = False
@@ -163,7 +163,7 @@ class SafetyEnvelope:
             raise ValueError("PoC execution is restricted to non-production targets")
 
     @classmethod
-    def from_trusted_input(cls, value: Optional[Dict[str, Any]]) -> "SafetyEnvelope":
+    def from_trusted_input(cls, value: dict[str, Any] | None) -> SafetyEnvelope:
         value = dict(value or {})
         trusted = value.get("_trusted_authorization_verified") is True
         return cls(
@@ -178,7 +178,7 @@ class SafetyEnvelope:
             max_requests=int(value.get("max_requests", 100) or 100),
         )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -197,7 +197,7 @@ class PoCControl:
         if not self.expected_marker.strip():
             raise ValueError(f"PoC control {self.name!r} requires an expected marker")
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -234,8 +234,8 @@ class PoCPlan:
     negative_control: PoCControl
     target_code: str = field(default="", repr=False, compare=False)
     image: str = "python:3.12-slim"
-    environment: Dict[str, Any] = field(default_factory=dict)
-    assumptions: List[str] = field(default_factory=list)
+    environment: dict[str, Any] = field(default_factory=dict)
+    assumptions: list[str] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         if not self.finding_id.strip() or not self.vulnerability_type.strip():
@@ -254,13 +254,13 @@ class PoCPlan:
     @classmethod
     def from_dict(
         cls,
-        value: Dict[str, Any],
+        value: dict[str, Any],
         *,
-        finding: Dict[str, Any],
+        finding: dict[str, Any],
         target_binding: PoCTargetBinding,
         target_code: str,
         oracle_id: str,
-    ) -> "PoCPlan":
+    ) -> PoCPlan:
         value = dict(value or {})
         marker = str(value.get("success_marker", "VIBE_SEC_VERIFIED") or "VIBE_SEC_VERIFIED")
         positive = dict(value.get("positive_control") or {})
@@ -310,7 +310,7 @@ class PoCPlan:
         serialized = json.dumps(value, sort_keys=True, ensure_ascii=True).encode("utf-8")
         return hashlib.sha256(serialized).hexdigest()
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         value = asdict(self)
         value.pop("target_code", None)
         value["harness_kind"] = self.harness_kind.value
@@ -321,11 +321,11 @@ class PoCPlan:
 @dataclass(frozen=True)
 class PoCValidation:
     executable: bool
-    plan: Optional[PoCPlan]
+    plan: PoCPlan | None
     envelope: SafetyEnvelope
-    gaps: List[str] = field(default_factory=list)
+    gaps: list[str] = field(default_factory=list)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "contract": "vibe-sec.poc-plan.v2",
             "executable": self.executable,
@@ -336,10 +336,10 @@ class PoCValidation:
 
 
 def validate_poc_plan(
-    raw_plan: Optional[Dict[str, Any]],
+    raw_plan: dict[str, Any] | None,
     *,
-    finding: Dict[str, Any],
-    trusted_authorization: Optional[Dict[str, Any]],
+    finding: dict[str, Any],
+    trusted_authorization: dict[str, Any] | None,
     project_root: str,
 ) -> PoCValidation:
     try:
@@ -371,7 +371,7 @@ def validate_poc_plan(
     except (TypeError, ValueError) as exc:
         return PoCValidation(False, None, envelope, [f"Invalid PoC plan: {exc}"])
 
-    gaps: List[str] = list(target_gaps)
+    gaps: list[str] = list(target_gaps)
     if plan.finding_id != str(finding.get("id", "unknown")):
         gaps.append("PoC plan is not bound to the current finding id")
     if plan.vulnerability_type.lower() != str(finding.get("vulnerability_type", "unknown")).lower():
@@ -392,9 +392,9 @@ def validate_poc_plan(
 
 
 def _bind_target(
-    raw_plan: Dict[str, Any], *, finding: Dict[str, Any], project_root: str,
-) -> tuple[Optional[PoCTargetBinding], str, List[str]]:
-    gaps: List[str] = []
+    raw_plan: dict[str, Any], *, finding: dict[str, Any], project_root: str,
+) -> tuple[PoCTargetBinding | None, str, list[str]]:
+    gaps: list[str] = []
     root = Path(project_root).resolve()
     if not root.is_dir():
         return None, "", ["PoC project root is unavailable"]
@@ -452,8 +452,8 @@ def bind_poc_verdict(
     *,
     positive_matched: bool,
     negative_matched: bool,
-    evidence_refs: Optional[List[str]] = None,
-) -> Dict[str, Any]:
+    evidence_refs: list[str] | None = None,
+) -> dict[str, Any]:
     if not validation.executable or validation.plan is None:
         verdict = PoCVerdict.NEEDS_EVIDENCE
     elif positive_matched and not negative_matched:

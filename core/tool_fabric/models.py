@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime, timezone, UTC
 from enum import Enum
 from typing import Any, Dict, List, Optional
 from uuid import uuid4
@@ -12,7 +12,7 @@ from ..sanitization import SENSITIVE_KEY_PARTS, redact_sensitive_text
 
 
 def utc_now() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 class ToolRiskClass(str, Enum):
@@ -34,16 +34,16 @@ class ToolExecutionStatus(str, Enum):
 class ToolSpec:
     name: str
     description: str
-    input_schema: Dict[str, Any]
+    input_schema: dict[str, Any]
     version: str = "1"
     capability: str = "analysis"
-    output_schema: Dict[str, Any] = field(default_factory=dict)
+    output_schema: dict[str, Any] = field(default_factory=dict)
     risk_class: ToolRiskClass = ToolRiskClass.READ_ONLY
-    required_permissions: List[str] = field(default_factory=list)
-    aliases: List[str] = field(default_factory=list)
+    required_permissions: list[str] = field(default_factory=list)
+    aliases: list[str] = field(default_factory=list)
     timeout_seconds: float = 30.0
     concurrency_safe: bool = True
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if not self.name or not self.name.replace("_", "").replace("-", "").isalnum():
@@ -51,7 +51,7 @@ class ToolSpec:
         if self.timeout_seconds <= 0:
             raise ValueError("ToolSpec.timeout_seconds must be positive")
 
-    def to_openai_schema(self) -> Dict[str, Any]:
+    def to_openai_schema(self) -> dict[str, Any]:
         return {
             "type": "function",
             "function": {
@@ -61,7 +61,7 @@ class ToolSpec:
             },
         }
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         payload = asdict(self)
         payload["risk_class"] = self.risk_class.value
         return payload
@@ -70,14 +70,14 @@ class ToolSpec:
 @dataclass
 class ToolRequest:
     tool_name: str
-    arguments: Dict[str, Any] = field(default_factory=dict)
+    arguments: dict[str, Any] = field(default_factory=dict)
     session_id: str = "local"
     task_id: str = "local"
-    target_scope: Dict[str, Any] = field(default_factory=dict)
+    target_scope: dict[str, Any] = field(default_factory=dict)
     request_id: str = field(default_factory=lambda: f"toolreq-{uuid4().hex}")
     created_at: str = field(default_factory=utc_now)
 
-    def to_dict(self, *, redact: bool = False) -> Dict[str, Any]:
+    def to_dict(self, *, redact: bool = False) -> dict[str, Any]:
         arguments = redact_mapping(self.arguments) if redact else dict(self.arguments)
         return {
             "request_id": self.request_id,
@@ -100,9 +100,9 @@ class ArtifactRef:
     producer: str
     media_type: str = "application/octet-stream"
     created_at: str = field(default_factory=utc_now)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -114,25 +114,25 @@ class ToolSignal:
     signal_id: str = field(default_factory=lambda: f"signal-{uuid4().hex}")
     severity: str = "info"
     confidence: float = 0.5
-    rule_id: Optional[str] = None
-    file_path: Optional[str] = None
-    line_start: Optional[int] = None
-    line_end: Optional[int] = None
-    artifact_refs: List[str] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    rule_id: str | None = None
+    file_path: str | None = None
+    line_start: int | None = None
+    line_end: int | None = None
+    artifact_refs: list[str] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         self.confidence = max(0.0, min(1.0, float(self.confidence)))
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
 @dataclass
 class ToolResult:
-    output: Dict[str, Any] = field(default_factory=dict)
-    signals: List[ToolSignal] = field(default_factory=list)
-    artifacts: List[ArtifactRef] = field(default_factory=list)
+    output: dict[str, Any] = field(default_factory=dict)
+    signals: list[ToolSignal] = field(default_factory=list)
+    artifacts: list[ArtifactRef] = field(default_factory=list)
 
 
 class ToolAdapterError(RuntimeError):
@@ -142,7 +142,7 @@ class ToolAdapterError(RuntimeError):
         self,
         message: str,
         *,
-        result: Optional[ToolResult] = None,
+        result: ToolResult | None = None,
         status: ToolExecutionStatus = ToolExecutionStatus.FAILED,
     ):
         super().__init__(message)
@@ -159,15 +159,15 @@ class ToolExecution:
     policy_reason: str
     execution_id: str = field(default_factory=lambda: f"toolexec-{uuid4().hex}")
     started_at: str = field(default_factory=utc_now)
-    ended_at: Optional[str] = None
+    ended_at: str | None = None
     duration_ms: int = 0
-    output: Dict[str, Any] = field(default_factory=dict)
-    signals: List[ToolSignal] = field(default_factory=list)
-    artifacts: List[ArtifactRef] = field(default_factory=list)
-    error: Optional[str] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    output: dict[str, Any] = field(default_factory=dict)
+    signals: list[ToolSignal] = field(default_factory=list)
+    artifacts: list[ArtifactRef] = field(default_factory=list)
+    error: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "execution_id": self.execution_id,
             "request_id": self.request_id,
@@ -188,7 +188,7 @@ class ToolExecution:
 
 def redact_mapping(value: Any) -> Any:
     if isinstance(value, dict):
-        redacted: Dict[str, Any] = {}
+        redacted: dict[str, Any] = {}
         for key, item in value.items():
             lowered = str(key).lower()
             sensitive_key = any(part in lowered for part in SENSITIVE_KEY_PARTS)

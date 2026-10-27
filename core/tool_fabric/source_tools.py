@@ -8,7 +8,8 @@ import hashlib
 import json
 import re
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, List, Optional
+from collections.abc import Iterable
 
 from ..sanitization import redact_sensitive_text
 from .dependency_inspection import inspect_dependencies, is_dependency_file
@@ -41,7 +42,7 @@ IGNORED_DIRECTORIES = {
 }
 
 
-def source_tool_specs() -> List[ToolSpec]:
+def source_tool_specs() -> list[ToolSpec]:
     return [
         ToolSpec(
             name="list_source_files",
@@ -245,11 +246,11 @@ class SourceToolSuite:
     MAX_SEARCH_FILES = 4_000
 
     def __init__(self) -> None:
-        self._python_index_root: Optional[Path] = None
+        self._python_index_root: Path | None = None
         self._python_index = None
-        self._javascript_index_root: Optional[Path] = None
+        self._javascript_index_root: Path | None = None
         self._javascript_index = None
-        self._typescript_index_root: Optional[Path] = None
+        self._typescript_index_root: Path | None = None
         self._typescript_index = None
 
     def register(self, registry: ToolRegistry) -> None:
@@ -334,7 +335,7 @@ class SourceToolSuite:
         root = _resolve_project_path(context.project_root, request.arguments.get("path", ""))
         file_glob = str(request.arguments.get("file_glob", "*") or "*")
         limit = _bounded_int(request.arguments.get("max_results", 50), 1, 200)
-        matches: List[Dict[str, Any]] = []
+        matches: list[dict[str, Any]] = []
         files_scanned = 0
         for path in _iter_source_files(root):
             if files_scanned >= self.MAX_SEARCH_FILES or len(matches) >= limit:
@@ -705,13 +706,13 @@ def _bounded_int(value: Any, minimum: int, maximum: int) -> int:
     return max(minimum, min(maximum, parsed))
 
 
-def _python_outline(content: str) -> Dict[str, Any]:
+def _python_outline(content: str) -> dict[str, Any]:
     try:
         tree = ast.parse(content)
     except SyntaxError as exc:
         return {"language": "python", "parse_error": str(exc), "imports": [], "symbols": []}
-    imports: List[Dict[str, Any]] = []
-    symbols: List[Dict[str, Any]] = []
+    imports: list[dict[str, Any]] = []
+    symbols: list[dict[str, Any]] = []
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             imports.extend({"module": alias.name, "line": node.lineno} for alias in node.names)
@@ -727,7 +728,7 @@ def _python_outline(content: str) -> Dict[str, Any]:
     return {"language": "python", "imports": imports[:200], "symbols": symbols[:500]}
 
 
-def _generic_outline(content: str) -> Dict[str, Any]:
+def _generic_outline(content: str) -> dict[str, Any]:
     imports = []
     symbols = []
     import_pattern = re.compile(r"^\s*(?:import|require\s*\(|from\s+)(.+)$")
@@ -744,7 +745,7 @@ def _generic_outline(content: str) -> Dict[str, Any]:
     return {"language": "generic", "imports": imports[:200], "symbols": symbols[:500]}
 
 
-def _catalog_vulnerability(catalog_path: Path, vulnerability_type: str) -> Dict[str, Any]:
+def _catalog_vulnerability(catalog_path: Path, vulnerability_type: str) -> dict[str, Any]:
     if not vulnerability_type or not catalog_path.is_file():
         return {}
     aliases = {

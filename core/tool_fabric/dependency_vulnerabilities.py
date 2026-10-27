@@ -5,7 +5,8 @@ from __future__ import annotations
 import asyncio
 import inspect
 import re
-from typing import Any, Awaitable, Callable, Dict, List, Optional
+from typing import Any, Dict, List, Optional
+from collections.abc import Awaitable, Callable
 
 import httpx
 
@@ -63,9 +64,7 @@ class OsvVulnerabilityAdapter:
 
     def __init__(
         self,
-        query_batch: Optional[
-            Callable[[Dict[str, Any]], Awaitable[Dict[str, Any]] | Dict[str, Any]]
-        ] = None,
+        query_batch: Callable[[dict[str, Any]], Awaitable[dict[str, Any]] | dict[str, Any]] | None = None,
     ):
         self._query_batch = query_batch or self._http_query_batch
 
@@ -138,7 +137,7 @@ class OsvVulnerabilityAdapter:
                 result=ToolResult(output={**failure, "artifact_ref": artifact.artifact_id}, artifacts=[artifact]),
             ) from exc
 
-        vulnerabilities: List[Dict[str, Any]] = []
+        vulnerabilities: list[dict[str, Any]] = []
         for package, result in zip(packages, response["results"], strict=True):
             if not isinstance(result, dict):
                 continue
@@ -205,7 +204,7 @@ class OsvVulnerabilityAdapter:
         return ToolResult(output=output, signals=signals, artifacts=[raw_artifact, summary_artifact])
 
     @staticmethod
-    async def _http_query_batch(payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def _http_query_batch(payload: dict[str, Any]) -> dict[str, Any]:
         timeout = httpx.Timeout(45.0, connect=10.0)
         async with httpx.AsyncClient(timeout=timeout, follow_redirects=False) as client:
             for attempt in range(3):
@@ -227,9 +226,9 @@ class OsvVulnerabilityAdapter:
 
 
 def _queryable_packages(
-    inventory: Dict[str, Any],
+    inventory: dict[str, Any],
     max_packages: int,
-) -> tuple[List[Dict[str, Any]], List[str]]:
+) -> tuple[list[dict[str, Any]], list[str]]:
     locked = list(inventory.get("locked_dependencies", []) or [])
     direct = list(inventory.get("dependencies", []) or [])
     candidates = locked + [
@@ -283,7 +282,7 @@ def _exact_version(value: Any, ecosystem: str) -> str:
     return ""
 
 
-def _normalize_vulnerability(package: Dict[str, Any], value: Dict[str, Any]) -> Dict[str, Any]:
+def _normalize_vulnerability(package: dict[str, Any], value: dict[str, Any]) -> dict[str, Any]:
     return {
         "id": str(value.get("id") or "OSV-UNKNOWN"),
         "aliases": [str(item) for item in list(value.get("aliases", []) or [])],
@@ -306,7 +305,7 @@ def _normalize_vulnerability(package: Dict[str, Any], value: Dict[str, Any]) -> 
     }
 
 
-def _severity(value: Dict[str, Any]) -> str:
+def _severity(value: dict[str, Any]) -> str:
     database = value.get("database_specific") if isinstance(value.get("database_specific"), dict) else {}
     label = str(database.get("severity", "")).lower()
     if label in {"critical", "high", "medium", "low"}:
@@ -324,7 +323,7 @@ def _severity(value: Dict[str, Any]) -> str:
     return "medium"
 
 
-def _fixed_versions(value: Dict[str, Any]) -> List[str]:
+def _fixed_versions(value: dict[str, Any]) -> list[str]:
     fixed = []
     for affected in list(value.get("affected", []) or []):
         if not isinstance(affected, dict):
@@ -339,11 +338,11 @@ def _fixed_versions(value: Dict[str, Any]) -> List[str]:
 
 
 def _base_output(
-    inventory: Dict[str, Any],
-    packages: List[Dict[str, Any]],
-    gaps: List[str],
+    inventory: dict[str, Any],
+    packages: list[dict[str, Any]],
+    gaps: list[str],
     queried_at: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     return {
         "scanner": "osv",
         "endpoint": OSV_QUERY_BATCH_URL,

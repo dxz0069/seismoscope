@@ -41,7 +41,7 @@ class OutputFormatter:
             "sarif": self.format_sarif,
         }
 
-    def format(self, result: Dict[str, Any], format_type: str = "markdown") -> str:
+    def format(self, result: dict[str, Any], format_type: str = "markdown") -> str:
         """
         格式化审查结果
 
@@ -58,7 +58,7 @@ class OutputFormatter:
 
         return formatter(result)
 
-    def format_markdown(self, result: Dict[str, Any]) -> str:
+    def format_markdown(self, result: dict[str, Any]) -> str:
         """格式化为 Markdown"""
         lines = [
             "# Vibe Sec 安全审查报告",
@@ -147,11 +147,11 @@ class OutputFormatter:
 
         return "\n".join(lines)
 
-    def format_json(self, result: Dict[str, Any]) -> str:
+    def format_json(self, result: dict[str, Any]) -> str:
         """格式化为 JSON"""
         return json.dumps(result, indent=2, ensure_ascii=False, default=str)
 
-    def format_sarif(self, result: Dict[str, Any]) -> str:
+    def format_sarif(self, result: dict[str, Any]) -> str:
         """格式化为 SARIF 2.1.0（OASIS 标准，GitHub Code Scanning 原生支持）。
 
         映射约定：漏洞类型 -> ruleId，severity -> level（critical/high -> error，
@@ -159,14 +159,14 @@ class OutputFormatter:
         finding id 作为 partialFingerprints 供 Code Scanning 去重。
         """
         level_map = {"critical": "error", "high": "error", "medium": "warning", "low": "note"}
-        rules: Dict[str, Dict[str, Any]] = {}
+        rules: dict[str, dict[str, Any]] = {}
         results = []
         for finding in result.get("findings", []):
             vuln_type = str(finding.get("vulnerability_type", "unknown"))
             description = str(finding.get("description") or finding.get("title") or vuln_type)
             if vuln_type not in rules:
                 standards = standards_for(vuln_type)
-                rule: Dict[str, Any] = {
+                rule: dict[str, Any] = {
                     "id": vuln_type,
                     "shortDescription": {"text": description},
                     "properties": {"tags": ["security", "vibe-coding"]},
@@ -189,7 +189,7 @@ class OutputFormatter:
                     },
                 }
             }
-            sarif_result: Dict[str, Any] = {
+            sarif_result: dict[str, Any] = {
                 "ruleId": vuln_type,
                 "level": level_map.get(str(finding.get("severity", "medium")).lower(), "note"),
                 "message": {"text": message},
@@ -223,7 +223,7 @@ class OutputFormatter:
         }
         return json.dumps(sarif, indent=2, ensure_ascii=False, default=str)
 
-    def format_claude_code(self, result: Dict[str, Any]) -> str:
+    def format_claude_code(self, result: dict[str, Any]) -> str:
         """
         格式化为 Claude Code 原生格式
 
@@ -322,7 +322,7 @@ class OutputFormatter:
 
         return "\n".join(lines)
 
-    def _generate_fix_instruction(self, finding: Dict[str, Any]) -> str:
+    def _generate_fix_instruction(self, finding: dict[str, Any]) -> str:
         """生成修复指令"""
         vtype = finding.get("vulnerability_type", "")
 
@@ -339,7 +339,7 @@ class OutputFormatter:
 
         return fix_map.get(vtype, "Review and fix the security issue")
 
-    def format_html(self, result: Dict[str, Any]) -> str:
+    def format_html(self, result: dict[str, Any]) -> str:
         """格式化为 HTML"""
         findings = result.get("findings", [])
 

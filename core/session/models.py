@@ -6,7 +6,7 @@ session/event/checkpoint model at the boundary.
 """
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime, timezone, UTC
 from enum import Enum
 from typing import Any, Dict, List, Optional
 from uuid import uuid4
@@ -15,7 +15,7 @@ from ..sanitization import sanitize_for_persistence
 
 
 def utc_now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 class RunStatus(str, Enum):
@@ -32,11 +32,11 @@ class RunEvent:
     event_type: str
     phase: str
     message: str = ""
-    data: Dict[str, Any] = field(default_factory=dict)
+    data: dict[str, Any] = field(default_factory=dict)
     event_id: str = field(default_factory=lambda: f"event-{uuid4().hex[:12]}")
     timestamp: datetime = field(default_factory=utc_now)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "event_id": self.event_id,
             "event_type": self.event_type,
@@ -47,7 +47,7 @@ class RunEvent:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "RunEvent":
+    def from_dict(cls, data: dict[str, Any]) -> "RunEvent":
         timestamp = data.get("timestamp")
         return cls(
             event_type=str(data.get("event_type", "unknown")),
@@ -62,11 +62,11 @@ class RunEvent:
 @dataclass
 class Checkpoint:
     phase: str
-    state: Dict[str, Any]
+    state: dict[str, Any]
     checkpoint_id: str = field(default_factory=lambda: f"checkpoint-{uuid4().hex[:12]}")
     created_at: datetime = field(default_factory=utc_now)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "checkpoint_id": self.checkpoint_id,
             "phase": self.phase,
@@ -75,7 +75,7 @@ class Checkpoint:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Checkpoint":
+    def from_dict(cls, data: dict[str, Any]) -> "Checkpoint":
         created_at = data.get("created_at")
         return cls(
             phase=str(data.get("phase", "")),
@@ -92,12 +92,12 @@ class RunSession:
     session_id: str = field(default_factory=lambda: f"run-{uuid4().hex[:16]}")
     status: RunStatus = RunStatus.CREATED
     started_at: datetime = field(default_factory=utc_now)
-    finished_at: Optional[datetime] = None
+    finished_at: datetime | None = None
     current_phase: str = "plan"
-    phases_completed: List[str] = field(default_factory=list)
-    events: List[RunEvent] = field(default_factory=list)
-    checkpoints: List[Checkpoint] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    phases_completed: list[str] = field(default_factory=list)
+    events: list[RunEvent] = field(default_factory=list)
+    checkpoints: list[Checkpoint] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def start(self) -> None:
         self.status = RunStatus.RUNNING
@@ -107,7 +107,7 @@ class RunSession:
         event_type: str,
         phase: str,
         message: str = "",
-        data: Optional[Dict[str, Any]] = None,
+        data: dict[str, Any] | None = None,
     ) -> RunEvent:
         self.current_phase = phase
         event = RunEvent(
@@ -119,7 +119,7 @@ class RunSession:
         self.events.append(event)
         return event
 
-    def checkpoint(self, phase: str, state: Dict[str, Any]) -> Checkpoint:
+    def checkpoint(self, phase: str, state: dict[str, Any]) -> Checkpoint:
         checkpoint = Checkpoint(phase=phase, state=sanitize_for_persistence(state))
         self.checkpoints.append(checkpoint)
         self.current_phase = phase
@@ -133,7 +133,7 @@ class RunSession:
         self.status = status
         self.finished_at = utc_now()
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "session_id": self.session_id,
             "project_path": self.project_path,
@@ -149,8 +149,8 @@ class RunSession:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "RunSession":
-        def parse_datetime(value: Optional[str]) -> Optional[datetime]:
+    def from_dict(cls, data: dict[str, Any]) -> "RunSession":
+        def parse_datetime(value: str | None) -> datetime | None:
             return datetime.fromisoformat(value) if value else None
 
         return cls(

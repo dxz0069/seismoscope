@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, List, Optional
+from collections.abc import Iterable
 
 try:
     import esprima
@@ -47,18 +48,18 @@ JS_SINKS = {
 
 @dataclass
 class JavaScriptSemanticIndex:
-    records: List[FunctionRecord]
+    records: list[FunctionRecord]
     files_indexed: int
-    parse_errors: List[Dict[str, str]] = field(default_factory=list)
+    parse_errors: list[dict[str, str]] = field(default_factory=list)
     truncated: bool = False
 
     def __post_init__(self) -> None:
         self.by_id = {record.record_id: record for record in self.records}
-        self.by_simple_name: Dict[str, List[FunctionRecord]] = {}
+        self.by_simple_name: dict[str, list[FunctionRecord]] = {}
         for record in self.records:
             self.by_simple_name.setdefault(record.name, []).append(record)
 
-    def resolve_call(self, call_name: str) -> List[FunctionRecord]:
+    def resolve_call(self, call_name: str) -> list[FunctionRecord]:
         return self.by_simple_name.get(call_name.rsplit(".", 1)[-1], [])[:8]
 
 
@@ -71,8 +72,8 @@ def build_javascript_semantic_index(
 ) -> JavaScriptSemanticIndex:
     if esprima is None:
         return JavaScriptSemanticIndex([], 0, [{"file_path": "", "error": "esprima is unavailable"}])
-    records: List[FunctionRecord] = []
-    parse_errors: List[Dict[str, str]] = []
+    records: list[FunctionRecord] = []
+    parse_errors: list[dict[str, str]] = []
     files_indexed = 0
     truncated = False
     for target in source_files:
@@ -101,7 +102,7 @@ def trace_javascript_flow(
     line: int = 0,
     max_depth: int = 4,
     max_paths: int = 40,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     normalized = file_path.replace("\\", "/")
     seeds = [record for record in index.records if record.file_path == normalized]
     if symbol:
@@ -121,10 +122,10 @@ def trace_javascript_flow(
         target for seed in seeds for call in seed.calls for target in index.resolve_call(call["name"])
     )[:100]
 
-    paths: List[Dict[str, Any]] = []
+    paths: list[dict[str, Any]] = []
     unresolved = set()
     for seed in seeds:
-        queue: List[tuple[FunctionRecord, List[FunctionRecord], List[Dict[str, Any]], int]] = [
+        queue: list[tuple[FunctionRecord, list[FunctionRecord], list[dict[str, Any]], int]] = [
             (seed, [seed], [], 0)
         ]
         while queue and len(paths) < max_paths:
@@ -183,7 +184,7 @@ def trace_javascript_flow(
     }
 
 
-def _records_for_program(file_path: str, tree: Dict[str, Any]) -> List[FunctionRecord]:
+def _records_for_program(file_path: str, tree: dict[str, Any]) -> list[FunctionRecord]:
     records = []
     module = ".".join(Path(file_path).with_suffix("").parts)
     for node in _walk_nodes(tree):
@@ -217,7 +218,7 @@ def _function_record(
     file_path: str,
     qualified_name: str,
     name: str,
-    node: Dict[str, Any],
+    node: dict[str, Any],
 ) -> FunctionRecord:
     calls = []
     sources = []
@@ -226,7 +227,7 @@ def _function_record(
     parameters = [_parameter_name(item) for item in list(node.get("params", []) or [])]
     parameters = [item for item in parameters if item]
     line_start = _line(node)
-    line_end = int((((node.get("loc") or {}).get("end") or {}).get("line") or line_start))
+    line_end = int(((node.get("loc") or {}).get("end") or {}).get("line") or line_start)
     for parameter in parameters:
         if parameter.lower() in SOURCE_NAME_MARKERS:
             sources.append({"kind": "parameter", "name": parameter, "line": line_start})
@@ -267,7 +268,7 @@ def _function_record(
     )
 
 
-def _walk_nodes(value: Any) -> Iterable[Dict[str, Any]]:
+def _walk_nodes(value: Any) -> Iterable[dict[str, Any]]:
     if isinstance(value, dict):
         if value.get("type"):
             yield value
@@ -279,7 +280,7 @@ def _walk_nodes(value: Any) -> Iterable[Dict[str, Any]]:
             yield from _walk_nodes(nested)
 
 
-def _expression_name(node: Dict[str, Any]) -> str:
+def _expression_name(node: dict[str, Any]) -> str:
     node_type = node.get("type")
     if node_type == "Identifier":
         return str(node.get("name", ""))
@@ -294,11 +295,11 @@ def _expression_name(node: Dict[str, Any]) -> str:
     return ""
 
 
-def _property_name(node: Dict[str, Any]) -> str:
+def _property_name(node: dict[str, Any]) -> str:
     return str(node.get("name", node.get("value", "")) or "")
 
 
-def _parameter_name(node: Dict[str, Any]) -> str:
+def _parameter_name(node: dict[str, Any]) -> str:
     if node.get("type") == "Identifier":
         return str(node.get("name", ""))
     if node.get("type") == "AssignmentPattern":
@@ -306,11 +307,11 @@ def _parameter_name(node: Dict[str, Any]) -> str:
     return ""
 
 
-def _line(node: Dict[str, Any]) -> int:
-    return int((((node.get("loc") or {}).get("start") or {}).get("line") or 1))
+def _line(node: dict[str, Any]) -> int:
+    return int(((node.get("loc") or {}).get("start") or {}).get("line") or 1)
 
 
-def _js_sink_kind(call_name: str) -> Optional[str]:
+def _js_sink_kind(call_name: str) -> str | None:
     if call_name in JS_SINKS:
         return JS_SINKS[call_name]
     simple = call_name.rsplit(".", 1)[-1]
@@ -319,7 +320,7 @@ def _js_sink_kind(call_name: str) -> Optional[str]:
     return None
 
 
-def _unique_records(records: Iterable[FunctionRecord]) -> List[FunctionRecord]:
+def _unique_records(records: Iterable[FunctionRecord]) -> list[FunctionRecord]:
     output = []
     seen = set()
     for record in records:
@@ -329,7 +330,7 @@ def _unique_records(records: Iterable[FunctionRecord]) -> List[FunctionRecord]:
     return output
 
 
-def _dedupe(values: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def _dedupe(values: list[dict[str, Any]]) -> list[dict[str, Any]]:
     output = []
     seen = set()
     for value in values:

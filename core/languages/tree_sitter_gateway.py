@@ -21,7 +21,8 @@ tree_sitter_language_pack 在解析器未缓存时会从 GitHub 下载平台解�
 from __future__ import annotations
 
 import os
-from typing import Any, Dict, Iterable, Optional
+from typing import Any, Dict, Optional
+from collections.abc import Iterable
 
 try:
     from tree_sitter_language_pack import (
@@ -91,10 +92,10 @@ def language_ready(language: str) -> bool:
         return False
 
 
-def warmup(languages: Optional[Iterable[str]] = None) -> Dict[str, Any]:
+def warmup(languages: Iterable[str] | None = None) -> dict[str, Any]:
     """预下载解析器到本地缓存。失败不抛出，逐语言返回结构化状态。"""
     names = [str(name) for name in (languages or DEFAULT_LANGUAGES)]
-    result: Dict[str, Any] = {
+    result: dict[str, Any] = {
         "contract_version": "vibe-sec.tree-sitter-warmup.v1",
         "cache_dir": _effective_cache_dir(),
         "languages": {},
@@ -123,7 +124,7 @@ def warmup(languages: Optional[Iterable[str]] = None) -> Dict[str, Any]:
     return result
 
 
-def status() -> Dict[str, Any]:
+def status() -> dict[str, Any]:
     """doctor 报告用的解析器就绪状态（不触发网络）。"""
     ready = {name: language_ready(name) for name in DEFAULT_LANGUAGES}
     pack_installed = get_parser is not None
@@ -152,7 +153,7 @@ def status() -> Dict[str, Any]:
     }
 
 
-def _effective_cache_dir() -> Optional[str]:
+def _effective_cache_dir() -> str | None:
     if downloaded_languages is None:
         return None
     _ensure_configured()

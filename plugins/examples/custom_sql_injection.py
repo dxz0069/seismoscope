@@ -38,7 +38,7 @@ class CustomSQLInjectionPlugin(DetectionRulePlugin):
         self.strict_mode = self.get_config("strict_mode", False)
         self._initialized = True
 
-    async def detect(self, code: str, context: Dict[str, Any]) -> List[Dict[str, Any]]:
+    async def detect(self, code: str, context: dict[str, Any]) -> list[dict[str, Any]]:
         """检测 SQL 注入漏洞"""
         findings = []
 

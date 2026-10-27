@@ -65,7 +65,7 @@ class PluginLoader:
 
         return plugin
 
-    def load_from_directory(self, directory: str) -> List[BasePlugin]:
+    def load_from_directory(self, directory: str) -> list[BasePlugin]:
         """
         从目录加载所有插件
 

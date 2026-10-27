@@ -20,7 +20,7 @@ import math
 from copy import deepcopy
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from ..agent_runtime.completion import FinalizeTaskContract
 from ..agent_runtime.graph import TaskGraphController
@@ -108,38 +108,38 @@ class OrchestrationConfig:
 class OrchestrationState:
     """编排状态"""
     current_phase: OrchestrationPhase = OrchestrationPhase.INIT
-    phase_results: Dict[OrchestrationPhase, AgentResult] = field(default_factory=dict)
-    phase_handoffs: Dict[OrchestrationPhase, TaskHandoff] = field(default_factory=dict)
+    phase_results: dict[OrchestrationPhase, AgentResult] = field(default_factory=dict)
+    phase_handoffs: dict[OrchestrationPhase, TaskHandoff] = field(default_factory=dict)
 
     # 合并后的 findings
-    merged_findings: List[Dict[str, Any]] = field(default_factory=list)
+    merged_findings: list[dict[str, Any]] = field(default_factory=list)
     # Scanner/lane output remains available for auditability.  ``merged_findings``
     # is only the smaller, traceable review projection.
-    raw_findings: List[Dict[str, Any]] = field(default_factory=list)
+    raw_findings: list[dict[str, Any]] = field(default_factory=list)
 
     # 验证后的 findings
-    verified_findings: List[Dict[str, Any]] = field(default_factory=list)
-    rejected_findings: List[Dict[str, Any]] = field(default_factory=list)
-    needs_evidence_findings: List[Dict[str, Any]] = field(default_factory=list)
-    not_reviewed_findings: List[Dict[str, Any]] = field(default_factory=list)
+    verified_findings: list[dict[str, Any]] = field(default_factory=list)
+    rejected_findings: list[dict[str, Any]] = field(default_factory=list)
+    needs_evidence_findings: list[dict[str, Any]] = field(default_factory=list)
+    not_reviewed_findings: list[dict[str, Any]] = field(default_factory=list)
 
     # 整改包
-    remediation_bundles: List[Dict[str, Any]] = field(default_factory=list)
+    remediation_bundles: list[dict[str, Any]] = field(default_factory=list)
 
     # 回归测试报告
-    regression_reports: List[Dict[str, Any]] = field(default_factory=list)
+    regression_reports: list[dict[str, Any]] = field(default_factory=list)
 
     # 错误信息
-    error: Optional[str] = None
-    session: Optional[RunSession] = None
-    project_profile: Dict[str, Any] = field(default_factory=dict)
-    runtime_surface_graph: Dict[str, Any] = field(default_factory=dict)
-    runtime_threat_model: Dict[str, Any] = field(default_factory=dict)
-    runtime_graph_observations: List[Dict[str, Any]] = field(default_factory=list)
-    vrtm_evolution: List[Dict[str, Any]] = field(default_factory=list)
-    lane_findings: Dict[str, List[Dict[str, Any]]] = field(default_factory=dict)
-    returned_packages: List[Dict[str, Any]] = field(default_factory=list)
-    audit_request: Dict[str, Any] = field(default_factory=dict)
+    error: str | None = None
+    session: RunSession | None = None
+    project_profile: dict[str, Any] = field(default_factory=dict)
+    runtime_surface_graph: dict[str, Any] = field(default_factory=dict)
+    runtime_threat_model: dict[str, Any] = field(default_factory=dict)
+    runtime_graph_observations: list[dict[str, Any]] = field(default_factory=list)
+    vrtm_evolution: list[dict[str, Any]] = field(default_factory=list)
+    lane_findings: dict[str, list[dict[str, Any]]] = field(default_factory=dict)
+    returned_packages: list[dict[str, Any]] = field(default_factory=list)
+    audit_request: dict[str, Any] = field(default_factory=dict)
 
 
 class OrchestratorAgent(BaseAgent):
@@ -166,9 +166,9 @@ class OrchestratorAgent(BaseAgent):
         self,
         llm_service: LLMService,
         agent_registry: AgentRegistry,
-        config: Optional[OrchestrationConfig] = None,
-        event_emitter: Optional[callable] = None,
-        session_store: Optional[SessionStore] = None,
+        config: OrchestrationConfig | None = None,
+        event_emitter: Callable | None = None,
+        session_store: SessionStore | None = None,
     ):
         super().__init__(
             config=AgentConfig(
@@ -191,12 +191,12 @@ class OrchestratorAgent(BaseAgent):
         event_type: str,
         phase: OrchestrationPhase,
         message: str = "",
-        data: Optional[Dict[str, Any]] = None,
+        data: dict[str, Any] | None = None,
     ) -> None:
         if self.state.session:
             self.state.session.emit(event_type, phase.value, message, data or {})
 
-    async def run(self, payload: Dict[str, Any]) -> AgentResult:
+    async def run(self, payload: dict[str, Any]) -> AgentResult:
         """
         执行确定性编排流程
 
@@ -312,7 +312,7 @@ class OrchestratorAgent(BaseAgent):
     async def _run_phase(
         self,
         phase: OrchestrationPhase,
-        payload: Dict[str, Any],
+        payload: dict[str, Any],
     ) -> None:
         """
         运行单个阶段
@@ -409,7 +409,7 @@ class OrchestratorAgent(BaseAgent):
 
             logger.info(f"Phase {phase.value} completed successfully")
 
-        except asyncio.TimeoutError as err:
+        except TimeoutError as err:
             self.agent_registry.set_state(agent_type, AgentState.FAILED)
             raise TimeoutError(f"Phase {phase.value} timed out") from err
         except Exception as e:
@@ -417,7 +417,7 @@ class OrchestratorAgent(BaseAgent):
             self._record_event("phase_failed", phase, str(e))
             raise
 
-    async def _run_audit_phase(self, payload: Dict[str, Any]) -> None:
+    async def _run_audit_phase(self, payload: dict[str, Any]) -> None:
         """Run audit lanes as independent, checkpointed child tasks."""
         logger.info("Running audit phase")
 
@@ -491,10 +491,10 @@ class OrchestratorAgent(BaseAgent):
 
     def _enrich_vrtm_from_findings(
         self,
-        findings: List[Dict[str, Any]],
+        findings: list[dict[str, Any]],
         *,
         phase: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         if not findings or not self.state.runtime_surface_graph:
             return {
                 "schema": "vibe-sec.vrtm.evolution.v1",
@@ -582,7 +582,7 @@ class OrchestratorAgent(BaseAgent):
             )
         return evolution
 
-    def _build_audit_lane_specs(self, payload: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def _build_audit_lane_specs(self, payload: dict[str, Any]) -> list[dict[str, Any]]:
         """Build only the lanes explicitly enabled by the audit scope."""
         scope = dict(payload.get("audit_scope") or {})
         enabled = lambda key: bool(scope.get(key, True))
@@ -622,14 +622,14 @@ class OrchestratorAgent(BaseAgent):
         *,
         agent_type: AgentType,
         base_agent: BaseAgent,
-        payload: Dict[str, Any],
-        lane_specs: List[Dict[str, Any]],
+        payload: dict[str, Any],
+        lane_specs: list[dict[str, Any]],
     ) -> AgentResult:
         """Run isolated audit agents concurrently and aggregate their handoff."""
         from core.audit.review_budget import SharedReviewBudget
 
         parent_task_id = f"audit-{self.state.session.session_id if self.state.session else 'run'}"
-        child_results: Dict[str, AgentResult] = {}
+        child_results: dict[str, AgentResult] = {}
         raw_review_limit = payload.get("react_review_limit")
         shared_review_budget = (
             SharedReviewBudget(raw_review_limit, expected_lanes=len(lane_specs))
@@ -640,7 +640,7 @@ class OrchestratorAgent(BaseAgent):
         if not registration:
             raise ValueError(f"Agent {agent_type.value} registration not found")
 
-        def checkpoint_sink(current_task: AgentTask, checkpoint: Dict[str, Any]) -> None:
+        def checkpoint_sink(current_task: AgentTask, checkpoint: dict[str, Any]) -> None:
             if self.state.session:
                 self.state.session.checkpoint("agent_task:audit", checkpoint)
                 if self.session_store:
@@ -673,7 +673,7 @@ class OrchestratorAgent(BaseAgent):
             ),
             loop_factory=loop_factory,
         )
-        child_tasks: List[AgentTask] = []
+        child_tasks: list[AgentTask] = []
         for spec in lane_specs:
             lane = spec["lane"]
             lane_payload = {
@@ -751,8 +751,8 @@ class OrchestratorAgent(BaseAgent):
             failed = ", ".join(f"{key}: {value}" for key, value in graph_result.errors.items())
             raise ValueError(f"Audit lane child tasks failed: {failed}")
 
-        findings: List[Dict[str, Any]] = []
-        lane_counts: Dict[str, int] = {}
+        findings: list[dict[str, Any]] = []
+        lane_counts: dict[str, int] = {}
         handoff = None
         failed_lanes = [
             spec["lane"]
@@ -872,7 +872,7 @@ class OrchestratorAgent(BaseAgent):
         phase: OrchestrationPhase,
         agent_type: AgentType,
         agent: BaseAgent,
-        payload: Dict[str, Any],
+        payload: dict[str, Any],
     ) -> AgentResult:
         """Run one phase agent through the bounded task runtime."""
         if not self.orch_config.enable_agent_runtime:
@@ -889,15 +889,15 @@ class OrchestratorAgent(BaseAgent):
             completion_contract={},
             metadata={"agent_type": agent_type.value},
         )
-        last_result: Optional[AgentResult] = None
+        last_result: AgentResult | None = None
 
-        async def handler(current_task: AgentTask, context: Dict[str, Any]) -> AgentResult:
+        async def handler(current_task: AgentTask, context: dict[str, Any]) -> AgentResult:
             nonlocal last_result
             del current_task, context
             last_result = await agent.run(payload)
             return last_result
 
-        def checkpoint_sink(current_task: AgentTask, checkpoint: Dict[str, Any]) -> None:
+        def checkpoint_sink(current_task: AgentTask, checkpoint: dict[str, Any]) -> None:
             if self.state.session:
                 self.state.session.checkpoint(f"agent_task:{phase.value}", checkpoint)
                 if self.session_store:
@@ -942,14 +942,14 @@ class OrchestratorAgent(BaseAgent):
         *,
         agent_type: AgentType,
         agent: BaseAgent,
-        payload: Dict[str, Any],
+        payload: dict[str, Any],
     ) -> AgentResult:
         """Verify findings as independently resumable child tasks."""
         findings = list(payload.get("findings_to_verify", []))
         parent_task_id = f"verification-{self.state.session.session_id if self.state.session else 'run'}"
-        child_results: Dict[str, AgentResult] = {}
+        child_results: dict[str, AgentResult] = {}
 
-        def checkpoint_sink(current_task: AgentTask, checkpoint: Dict[str, Any]) -> None:
+        def checkpoint_sink(current_task: AgentTask, checkpoint: dict[str, Any]) -> None:
             if self.state.session:
                 self.state.session.checkpoint("agent_task:verification", checkpoint)
                 if self.session_store:
@@ -1147,8 +1147,8 @@ class OrchestratorAgent(BaseAgent):
     def _build_phase_payload(
         self,
         phase: OrchestrationPhase,
-        original_payload: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        original_payload: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         构建阶段特定的输入数据
 
@@ -1228,7 +1228,7 @@ class OrchestratorAgent(BaseAgent):
 
         return payload
 
-    def _collect_audit_findings(self) -> List[Dict[str, Any]]:
+    def _collect_audit_findings(self) -> list[dict[str, Any]]:
         """收集所有审计阶段的 findings"""
         findings = []
 
@@ -1238,7 +1238,7 @@ class OrchestratorAgent(BaseAgent):
 
         return findings
 
-    def _filter_findings_for_verification(self) -> List[Dict[str, Any]]:
+    def _filter_findings_for_verification(self) -> list[dict[str, Any]]:
         """筛选需要验证的 findings"""
         all_findings = self.state.merged_findings
 
@@ -1276,9 +1276,9 @@ class OrchestratorAgent(BaseAgent):
 
     def _select_verification_candidates(
         self,
-        findings: List[Dict[str, Any]],
+        findings: list[dict[str, Any]],
         budget: int,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Return a severity-prioritized batch with bounded per-type coverage."""
         if budget <= 0:
             return []
@@ -1290,9 +1290,9 @@ class OrchestratorAgent(BaseAgent):
                 -float(item.get("confidence", 0) or 0),
             ),
         )
-        selected: List[Dict[str, Any]] = []
+        selected: list[dict[str, Any]] = []
         selected_ids: set[str] = set()
-        quota_by_type: Dict[str, int] = {}
+        quota_by_type: dict[str, int] = {}
         per_type_quota = max(0, int(self.orch_config.verification_sample_per_type))
 
         if per_type_quota:
@@ -1331,9 +1331,9 @@ class OrchestratorAgent(BaseAgent):
             )
             self._record_event("phase_completed", OrchestrationPhase.RETURN, "Remediation packages prepared")
 
-    def _attach_runtime_context(self, findings: List[Dict[str, Any]]) -> None:
+    def _attach_runtime_context(self, findings: list[dict[str, Any]]) -> None:
         """Bind remediation work to the evidence-backed VRTM path, not just a file line."""
-        observations_by_finding: Dict[str, List[Dict[str, Any]]] = {}
+        observations_by_finding: dict[str, list[dict[str, Any]]] = {}
         for observation in self.state.runtime_graph_observations:
             finding_id = str((observation.get("facts") or {}).get("finding_id", ""))
             if finding_id:
@@ -1484,7 +1484,7 @@ class OrchestratorAgent(BaseAgent):
             },
         )
 
-    def _collect_partial_results(self) -> Dict[str, Any]:
+    def _collect_partial_results(self) -> dict[str, Any]:
         """收集部分结果（用于失败情况）"""
         return {
             "phases_completed": [

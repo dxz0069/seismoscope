@@ -38,7 +38,7 @@ for level, (size, bold) in {1: (18, True), 2: (14, True), 3: (12, True)}.items()
     s.paragraph_format.space_before = Pt(12 if level > 1 else 20)
     s.paragraph_format.space_after = Pt(6)
 
-with open(SRC, 'r', encoding='utf-8') as f:
+with open(SRC, encoding='utf-8') as f:
     lines = f.readlines()
 
 def add_paragraph(text, style='Normal', bold=False):

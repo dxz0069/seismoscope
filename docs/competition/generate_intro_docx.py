@@ -21,7 +21,7 @@ for lvl, sz in [(1, 16), (2, 13), (3, 11)]:
     s.font.bold = True
     s.font.color.rgb = RGBColor(0, 0, 0)
 
-with open('作品简介.md', 'r', encoding='utf-8') as f:
+with open('作品简介.md', encoding='utf-8') as f:
     lines = f.readlines()
 
 for line in lines:

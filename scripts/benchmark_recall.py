@@ -37,6 +37,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from main import run_audit  # noqa: E402
+from datetime import UTC
 
 FIXTURES = ROOT / "tests" / "fixtures"
 
@@ -185,7 +186,7 @@ async def run_benchmark(extra_sets: list | None = None) -> dict:
     false_positives = sum(len(item["unexpected_types"]) for item in safe_reports)
     return {
         "contract_version": "seismoscope.benchmark-recall.v1",
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "generated_at": datetime.now(UTC).isoformat(),
         "mode": "deterministic-no-llm",
         "sets": reports,
         "summary": {

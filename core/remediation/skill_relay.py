@@ -39,9 +39,9 @@ class RelayEvent:
     timestamp: datetime
     actor: str  # "system", "ai_assistant", "user"
     message: str
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "from_state": self.from_state.value,
             "to_state": self.to_state.value,
@@ -64,29 +64,29 @@ class SkillRelayPackage:
     finding_title: str
     finding_severity: str
     ai_patch_prompt: str
-    patch_constraints: Dict[str, Any] = field(default_factory=dict)
-    retest_plan: List[Dict[str, Any]] = field(default_factory=list)
-    acceptance_criteria: List[str] = field(default_factory=list)
+    patch_constraints: dict[str, Any] = field(default_factory=dict)
+    retest_plan: list[dict[str, Any]] = field(default_factory=list)
+    acceptance_criteria: list[str] = field(default_factory=list)
 
     # 状态追踪
     state: RelayState = RelayState.DRAFT
-    events: List[RelayEvent] = field(default_factory=list)
-    state_history: List[RelayState] = field(default_factory=list)
+    events: list[RelayEvent] = field(default_factory=list)
+    state_history: list[RelayState] = field(default_factory=list)
 
     # 修复结果
-    fix_result: Optional[Dict[str, Any]] = None
-    fix_summary: Optional[str] = None
-    fix_commit: Optional[str] = None
-    fix_diff: Optional[str] = None
-    retest_results: List[Dict[str, Any]] = field(default_factory=list)
+    fix_result: dict[str, Any] | None = None
+    fix_summary: str | None = None
+    fix_commit: str | None = None
+    fix_diff: str | None = None
+    retest_results: list[dict[str, Any]] = field(default_factory=list)
 
     # 元数据
     created_at: datetime = field(default_factory=datetime.now)
     updated_at: datetime = field(default_factory=datetime.now)
-    completed_at: Optional[datetime] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    completed_at: datetime | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """转换为字典"""
         return {
             "package_id": self.package_id,
@@ -128,10 +128,10 @@ class SkillRelayManager:
     """
 
     def __init__(self):
-        self.packages: Dict[str, SkillRelayPackage] = {}
+        self.packages: dict[str, SkillRelayPackage] = {}
         self._valid_transitions = self._build_valid_transitions()
 
-    def _build_valid_transitions(self) -> Dict[RelayState, List[RelayState]]:
+    def _build_valid_transitions(self) -> dict[RelayState, list[RelayState]]:
         """构建有效状态转换图"""
         return {
             RelayState.DRAFT: [RelayState.DISPATCHED, RelayState.REJECTED],
@@ -146,8 +146,8 @@ class SkillRelayManager:
 
     def create_package(
         self,
-        finding: Dict[str, Any],
-        bundle: Dict[str, Any],
+        finding: dict[str, Any],
+        bundle: dict[str, Any],
     ) -> SkillRelayPackage:
         """
         创建整改包
@@ -197,7 +197,7 @@ class SkillRelayManager:
         to_state: RelayState,
         actor: str = "system",
         message: str = "",
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
     ) -> bool:
         """
         状态转换
@@ -274,10 +274,10 @@ class SkillRelayManager:
     def complete_fix(
         self,
         package: SkillRelayPackage,
-        result: Dict[str, Any],
+        result: dict[str, Any],
         summary: str = "",
-        commit: Optional[str] = None,
-        diff: Optional[str] = None,
+        commit: str | None = None,
+        diff: str | None = None,
     ) -> bool:
         """AI 助手完成修复"""
         package.fix_result = result
@@ -295,7 +295,7 @@ class SkillRelayManager:
     def return_results(
         self,
         package: SkillRelayPackage,
-        retest_results: Optional[List[Dict[str, Any]]] = None,
+        retest_results: list[dict[str, Any]] | None = None,
     ) -> bool:
         """返回修复结果给平台"""
         if retest_results:
@@ -326,27 +326,27 @@ class SkillRelayManager:
             message=error or "修复失败",
         )
 
-    def get_package(self, package_id: str) -> Optional[SkillRelayPackage]:
+    def get_package(self, package_id: str) -> SkillRelayPackage | None:
         """获取整改包"""
         return self.packages.get(package_id)
 
-    def get_all_packages(self) -> List[SkillRelayPackage]:
+    def get_all_packages(self) -> list[SkillRelayPackage]:
         """获取所有整改包"""
         return list(self.packages.values())
 
-    def get_packages_by_state(self, state: RelayState) -> List[SkillRelayPackage]:
+    def get_packages_by_state(self, state: RelayState) -> list[SkillRelayPackage]:
         """按状态获取整改包"""
         return [p for p in self.packages.values() if p.state == state]
 
-    def get_pending_packages(self) -> List[SkillRelayPackage]:
+    def get_pending_packages(self) -> list[SkillRelayPackage]:
         """获取待处理的整改包"""
         return self.get_packages_by_state(RelayState.DISPATCHED)
 
-    def get_completed_packages(self) -> List[SkillRelayPackage]:
+    def get_completed_packages(self) -> list[SkillRelayPackage]:
         """获取已完成的整改包"""
         return self.get_packages_by_state(RelayState.RETURNED)
 
-    def get_summary(self) -> Dict[str, Any]:
+    def get_summary(self) -> dict[str, Any]:
         """获取状态摘要"""
         state_counts = {}
         for package in self.packages.values():

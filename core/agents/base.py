@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional, Protocol
+from typing import Any, Callable, Dict, List, Optional, Protocol
 
 # ========== 枚举类型 ==========
 
@@ -47,13 +47,13 @@ class AgentConfig:
     name: str
     agent_type: AgentType
     pattern: AgentPattern = AgentPattern.REACT
-    model: Optional[str] = None  # LLM 模型标识
+    model: str | None = None  # LLM 模型标识
     temperature: float = 0.1
     max_tokens: int = 8192
     max_iterations: int = 20
     timeout_seconds: int = 600
-    tools: List[str] = field(default_factory=list)
-    system_prompt: Optional[str] = None
+    tools: list[str] = field(default_factory=list)
+    system_prompt: str | None = None
     enabled: bool = True
 
 
@@ -82,13 +82,13 @@ class TaskHandoff:
     from_agent: str
     to_agent: str
     summary: str
-    work_completed: List[str] = field(default_factory=list)
-    key_findings: List[Dict[str, Any]] = field(default_factory=list)
-    insights: List[str] = field(default_factory=list)
-    suggested_actions: List[Dict[str, Any]] = field(default_factory=list)
-    attention_points: List[str] = field(default_factory=list)
-    priority_areas: List[str] = field(default_factory=list)
-    context_refs: Dict[str, str] = field(default_factory=dict)
+    work_completed: list[str] = field(default_factory=list)
+    key_findings: list[dict[str, Any]] = field(default_factory=list)
+    insights: list[str] = field(default_factory=list)
+    suggested_actions: list[dict[str, Any]] = field(default_factory=list)
+    attention_points: list[str] = field(default_factory=list)
+    priority_areas: list[str] = field(default_factory=list)
+    context_refs: dict[str, str] = field(default_factory=dict)
     confidence: float = 0.8
     timestamp: datetime = field(default_factory=datetime.now)
 
@@ -157,7 +157,7 @@ class TaskHandoff:
         return "\n".join(lines)
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "TaskHandoff":
+    def from_dict(cls, data: dict[str, Any]) -> "TaskHandoff":
         """从字典创建 TaskHandoff"""
         return cls(
             from_agent=data.get("from_agent", "unknown"),
@@ -173,7 +173,7 @@ class TaskHandoff:
             confidence=data.get("confidence", 0.8),
         )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """转换为字典"""
         return {
             "from_agent": self.from_agent,
@@ -204,16 +204,16 @@ class AgentResult:
         tokens_used: 使用的 token 数量
     """
     success: bool
-    data: Dict[str, Any] = field(default_factory=dict)
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    handoff: Optional[TaskHandoff] = None
+    data: dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
+    handoff: TaskHandoff | None = None
     tokens_used: int = 0
 
     @classmethod
     def success_result(
         cls,
-        data: Dict[str, Any],
-        handoff: Optional[TaskHandoff] = None,
+        data: dict[str, Any],
+        handoff: TaskHandoff | None = None,
         tokens_used: int = 0,
         **metadata
     ) -> "AgentResult":
@@ -230,7 +230,7 @@ class AgentResult:
     def failure_result(
         cls,
         error: str,
-        data: Optional[Dict[str, Any]] = None,
+        data: dict[str, Any] | None = None,
         **metadata
     ) -> "AgentResult":
         """创建失败结果"""
@@ -248,13 +248,13 @@ class LLMService(Protocol):
 
     async def chat(
         self,
-        messages: List[Dict[str, str]],
+        messages: list[dict[str, str]],
         *,
-        model: Optional[str] = None,
+        model: str | None = None,
         temperature: float = 0.1,
         max_tokens: int = 8192,
-        tools: Optional[List[Dict]] = None,
-    ) -> Dict[str, Any]:
+        tools: list[dict] | None = None,
+    ) -> dict[str, Any]:
         """
         发送聊天请求
 
@@ -280,7 +280,7 @@ class ToolRegistry(Protocol):
         """获取工具"""
         ...
 
-    def list_tools(self) -> List[str]:
+    def list_tools(self) -> list[str]:
         """列出所有工具名称"""
         ...
 
@@ -298,7 +298,7 @@ class AgentTool(Protocol):
         """工具描述"""
         ...
 
-    async def execute(self, **kwargs) -> Dict[str, Any]:
+    async def execute(self, **kwargs) -> dict[str, Any]:
         """执行工具"""
         ...
 
@@ -322,8 +322,8 @@ class BaseAgent(ABC):
         self,
         config: AgentConfig,
         llm_service: LLMService,
-        tools: Optional[ToolRegistry] = None,
-        event_emitter: Optional[callable] = None,
+        tools: ToolRegistry | None = None,
+        event_emitter: Callable | None = None,
     ):
         self.config = config
         self.llm_service = llm_service
@@ -331,7 +331,7 @@ class BaseAgent(ABC):
         self.event_emitter = event_emitter
 
     @abstractmethod
-    async def run(self, payload: Dict[str, Any]) -> AgentResult:
+    async def run(self, payload: dict[str, Any]) -> AgentResult:
         """
         执行 Agent 主逻辑
 
@@ -343,7 +343,7 @@ class BaseAgent(ABC):
         """
         ...
 
-    async def emit_event(self, event: str, message: str, metadata: Optional[Dict] = None):
+    async def emit_event(self, event: str, message: str, metadata: dict | None = None):
         """
         发射事件
 
@@ -363,12 +363,12 @@ class BaseAgent(ABC):
 
     async def call_llm(
         self,
-        messages: List[Dict[str, str]],
+        messages: list[dict[str, str]],
         *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        tools: Optional[List[Dict]] = None,
-    ) -> Dict[str, Any]:
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        tools: list[dict] | None = None,
+    ) -> dict[str, Any]:
         """
         调用 LLM
 
@@ -389,13 +389,13 @@ class BaseAgent(ABC):
             tools=tools,
         )
 
-    def get_tool(self, name: str) -> Optional[AgentTool]:
+    def get_tool(self, name: str) -> AgentTool | None:
         """获取工具"""
         if self.tools:
             return self.tools.get_tool(name)
         return None
 
-    def list_tools(self) -> List[str]:
+    def list_tools(self) -> list[str]:
         """列出所有工具名称"""
         if self.tools:
             return self.tools.list_tools()

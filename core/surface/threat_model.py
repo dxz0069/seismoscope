@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from hashlib import sha1
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, List, Optional
+from collections.abc import Iterable
 
 from ..harness.models import RuntimeSurfaceGraph
 
@@ -43,13 +44,13 @@ class ThreatTechnique:
     category: str
     description: str
     default_severity: str
-    required_node_types: List[str] = field(default_factory=list)
+    required_node_types: list[str] = field(default_factory=list)
     verification_strategy: str = "static_and_runtime"
-    flow_planes: List[str] = field(default_factory=list)
-    path_pattern: List[str] = field(default_factory=list)
-    external_mappings: Dict[str, List[str]] = field(default_factory=dict)
+    flow_planes: list[str] = field(default_factory=list)
+    path_pattern: list[str] = field(default_factory=list)
+    external_mappings: dict[str, list[str]] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "id": self.technique_id,
             "name": self.name,
@@ -70,9 +71,9 @@ class EvidencePredicateSpec:
     description: str
     evidence_type: str
     required: bool = True
-    verification_tool: Optional[str] = None
+    verification_tool: str | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "id": self.predicate_id,
             "description": self.description,
@@ -87,30 +88,30 @@ class RiskHypothesis:
     hypothesis_id: str
     technique_id: str
     title: str
-    source_node_ids: List[str]
-    boundary_node_ids: List[str]
-    target_node_ids: List[str]
-    attack_path: List[str]
+    source_node_ids: list[str]
+    boundary_node_ids: list[str]
+    target_node_ids: list[str]
+    attack_path: list[str]
     impact: str
     severity: str
     confidence: float
-    evidence_predicates: List[EvidencePredicateSpec] = field(default_factory=list)
-    assumptions: List[str] = field(default_factory=list)
+    evidence_predicates: list[EvidencePredicateSpec] = field(default_factory=list)
+    assumptions: list[str] = field(default_factory=list)
     status: str = "open"
-    flow_planes: List[str] = field(default_factory=list)
-    control_gaps: List[Dict[str, Any]] = field(default_factory=list)
-    risk_factors: Dict[str, Any] = field(default_factory=dict)
-    external_mappings: Dict[str, List[str]] = field(default_factory=dict)
+    flow_planes: list[str] = field(default_factory=list)
+    control_gaps: list[dict[str, Any]] = field(default_factory=list)
+    risk_factors: dict[str, Any] = field(default_factory=dict)
+    external_mappings: dict[str, list[str]] = field(default_factory=dict)
     applicability: str = "applicable"
     residual_status: str = "unresolved"
-    control_state: Dict[str, Any] = field(default_factory=dict)
+    control_state: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         # Validate status at construction time so typos raise immediately.
         # RiskHypothesis is a mutable dataclass, so plain assignment works.
         self.status = HypothesisStatus.validate(self.status)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "id": self.hypothesis_id,
             "technique_id": self.technique_id,
@@ -139,12 +140,12 @@ class RiskHypothesis:
 class RuntimeThreatModel:
     method: str = "vibe_runtime_threat_model"
     version: str = VRTM_METHOD_VERSION
-    techniques: List[ThreatTechnique] = field(default_factory=list)
-    hypotheses: List[RiskHypothesis] = field(default_factory=list)
-    coverage: Dict[str, Any] = field(default_factory=dict)
-    assumptions: List[str] = field(default_factory=list)
+    techniques: list[ThreatTechnique] = field(default_factory=list)
+    hypotheses: list[RiskHypothesis] = field(default_factory=list)
+    coverage: dict[str, Any] = field(default_factory=dict)
+    assumptions: list[str] = field(default_factory=list)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "method": self.method,
             "version": self.version,
@@ -156,7 +157,7 @@ class RuntimeThreatModel:
         }
 
 
-_TECHNIQUE_DETAILS: Dict[str, Dict[str, Any]] = {
+_TECHNIQUE_DETAILS: dict[str, dict[str, Any]] = {
     "T-PROMPT-INJECTION": {
         "flow_planes": ["instruction"],
         "path_pattern": ["external_actor", "prompt", "model"],
@@ -448,10 +449,10 @@ class RuntimeThreatModelAnalyzer:
     )
 
     # Registry for extra techniques added at runtime (e.g. from plugins or tests).
-    _extra_techniques: Dict[str, "ThreatTechnique"] = {}
+    _extra_techniques: dict[str, ThreatTechnique] = {}
 
     @classmethod
-    def register_technique(cls, technique: "ThreatTechnique") -> None:
+    def register_technique(cls, technique: ThreatTechnique) -> None:
         """Register an additional ThreatTechnique without modifying TECHNIQUES.
 
         The registered technique will be picked up by all subsequent analyzer
@@ -485,7 +486,7 @@ class RuntimeThreatModelAnalyzer:
         }
 
     def analyze(self) -> RuntimeThreatModel:
-        hypotheses: List[RiskHypothesis] = []
+        hypotheses: list[RiskHypothesis] = []
         hypotheses.extend(self._prompt_injection_hypotheses())
         hypotheses.extend(self._excessive_agency_hypotheses())
         hypotheses.extend(self._description_injection_hypotheses())
@@ -502,7 +503,7 @@ class RuntimeThreatModelAnalyzer:
         hypotheses.extend(self._service_identity_hypotheses())
         hypotheses = self._rank_and_deduplicate_hypotheses(hypotheses)
 
-        node_types: Dict[str, int] = {}
+        node_types: dict[str, int] = {}
         for node in self.graph.nodes:
             node_types[node.node_type] = node_types.get(node.node_type, 0) + 1
         modeled_types = {item for technique in self.TECHNIQUES for item in technique.required_node_types}
@@ -544,7 +545,7 @@ class RuntimeThreatModelAnalyzer:
             ],
         )
 
-    def _prompt_injection_hypotheses(self) -> List[RiskHypothesis]:
+    def _prompt_injection_hypotheses(self) -> list[RiskHypothesis]:
         prompts = [node for node in self.graph.nodes if node.node_type == "prompt"]
         results = []
         for prompt in prompts:
@@ -570,7 +571,7 @@ class RuntimeThreatModelAnalyzer:
                 ))
         return results
 
-    def _excessive_agency_hypotheses(self) -> List[RiskHypothesis]:
+    def _excessive_agency_hypotheses(self) -> list[RiskHypothesis]:
         results = []
         for tool in self.graph.nodes:
             if tool.node_type != "tool" or tool.attributes.get("risk_level") not in {"high", "critical"}:
@@ -613,7 +614,7 @@ class RuntimeThreatModelAnalyzer:
             ))
         return results
 
-    def _description_injection_hypotheses(self) -> List[RiskHypothesis]:
+    def _description_injection_hypotheses(self) -> list[RiskHypothesis]:
         results = []
         markers = ("ignore", "override", "disregard", "forget", "system prompt")
         for tool in self.graph.nodes:
@@ -638,7 +639,7 @@ class RuntimeThreatModelAnalyzer:
             ))
         return results
 
-    def _unprotected_entry_hypotheses(self) -> List[RiskHypothesis]:
+    def _unprotected_entry_hypotheses(self) -> list[RiskHypothesis]:
         results = []
         actor_ids = self._ids_by_type("external_actor")
         for entry in self.graph.nodes:
@@ -686,10 +687,10 @@ class RuntimeThreatModelAnalyzer:
         return (severity.get(item.severity, 0), item.confidence, item.hypothesis_id)
 
     def _rank_and_deduplicate_hypotheses(
-        self, hypotheses: List[RiskHypothesis],
-    ) -> List[RiskHypothesis]:
+        self, hypotheses: list[RiskHypothesis],
+    ) -> list[RiskHypothesis]:
         """Collapse identical technique/path hypotheses without hiding evidence."""
-        clusters: Dict[tuple[str, tuple[str, ...], tuple[str, ...]], RiskHypothesis] = {}
+        clusters: dict[tuple[str, tuple[str, ...], tuple[str, ...]], RiskHypothesis] = {}
         for hypothesis in hypotheses:
             key = (
                 hypothesis.technique_id,
@@ -708,7 +709,7 @@ class RuntimeThreatModelAnalyzer:
             existing.risk_factors["cluster_size"] = len(related) + 1
         return sorted(clusters.values(), key=self._hypothesis_priority, reverse=True)
 
-    def _indirect_prompt_injection_hypotheses(self) -> List[RiskHypothesis]:
+    def _indirect_prompt_injection_hypotheses(self) -> list[RiskHypothesis]:
         results = []
         seen_paths = set()
         for prompt in self.graph.nodes:
@@ -771,7 +772,7 @@ class RuntimeThreatModelAnalyzer:
                 ))
         return results
 
-    def _mcp_authorization_hypotheses(self) -> List[RiskHypothesis]:
+    def _mcp_authorization_hypotheses(self) -> list[RiskHypothesis]:
         results = []
         for capability in self.graph.nodes:
             if capability.node_type != "mcp_capability":
@@ -802,7 +803,7 @@ class RuntimeThreatModelAnalyzer:
             ))
         return results
 
-    def _browser_sink_hypotheses(self) -> List[RiskHypothesis]:
+    def _browser_sink_hypotheses(self) -> list[RiskHypothesis]:
         results = []
         for sink in self.graph.nodes:
             if sink.node_type != "browser_sink":
@@ -829,7 +830,7 @@ class RuntimeThreatModelAnalyzer:
                 ))
         return results
 
-    def _workflow_privilege_hypotheses(self) -> List[RiskHypothesis]:
+    def _workflow_privilege_hypotheses(self) -> list[RiskHypothesis]:
         results = []
         actor_ids = self._ids_by_type("external_actor")
         for workflow in self.graph.nodes:
@@ -894,10 +895,10 @@ class RuntimeThreatModelAnalyzer:
             )
         return False
 
-    def _eligible_workflow_descendants(self, node_id: str) -> List[str]:
+    def _eligible_workflow_descendants(self, node_id: str) -> list[str]:
         pending = [node_id]
         seen: set[str] = set()
-        related: List[str] = []
+        related: list[str] = []
         while pending:
             current_id = pending.pop()
             if current_id in seen:
@@ -912,7 +913,7 @@ class RuntimeThreatModelAnalyzer:
             )
         return sorted(related)
 
-    def _sensitive_storage_hypotheses(self) -> List[RiskHypothesis]:
+    def _sensitive_storage_hypotheses(self) -> list[RiskHypothesis]:
         results = []
         for storage in self.graph.nodes:
             if storage.node_type != "storage_asset" or not storage.attributes.get("sensitive"):
@@ -939,7 +940,7 @@ class RuntimeThreatModelAnalyzer:
                 ))
         return results
 
-    def _memory_poisoning_hypotheses(self) -> List[RiskHypothesis]:
+    def _memory_poisoning_hypotheses(self) -> list[RiskHypothesis]:
         results = []
         for edge in self.edges:
             source = self.nodes.get(edge.source)
@@ -969,7 +970,7 @@ class RuntimeThreatModelAnalyzer:
             ))
         return results
 
-    def _retrieval_injection_hypotheses(self) -> List[RiskHypothesis]:
+    def _retrieval_injection_hypotheses(self) -> list[RiskHypothesis]:
         results = []
         for edge in self.edges:
             source = self.nodes.get(edge.source)
@@ -999,7 +1000,7 @@ class RuntimeThreatModelAnalyzer:
             ))
         return results
 
-    def _secret_delegation_hypotheses(self) -> List[RiskHypothesis]:
+    def _secret_delegation_hypotheses(self) -> list[RiskHypothesis]:
         results = []
         for edge in self.edges:
             source = self.nodes.get(edge.source)
@@ -1024,7 +1025,7 @@ class RuntimeThreatModelAnalyzer:
             ))
         return results
 
-    def _deployment_tampering_hypotheses(self) -> List[RiskHypothesis]:
+    def _deployment_tampering_hypotheses(self) -> list[RiskHypothesis]:
         results = []
         for edge in self.edges:
             source = self.nodes.get(edge.source)
@@ -1046,7 +1047,7 @@ class RuntimeThreatModelAnalyzer:
             ))
         return results
 
-    def _service_identity_hypotheses(self) -> List[RiskHypothesis]:
+    def _service_identity_hypotheses(self) -> list[RiskHypothesis]:
         results = []
         for identity in self.graph.nodes:
             if identity.node_type != "service_identity":
@@ -1096,14 +1097,14 @@ class RuntimeThreatModelAnalyzer:
         *,
         technique_id: str,
         title: str,
-        source_ids: List[str],
-        target_ids: List[str],
-        path: List[str],
+        source_ids: list[str],
+        target_ids: list[str],
+        path: list[str],
         impact: str,
         severity: str,
         confidence: float,
-        predicates: List[EvidencePredicateSpec],
-        assumptions: Optional[List[str]] = None,
+        predicates: list[EvidencePredicateSpec],
+        assumptions: list[str] | None = None,
     ) -> RiskHypothesis:
         fingerprint = "|".join([technique_id, title, *path])
         technique = self.techniques[technique_id]
@@ -1167,10 +1168,10 @@ class RuntimeThreatModelAnalyzer:
         )
 
     def _control_state(
-        self, technique_id: str, path: List[str], boundary_ids: List[str],
-    ) -> Dict[str, Any]:
-        observed_ids: List[str] = []
-        evidence_levels: List[str] = []
+        self, technique_id: str, path: list[str], boundary_ids: list[str],
+    ) -> dict[str, Any]:
+        observed_ids: list[str] = []
+        evidence_levels: list[str] = []
         for node_id in boundary_ids:
             node = self.nodes.get(node_id)
             if not node:
@@ -1233,20 +1234,20 @@ class RuntimeThreatModelAnalyzer:
             }
         return False
 
-    def _ids_by_type(self, node_type: str) -> List[str]:
+    def _ids_by_type(self, node_type: str) -> list[str]:
         return [node.node_id for node in self.graph.nodes if node.node_type == node_type]
 
-    def _ids_for_tool_asset(self, tool_id: str) -> List[str]:
+    def _ids_for_tool_asset(self, tool_id: str) -> list[str]:
         return [
             edge.target for edge in self.edges
             if edge.source == tool_id and edge.relation == "accesses"
         ]
 
-    def _outgoing_targets(self, node_id: str, *, relations: set[str]) -> List[str]:
+    def _outgoing_targets(self, node_id: str, *, relations: set[str]) -> list[str]:
         return [edge.target for edge in self.edges if edge.source == node_id and edge.relation in relations]
 
-    def _first_path(self, source_id: str, target_types: set[str], max_depth: int = 4) -> List[str]:
-        queue: List[List[str]] = [[source_id]]
+    def _first_path(self, source_id: str, target_types: set[str], max_depth: int = 4) -> list[str]:
+        queue: list[list[str]] = [[source_id]]
         visited = {source_id}
         while queue:
             path = queue.pop(0)
@@ -1263,7 +1264,7 @@ class RuntimeThreatModelAnalyzer:
                 queue.append(path + [edge.target])
         return [source_id]
 
-    def _boundary_ids_for_path(self, path: Iterable[str]) -> List[str]:
+    def _boundary_ids_for_path(self, path: Iterable[str]) -> list[str]:
         path_set = set(path)
         return [
             edge.target
