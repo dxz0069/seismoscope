@@ -27,9 +27,18 @@ def test_fixed_form_with_dollar_anchor_is_clean():
     assert find_lookahead_bypasses(FIXED + "\n") == []
 
 
-def test_first_round_form_without_lookahead_is_not_this_analyzer():
-    # 无环视的旧形态不属于本分析器职责（缺端锚语义不成立）
-    assert find_lookahead_bypasses(FIRST_ROUND + "\n") == []
+def test_first_round_complete_tag_only_form_is_flagged():
+    # 形态二（PSECBUGS-117112）：只有完整标签分支，分块转义串尾绕过
+    candidates = find_lookahead_bypasses(FIRST_ROUND + "\n")
+    assert len(candidates) == 1
+    assert "完整标签分支" in candidates[0]["reason"]
+    assert "分裂载荷" in candidates[0]["reason"]
+
+
+def test_bare_matcher_form_is_clean():
+    # 裸匹配任意出现（含串尾）无此缺陷
+    bare = "var R = /<\\/script/gi; str.replace(R, '');"
+    assert find_lookahead_bypasses(bare + "\n") == []
 
 
 def test_unrelated_lookaheads_do_not_trigger():
