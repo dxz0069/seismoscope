@@ -53,6 +53,7 @@ web_vulnerability_patterns:
   - subprocess\.Popen\(.*shell=True
   - childProcess\.exec(?:Sync)?\(
   - child_process\.exec(?:Sync)?\(
+  - (?:execFile|execFileSync|spawnSync|spawn)\s*\([^)\n]*\.split\(
   - (?:^|[^\w$.])exec(?:Sync)?\s*\(
   - replace\(/\(\[&\|<>,;=\^\]\)/g,\s*[\'"]\^\$1[\'"]\)
 - vulnerability_type: code_injection

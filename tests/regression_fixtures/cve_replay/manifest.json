@@ -101,6 +101,66 @@
      ]
     }
    ]
+  },
+  {
+   "target": "systeminformation-inetlatency",
+   "cwe": "CWE-78",
+   "expected_types": [
+    "command_injection"
+   ],
+   "parent_commit": "0be6fcd575c0",
+   "advisory": "GHSA-jff2-qjw8-5476 / CVE-2021-21388（修复 01ef56cd）",
+   "note": "execFile 参数由用户输入字符串 split 而来——参数数组安全性被打穿；hunk 行含修复行与 sink 行",
+   "fix_files": [
+    {
+     "file": "lib/internet.js",
+     "hunk_lines": [
+      215,
+      216
+     ]
+    }
+   ]
+  },
+  {
+   "target": "systeminformation-v4",
+   "cwe": "CWE-78",
+   "expected_types": [
+    "command_injection"
+   ],
+   "parent_commit": "73dce8d717ca",
+   "advisory": "GHSA-8j36-q8x7-pm6q / CVE-2020-7778（修复 11103a44 等）",
+   "note": "v4 时代单文件 lib：exec 引号拼接（'ping ' + hostSanitized）；sanitize 实现自身有缺陷（修复含循环 bugfix）；hunk 行为修复区与 sink 行",
+   "fix_files": [
+    {
+     "file": "lib/internet.js",
+     "hunk_lines": [
+      38,
+      60,
+      154,
+      172
+     ]
+    }
+   ]
+  },
+  {
+   "target": "systeminformation-8021x",
+   "cwe": "CWE-78",
+   "expected_types": [
+    "command_injection"
+   ],
+   "parent_commit": "51c7698b9178",
+   "advisory": "GHSA-cvv5-9h9w-qp2m / CVE-2024-56334（修复 f7af0a67）",
+   "note": "getWindowsIEEE8021x：netsh 命令模板插值 SSID 未 sanitize；hunk 行为 sink 行",
+   "fix_files": [
+    {
+     "file": "lib/network.js",
+     "hunk_lines": [
+      349,
+      403,
+      404
+     ]
+    }
+   ]
   }
  ]
 }

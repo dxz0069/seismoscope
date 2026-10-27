@@ -56,6 +56,8 @@ class SharedReviewBudget:
                 "severity": str(candidate.get("severity", "medium")).lower(),
                 "confidence": float(candidate.get("confidence", 0.0) or 0.0),
                 "order": int(candidate.get("order", 0) or 0),
+                "file_path": str(candidate.get("file_path", "")),
+                "evidence": str(candidate.get("evidence_text", "")),
             }
             for candidate in candidates
             if str(candidate.get("id", ""))
@@ -69,6 +71,29 @@ class SharedReviewBudget:
                 await self._selection_condition.wait_for(lambda: self._selection_finalized)
             return set(self._selected_by_lane.get(str(lane), set()))
 
+    @staticmethod
+    def _targeted_priority(candidate: dict[str, Any]) -> int:
+        """LLM 预算的定向优先级（越小越优先）。
+
+        - 安全控制例程（escape/sanitize/neutralize/encode/validate/deserialize
+          所在文件或证据）加权提前：这是 "false positivity" 高发位——看着已
+          加固实则可绕过，LLM 深读其实现的边际价值最高（实测：serialize-
+          javascript 语义绕过曾因审查预算未抵达此处而漏检）。
+        - 测试目录候选降权最后：审查预算大量耗在 test 文件是首测中
+          "45 个发现全落测试、sink 零命中"的直接原因。
+        """
+        path = (candidate.get("file_path") or "").lower()
+        evidence = (candidate.get("evidence") or "").lower()
+        control_markers = (
+            "escape", "sanitize", "sanitise", "neutralize", "neutralise",
+            "encode", "validate", "deserialize", "unserialize", "purify", "filter",
+        )
+        if any(marker in path or marker in evidence for marker in control_markers):
+            return 0
+        if any(part in path for part in ("/test", "test/", "/tests", "tests/", "/__tests__", ".spec.", ".test.")):
+            return 2
+        return 1
+
     def _finalize_selection(self) -> None:
         if self._selection_finalized:
             return
@@ -77,6 +102,7 @@ class SharedReviewBudget:
             for candidate in candidates:
                 ranked.append((
                     self._SEVERITY_RANK.get(candidate["severity"], 5),
+                    self._targeted_priority(candidate),
                     -candidate["confidence"],
                     lane,
                     candidate["order"],
@@ -85,7 +111,7 @@ class SharedReviewBudget:
         ranked.sort()
         selected = ranked[:self.limit]
         self._selected_by_lane = {}
-        for _, _, lane, _, candidate_id in selected:
+        for _, _, _, lane, _, candidate_id in selected:
             self._selected_by_lane.setdefault(lane, set()).add(candidate_id)
         self._claimed = len(selected)
         self._remaining = self.limit - self._claimed

@@ -4,6 +4,15 @@
 
 ## [Unreleased]
 
+## [0.22.0] — 2026-10-27
+
+### 新增
+
+- **CVE 回放靶场 5 → 8 目标，全命中**：systeminformation 家族再纳三例（CVE-2021-21388 execFile 参数 split 打穿数组安全、CVE-2020-7778 v4 引号拼接 exec、CVE-2024-56334 netsh 模板插值 SSID），均与上游父提交核验
+- **LLM 审查预算定向优先级**：安全控制例程（escape/sanitize/validate 等，false positivity 高发位）候选加权优先、测试目录候选降权最后——针对首测"45 个发现全落测试文件、sink 零命中"的直接修正
+- **门控增强**：JS exec 污点门控支持引号拼接形态（'ping ' + host），execFile/spawn 参数由 split 而来的新模式
+- **贡献者路线图**：docs/CONTRIBUTING.md（兴趣点定位表 + 不可破坏约束）；3 个 good-first-issue 上线
+
 ## [0.21.0] — 2026-10-27
 
 ### 新增
