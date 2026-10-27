@@ -36,3 +36,7 @@ pytest-cache-files-*/
 .vscode/
 Thumbs.db
 .DS_Store
+
+# 前端依赖与构建产物
+node_modules/
+frontend-v2/dist/
