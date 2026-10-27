@@ -1149,6 +1149,20 @@ def _print_deployment_report(report: dict[str, Any], *, as_json: bool) -> None:
         print(f"[{state}] {image.get('id')} -> {image.get('image')} ({image.get('reason')})")
     llm = doctor.get("llm", {})
     print(f"LLM credentials: {'configured' if llm.get('configured') else 'not configured'}")
+    capabilities = doctor.get("capabilities")
+    if capabilities:
+        print("Capabilities:")
+        for name, info in capabilities.items():
+            state = "READY" if info.get("available") else ("OPTIONAL" if info.get("optional") else "DEGRADED")
+            suffix = ""
+            if not info.get("available"):
+                parts = list(info.get("blocking") or [])
+                if info.get("fallback"):
+                    parts.append(f"fallback: {info['fallback']}")
+                if info.get("next_step"):
+                    parts.append(f"next: {info['next_step']}")
+                suffix = f" ({'; '.join(parts)})" if parts else ""
+            print(f"  [{state}] {name}{suffix}")
 
 
 def main():
