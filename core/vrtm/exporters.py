@@ -13,6 +13,8 @@ def export_vrtm(result: dict[str, Any], format_type: str) -> str:
         return _markdown(result)
     if format_type == "dot":
         return _dot(result)
+    if format_type == "mermaid":
+        return _mermaid(result)
     raise ValueError(f"unsupported VRTM export format: {format_type}")
 
 
@@ -97,3 +99,54 @@ def _dot(result: dict[str, Any]) -> str:
 
 def _escape(value: Any) -> str:
     return str(value).replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n")
+
+
+_PLANE_COLORS = {
+    "data": "#0284c7",
+    "instruction": "#7c3aed",
+    "permission": "#d97706",
+    "artifact": "#059669",
+}
+
+
+def _mermaid(result: dict[str, Any]) -> str:
+    """GitHub 原生可渲染的 Mermaid flowchart（```mermaid 代码块内）。
+
+    节点按类型着色，出现在任一假设攻击路径上的节点以红框标红；
+    边标注语义关系与流平面。
+    """
+    graph = result.get("graph", {})
+    hypotheses = result.get("threat_model", {}).get("hypotheses", [])
+    risky_nodes = {
+        node_id for item in hypotheses for node_id in item.get("attack_path", [])
+    }
+    lines = ["flowchart LR"]
+
+    node_index = {
+        node.get("id", ""): f"n{index}"
+        for index, node in enumerate(graph.get("nodes", []))
+    }
+
+    def safe(node_id: str) -> str:
+        return node_index.get(node_id, "n_unknown")
+
+    for node in graph.get("nodes", []):
+        mid = node_index.get(node.get("id", ""), "n_unknown")
+        label = _mermaid_label(f"{node.get('label', '')} [{node.get('type', '')}]")
+        color = _PLANE_COLORS.get(str(node.get("flow_plane", "")).lower(), "#475569")
+        stroke = '#dc2626,"3px"' if node.get("id") in risky_nodes else f'{color},"1.5px"'
+        lines.append(f'    {mid}["{label}"]:::plain -.-> style {mid} stroke:{stroke}')
+    for edge in graph.get("edges", []):
+        source = node_index.get(edge.get("source", ""), safe(edge.get("source", "")))
+        target = node_index.get(edge.get("target", ""), safe(edge.get("target", "")))
+        relation = _mermaid_label(edge.get("semantic_relation") or edge.get("relation", ""))
+        planes = ",".join(edge.get("flow_planes", []))
+        label = f"{relation} <small>{planes}</small>" if planes else relation
+        lines.append(f'    {source} -->|"{label}"| {target}')
+    lines.append("    classDef plain fill:#f8fafc,color:#0f172a;")
+    return "\n".join(lines)
+
+
+def _mermaid_label(value: Any) -> str:
+    text = str(value).replace('"', "'").replace("\n", " ").strip()
+    return text[:48] + ("…" if len(text) > 48 else "")
