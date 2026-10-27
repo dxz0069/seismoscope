@@ -31,6 +31,10 @@ Industry evidence: [Escape.tech scanned 5,600 vibe-coded apps and found 2,000+ v
 
 **4. Remediation bundles, not PDFs.** Confirmed risks become RemediationBundles — file/line-precise fix instructions, forbidden changes, acceptance criteria and a retest plan — consumable directly by AI coding agents, or shipped as a GitHub PR with one command.
 
+## 30-second Demo
+
+Fork [seismoscope-demo](https://github.com/dxz0069/seismoscope-demo) → CI audits automatically → alerts (XSS / SQL injection / hardcoded key, each with CWE links) appear under the Security tab in about a minute.
+
 ## Quick Start
 
 ```bash
