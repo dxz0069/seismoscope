@@ -81,22 +81,50 @@ def find_lookahead_bypasses(content: str) -> List[Dict[str, Any]]:
             continue
         seen_literals.add(open_idx)
         literal = content[open_idx:end]
-        lookaheads = _LOOKAHEAD.findall(literal)
-        if not lookaheads:
-            continue
-        # 任一环视体含端锚（$ 或 \z）即不构成串尾绕过
-        unanchored = [body for body in lookaheads if "$" not in body and "\\z" not in body]
-        if not unanchored:
+        reason = _bypass_reason(literal)
+        if reason is None:
             continue
         line = content.count("\n", 0, open_idx) + 1
         candidates.append({
             "line_start": line,
             "line_end": line + literal.count("\n"),
             "evidence": literal,
-            "reason": (
-                "script 闭合标签中和正则的正向环视缺少端锚（$ / \\z）："
-                "中和仅在标签后还有界定字符时生效，序列化内容以 </script "
-                "结尾（串尾）时环视失败、标签未被中和——串尾绕过"
-            ),
+            "reason": reason,
         })
     return candidates
+
+
+def _bypass_reason(literal: str) -> Optional[str]:
+    """判定一个 script 闭合标签中和正则的绕过形态，返回原因或 None。
+
+    形态一（环视缺端锚，PSECBUGS-118415）：有环视分支但环视体无 ``$``/``\\z``
+    ——中和仅在后面还有界定字符时生效，串尾裸标签未中和。
+
+    形态二（只有完整标签分支，PSECBUGS-117112）：无任何环视与端锚，
+    分支要求闭合 ``>``——分块转义场景下（各函数体独立转义）裸 ``</script``
+    串尾绕过，闭合 ``>`` 可由后续序列化值补上。
+    """
+    lookaheads = _LOOKAHEAD.findall(literal)
+    has_anchor = "$" in literal or "\\z" in literal
+    if lookaheads:
+        if has_anchor:
+            return None
+        unanchored = [body for body in lookaheads if "$" not in body and "\\z" not in body]
+        if not unanchored:
+            return None
+        return (
+            "script 闭合标签中和正则的正向环视缺少端锚（$ / \\z）："
+            "中和仅在标签后还有界定字符时生效，序列化内容以 </script "
+            "结尾（串尾）时环视失败、标签未被中和——串尾绕过"
+        )
+    # 形态二：无环视无端锚，且分支要求闭合 >（完整标签才中和）
+    if has_anchor:
+        return None
+    after_anchor = literal[literal.lower().find("<\\/script") + len("<\\/script"):]
+    if ">" not in after_anchor:
+        return None  # 裸匹配任意出现（含串尾），无此缺陷
+    return (
+        "script 闭合标签中和正则只有要求闭合 > 的完整标签分支，"
+        "无裸前缀环视、无端锚：分块转义场景下（各片段独立转义）串尾"
+        "裸 </script 未被中和，闭合 > 可由后续片段补上——分裂载荷绕过"
+    )
