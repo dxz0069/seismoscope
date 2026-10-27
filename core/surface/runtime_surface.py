@@ -1075,11 +1075,21 @@ class RuntimeSurfaceBuilder:
 
     def _extract_config(self, file_path: str, content: str, suffix: str) -> None:
         if suffix == ".json":
-            payload = json.loads(content)
+            try:
+                payload = json.loads(content)
+            except (json.JSONDecodeError, ValueError):
+                return
         else:
             if yaml is None:
                 raise ValueError("PyYAML unavailable")
-            payload = yaml.safe_load(content)
+            try:
+                payload = yaml.safe_load(content)
+            except yaml.YAMLError:
+                # 多文档 YAML（--- 分隔，k8s manifest、文档配置等极常见）
+                # 或解析失败：配置面提取只是增强信息，跳过该文件即可，
+                # 绝不能让整个审计崩溃（实测触发：PyYAML sdist 的
+                # examples/pygments-lexer/example.yaml）。
+                return
         if not isinstance(payload, dict):
             return
         if _is_workflow_path(file_path) and isinstance(payload.get("jobs"), dict):
