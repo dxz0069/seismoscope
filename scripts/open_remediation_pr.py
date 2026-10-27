@@ -29,7 +29,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -38,7 +38,7 @@ if str(ROOT) not in sys.path:
 from core.audit.standards_map import standards_for  # noqa: E402
 
 
-def bundles_from(result: Dict[str, Any]) -> List[Dict[str, Any]]:
+def bundles_from(result: dict[str, Any]) -> list[dict[str, Any]]:
     bundles = result.get("remediation_bundles") or []
     return [b for b in bundles if isinstance(b, dict) and b.get("ai_patch_prompt")]
 
@@ -59,9 +59,9 @@ def _standards_line(vulnerability_type: str) -> str:
     return f"**标准**: {tags}（[OWASP]({standards['help_uri']})）\n\n"
 
 
-def compose_bundle_section(bundle: Dict[str, Any]) -> str:
+def compose_bundle_section(bundle: dict[str, Any]) -> str:
     """单个 Bundle 的 PR 正文段落。"""
-    lines: List[str] = []
+    lines: list[str] = []
     title = bundle.get("finding_title") or bundle.get("title") or bundle.get("vulnerability_type", "finding")
     lines.append(f"## {_severity_badge(bundle.get('severity'))} {title}")
     lines.append("")
@@ -117,7 +117,7 @@ def compose_bundle_section(bundle: Dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-def compose_pr(bundles: List[Dict[str, Any]], *, split: bool = False) -> List[Dict[str, str]]:
+def compose_pr(bundles: list[dict[str, Any]], *, split: bool = False) -> list[dict[str, str]]:
     """组装 PR 列表：split=False 汇总单 PR，split=True 每个漏洞一个 PR。"""
     if not bundles:
         return []
@@ -151,11 +151,11 @@ def compose_pr(bundles: List[Dict[str, Any]], *, split: bool = False) -> List[Di
     }]
 
 
-def _run(command: List[str], *, check: bool = True) -> subprocess.CompletedProcess:
+def _run(command: list[str], *, check: bool = True) -> subprocess.CompletedProcess:
     return subprocess.run(command, capture_output=True, text=True, encoding="utf-8", check=check)
 
 
-def create_pull_requests(entries: List[Dict[str, str]], *, repo: str, base: str, branch_prefix: str) -> None:
+def create_pull_requests(entries: list[dict[str, str]], *, repo: str, base: str, branch_prefix: str) -> None:
     if shutil.which("gh") is None:
         print("错误：未找到 gh CLI，请安装并登录（gh auth login）。", file=sys.stderr)
         sys.exit(2)

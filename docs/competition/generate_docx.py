@@ -1,11 +1,13 @@
 """Convert design document markdown to formatted Word document."""
-import re, os
+import os
+import re
+
 from docx import Document
-from docx.shared import Pt, Inches, Cm, RGBColor
-from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.style import WD_STYLE_TYPE
-from docx.oxml.ns import qn
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml import OxmlElement
+from docx.oxml.ns import qn
+from docx.shared import Cm, Inches, Pt, RGBColor
 
 SRC = r'E:\zhuomian\c444\lz\vibe-sec-platform\系统设计文档-最终版.md'
 DST = r'E:\zhuomian\c444\lz\vibe-sec-platform\系统设计文档-最终版-v2.docx'
@@ -36,7 +38,7 @@ for level, (size, bold) in {1: (18, True), 2: (14, True), 3: (12, True)}.items()
     s.paragraph_format.space_before = Pt(12 if level > 1 else 20)
     s.paragraph_format.space_after = Pt(6)
 
-with open(SRC, 'r', encoding='utf-8') as f:
+with open(SRC, encoding='utf-8') as f:
     lines = f.readlines()
 
 def add_paragraph(text, style='Normal', bold=False):

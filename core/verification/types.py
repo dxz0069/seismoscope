@@ -2,10 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Dict
-
-
-VULNERABILITY_TYPE_ALIASES: Dict[str, str] = {
+VULNERABILITY_TYPE_ALIASES: dict[str, str] = {
     "hardcoded_secrets": "secret_leak",
     "hardcoded_secret": "secret_leak",
     "hardcoded_credentials": "credential_exposure",

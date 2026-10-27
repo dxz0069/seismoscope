@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Callable, Dict, Optional
+from collections.abc import Callable
+from typing import Any
 
 from ..session.models import RunSession
 from ..session.store import SessionStore
@@ -18,7 +19,7 @@ class ResumeManager:
     def load_session(self, session_id: str) -> RunSession:
         return self.store.load(session_id)
 
-    def load_task(self, session_id: str, task_id: Optional[str] = None) -> AgentTask:
+    def load_task(self, session_id: str, task_id: str | None = None) -> AgentTask:
         session = self.store.load(session_id)
         for checkpoint in reversed(session.checkpoints):
             payload = checkpoint.state.get("task")
@@ -35,7 +36,7 @@ class ResumeManager:
         task: AgentTask,
         *,
         reason: str = "task checkpoint",
-        data: Optional[Dict[str, Any]] = None,
+        data: dict[str, Any] | None = None,
     ) -> None:
         session.checkpoint(
             "agent_task",
@@ -47,10 +48,10 @@ class ResumeManager:
         session_id: str,
         handler: Callable[..., Any],
         *,
-        task_id: Optional[str] = None,
-        loop: Optional[AgentTaskLoop] = None,
-        context: Optional[Dict[str, Any]] = None,
-        tool_executor: Optional[Callable[..., Any]] = None,
+        task_id: str | None = None,
+        loop: AgentTaskLoop | None = None,
+        context: dict[str, Any] | None = None,
+        tool_executor: Callable[..., Any] | None = None,
     ) -> TaskLoopResult:
         session = self.store.load(session_id)
         task = self.load_task(session_id, task_id)
@@ -59,7 +60,7 @@ class ResumeManager:
         loop = loop or AgentTaskLoop()
         old_sink = loop.checkpoint_sink
 
-        def checkpoint_sink(current_task: AgentTask, payload: Dict[str, Any]) -> None:
+        def checkpoint_sink(current_task: AgentTask, payload: dict[str, Any]) -> None:
             self.save_task_checkpoint(session, current_task, data=payload)
             self.store.save(session)
             if old_sink:

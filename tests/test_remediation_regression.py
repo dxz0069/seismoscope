@@ -5,8 +5,8 @@ from types import SimpleNamespace
 
 import agents.regression_agent as regression_module
 import main as main_module
-from agents.remediation_agent import RemediationAgent
 from agents.regression_agent import RegressionAgent
+from agents.remediation_agent import RemediationAgent
 from main import run_retest
 
 

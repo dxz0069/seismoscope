@@ -76,8 +76,10 @@ def test_custom_rules_extend_detection(tmp_path, monkeypatch):
     # 内置规则不被自定义文件裁剪其余组：secrets 等组回落内置
     assert agent.secret_patterns == _builtin_groups()["secret_patterns"]
 
-    import asyncio, tempfile
+    import asyncio
+    import tempfile
     from pathlib import Path as P
+
     from main import run_audit
 
     with tempfile.TemporaryDirectory() as td:

@@ -79,6 +79,7 @@ def test_audit_respects_vibe_secignore(tmp_path):
 def test_audit_result_echoes_effective_exclusions(tmp_path):
     """恶意仓库可携带全排除 .vibe-secignore——生效模式必须随结果回显。"""
     import asyncio
+
     from main import run_audit
 
     (tmp_path / ".vibe-secignore").write_text("vendor/**\n", encoding="utf-8")

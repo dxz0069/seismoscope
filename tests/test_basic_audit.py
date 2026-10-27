@@ -10,9 +10,8 @@ from unittest.mock import patch
 import pytest
 
 import main as main_module
-from main import format_result, run_audit, run_skill_audit
 from core.runtime.docker_executor import DockerExecutor
-
+from main import format_result, run_audit, run_skill_audit
 
 FIXTURE_PROJECT = Path(__file__).parent / "fixtures"
 

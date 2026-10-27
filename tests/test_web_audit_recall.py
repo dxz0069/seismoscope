@@ -12,11 +12,10 @@ from __future__ import annotations
 
 import asyncio
 
-from main import run_audit
-
 from agents.audit_agent import AuditAgent
 from agents.remediation_agent import PROFILES as REMEDIATION_PROFILES
 from agents.verification_agent import VerificationAgent
+from main import run_audit
 
 
 def _scan_patterns(content: str) -> set:

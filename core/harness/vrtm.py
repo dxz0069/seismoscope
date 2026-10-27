@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 
 class FlowPlane(str, Enum):
@@ -25,7 +25,7 @@ class EvidenceLevel(str, Enum):
 # Canonical relation names → (canonical_name, flow_planes).
 # These are the authoritative relation identifiers used in graph queries,
 # lifecycle analysis, and security-change detection.
-RELATION_SEMANTICS: Dict[str, Tuple[str, Tuple[FlowPlane, ...]]] = {
+RELATION_SEMANTICS: dict[str, tuple[str, tuple[FlowPlane, ...]]] = {
     # ── Canonical relations (key == canonical_name) ───────────────────────
     "supplies_data":         ("supplies_data",          (FlowPlane.DATA,)),
     "influences_instruction":("influences_instruction", (FlowPlane.INSTRUCTION,)),
@@ -67,7 +67,7 @@ RELATION_SEMANTICS: Dict[str, Tuple[str, Tuple[FlowPlane, ...]]] = {
 
 # Reverse map: alias → canonical name for fast lookups without going through
 # the full RELATION_SEMANTICS dict.
-RELATION_ALIASES: Dict[str, str] = {
+RELATION_ALIASES: dict[str, str] = {
     alias: canonical
     for alias, (canonical, _) in RELATION_SEMANTICS.items()
     if alias != canonical
@@ -121,7 +121,7 @@ NODE_GROUPS = {
 }
 
 
-def node_evidence(node_type: str, attributes: Dict[str, Any]) -> Dict[str, Any]:
+def node_evidence(node_type: str, attributes: dict[str, Any]) -> dict[str, Any]:
     provenance = dict(attributes.get("provenance") or {})
     file_path = provenance.get("file_path") or attributes.get("file_path")
     declared = attributes.get("declaration_source")
@@ -149,7 +149,7 @@ def node_evidence(node_type: str, attributes: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def edge_semantics(relation: str, attributes: Dict[str, Any]) -> Dict[str, Any]:
+def edge_semantics(relation: str, attributes: dict[str, Any]) -> dict[str, Any]:
     # Resolve aliases to canonical form before looking up semantics so that
     # "supplies_input", "influences", etc. are treated identically to their
     # canonical counterparts by all downstream graph analysis code.
@@ -182,7 +182,7 @@ def edge_semantics(relation: str, attributes: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def enrich_runtime_graph(graph: Any) -> Dict[str, Any]:
+def enrich_runtime_graph(graph: Any) -> dict[str, Any]:
     for node in graph.nodes:
         node.attributes.setdefault("entity_group", NODE_GROUPS.get(node.node_type, "other"))
         if not node.evidence or not node.evidence.get("level"):
@@ -230,10 +230,10 @@ def enrich_runtime_graph(graph: Any) -> Dict[str, Any]:
     return coverage
 
 
-def runtime_graph_coverage(graph: Any) -> Dict[str, Any]:
+def runtime_graph_coverage(graph: Any) -> dict[str, Any]:
     plane_counts = {item.value: 0 for item in FlowPlane}
     evidence_counts = {item.value: 0 for item in EvidenceLevel}
-    unknowns: List[Dict[str, Any]] = []
+    unknowns: list[dict[str, Any]] = []
     for node in graph.nodes:
         level = str((node.evidence or {}).get("level", EvidenceLevel.UNKNOWN.value))
         evidence_counts[level] = evidence_counts.get(level, 0) + 1

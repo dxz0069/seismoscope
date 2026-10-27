@@ -5,9 +5,10 @@ from __future__ import annotations
 import ast
 import os
 import re
+from collections.abc import Iterable, Sequence
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Sequence
+from typing import Any
 
 try:
     from tree_sitter_language_pack import get_parser
@@ -15,7 +16,6 @@ except ImportError:  # pragma: no cover - dependency is declared but optional at
     get_parser = None
 
 from ..languages.tree_sitter_gateway import parser_for
-
 
 _NATIVE_TREE_SITTER_ENABLED = os.getenv("VIBE_SEC_ENABLE_TREE_SITTER") == "1"
 
@@ -35,21 +35,21 @@ class FrameworkObservation:
     line_start: int
     line_end: int
     symbol: str = ""
-    details: Dict[str, Any] = field(default_factory=dict)
+    details: dict[str, Any] = field(default_factory=dict)
     confidence: float = 0.9
     parser: str = ""
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
 @dataclass
 class FrameworkSemanticReport:
-    observations: List[FrameworkObservation] = field(default_factory=list)
-    risk_paths: List[Dict[str, Any]] = field(default_factory=list)
-    coverage: Dict[str, Any] = field(default_factory=dict)
+    observations: list[FrameworkObservation] = field(default_factory=list)
+    risk_paths: list[dict[str, Any]] = field(default_factory=list)
+    coverage: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "contract": "vibe-sec.framework-semantics.v1",
             "frameworks": sorted({item.framework for item in self.observations}),
@@ -70,9 +70,9 @@ def analyze_framework_semantics(
 ) -> FrameworkSemanticReport:
     root = project_root.resolve()
     paths = _selected_files(root, file_path, max_files)
-    observations: List[FrameworkObservation] = []
-    failures: List[Dict[str, str]] = []
-    parsed_files: List[str] = []
+    observations: list[FrameworkObservation] = []
+    failures: list[dict[str, str]] = []
+    parsed_files: list[str] = []
     truncated = False
     for path in paths:
         relative = path.relative_to(root).as_posix()
@@ -103,7 +103,7 @@ def analyze_framework_semantics(
             failures.append({"file_path": relative, "error": type(exc).__name__})
     risk_paths = _build_risk_paths(observations)
     frameworks = sorted({item.framework for item in observations})
-    gaps: List[str] = []
+    gaps: list[str] = []
     if failures:
         gaps.append(f"{len(failures)} supported source files could not be semantically parsed")
     if truncated:
@@ -130,7 +130,7 @@ def analyze_framework_semantics(
     )
 
 
-def _selected_files(root: Path, file_path: str, max_files: int) -> List[Path]:
+def _selected_files(root: Path, file_path: str, max_files: int) -> list[Path]:
     if file_path:
         target = (root / file_path).resolve()
         try:
@@ -152,7 +152,7 @@ def _selected_files(root: Path, file_path: str, max_files: int) -> List[Path]:
     return selected
 
 
-def _analyze_python(file_path: str, content: str) -> List[FrameworkObservation]:
+def _analyze_python(file_path: str, content: str) -> list[FrameworkObservation]:
     tree = ast.parse(content)
     imports = " ".join(
         [alias.name for node in ast.walk(tree) if isinstance(node, ast.Import) for alias in node.names]
@@ -167,7 +167,7 @@ def _analyze_python(file_path: str, content: str) -> List[FrameworkObservation]:
         frameworks.append("flask")
     if not frameworks:
         return []
-    observations: List[FrameworkObservation] = []
+    observations: list[FrameworkObservation] = []
     for node in ast.walk(tree):
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             observations.extend(_python_function_observations(file_path, content, node, frameworks))
@@ -189,8 +189,8 @@ def _python_function_observations(
     content: str,
     node: ast.FunctionDef | ast.AsyncFunctionDef,
     frameworks: Sequence[str],
-) -> List[FrameworkObservation]:
-    result: List[FrameworkObservation] = []
+) -> list[FrameworkObservation]:
+    result: list[FrameworkObservation] = []
     decorators = [
         _python_name(item.func) if isinstance(item, ast.Call) else _python_name(item)
         for item in node.decorator_list
@@ -359,13 +359,13 @@ def _analyze_tree_sitter_lines(
     file_path: str,
     content: str,
     suffix: str,
-) -> tuple[List[FrameworkObservation], Optional[str]]:
+) -> tuple[list[FrameworkObservation], str | None]:
     language = {
         ".js": "javascript", ".jsx": "tsx", ".ts": "typescript", ".tsx": "tsx",
         ".java": "java", ".go": "go",
     }[suffix]
     parser_name = f"tree_sitter_{language}"
-    parser_failure: Optional[str] = None
+    parser_failure: str | None = None
     syntax_validated = False
     if get_parser is None:
         parser_failure = "tree_sitter_unavailable"
@@ -393,7 +393,7 @@ def _analyze_tree_sitter_lines(
         framework for framework, markers in _FRAMEWORK_MARKERS[suffix].items()
         if any(marker in lowered for marker in markers)
     ]
-    observations: List[FrameworkObservation] = []
+    observations: list[FrameworkObservation] = []
     for line_number, line in enumerate(content.splitlines(), 1):
         for framework in frameworks:
             for semantic_type, pattern, operation in _LINE_RULES.get(framework, []):
@@ -424,8 +424,8 @@ def _analyze_tree_sitter_lines(
     return observations, parser_failure
 
 
-def _build_risk_paths(observations: Iterable[FrameworkObservation]) -> List[Dict[str, Any]]:
-    by_file: Dict[str, List[FrameworkObservation]] = {}
+def _build_risk_paths(observations: Iterable[FrameworkObservation]) -> list[dict[str, Any]]:
+    by_file: dict[str, list[FrameworkObservation]] = {}
     for item in observations:
         by_file.setdefault(item.file_path, []).append(item)
     paths = []
@@ -463,7 +463,7 @@ def _observation(
     node: ast.AST,
     *,
     symbol: str = "",
-    details: Optional[Dict[str, Any]] = None,
+    details: dict[str, Any] | None = None,
     parser: str,
 ) -> FrameworkObservation:
     return FrameworkObservation(

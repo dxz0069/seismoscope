@@ -7,9 +7,9 @@ import json
 import re
 import tomllib
 import xml.etree.ElementTree as ET
+from collections.abc import Callable, Iterable
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
-
+from typing import Any
 
 MAX_MANIFEST_BYTES = 2_000_000
 
@@ -38,7 +38,7 @@ def inspect_dependencies(
     ecosystem: str = "",
     max_packages: int = 1_000,
     max_manifests: int = 100,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     root = project_root.resolve()
     selected_ecosystem = ecosystem.strip().lower()
     matching_paths = (
@@ -52,10 +52,10 @@ def inspect_dependencies(
         bounded_paths.append(path)
     truncated = len(bounded_paths) > max_manifests
     paths = bounded_paths[:max_manifests]
-    manifests: List[Dict[str, Any]] = []
-    direct: List[Dict[str, Any]] = []
-    locked: List[Dict[str, Any]] = []
-    gaps: List[str] = []
+    manifests: list[dict[str, Any]] = []
+    direct: list[dict[str, Any]] = []
+    locked: list[dict[str, Any]] = []
+    gaps: list[str] = []
     for path in paths:
         relative = path.relative_to(root).as_posix()
         detected = _ecosystem(path.name)
@@ -179,10 +179,10 @@ def _ecosystem(name: str) -> str:
     return "unknown"
 
 
-def _parse_file(path: Path, relative: str, ecosystem: str) -> Tuple[List[Dict[str, Any]], Optional[str]]:
+def _parse_file(path: Path, relative: str, ecosystem: str) -> tuple[list[dict[str, Any]], str | None]:
     name = path.name.lower()
     text = path.read_text(encoding="utf-8", errors="replace")
-    parsers: Dict[str, Callable[[str, str], List[Dict[str, Any]]]] = {
+    parsers: dict[str, Callable[[str, str], list[dict[str, Any]]]] = {
         "pyproject.toml": _parse_pyproject,
         "poetry.lock": _parse_toml_lock,
         "uv.lock": _parse_toml_lock,
@@ -216,8 +216,8 @@ def _entry(
     file_path: str,
     line: int,
     *,
-    pinned: Optional[bool] = None,
-) -> Dict[str, Any]:
+    pinned: bool | None = None,
+) -> dict[str, Any]:
     clean_name = str(name or "").strip()
     clean_version = _safe_version(version)
     return {
@@ -258,7 +258,7 @@ def _line_of(text: str, needle: str) -> int:
     return 1
 
 
-def _parse_requirement(value: str) -> Tuple[str, str]:
+def _parse_requirement(value: str) -> tuple[str, str]:
     item = value.split(";", 1)[0].strip()
     if " @ " in item:
         name, _ = item.split(" @ ", 1)
@@ -267,7 +267,7 @@ def _parse_requirement(value: str) -> Tuple[str, str]:
     return (match.group(1), match.group(2).strip()) if match else (item, "")
 
 
-def _parse_requirements(text: str, relative: str) -> List[Dict[str, Any]]:
+def _parse_requirements(text: str, relative: str) -> list[dict[str, Any]]:
     values = []
     for line_number, raw in enumerate(text.splitlines(), 1):
         stripped = raw.strip()
@@ -281,7 +281,7 @@ def _parse_requirements(text: str, relative: str) -> List[Dict[str, Any]]:
     return values
 
 
-def _parse_pyproject(text: str, relative: str) -> List[Dict[str, Any]]:
+def _parse_pyproject(text: str, relative: str) -> list[dict[str, Any]]:
     data = tomllib.loads(text)
     values = []
     project = dict(data.get("project", {}) or {})
@@ -302,7 +302,7 @@ def _parse_pyproject(text: str, relative: str) -> List[Dict[str, Any]]:
     return values
 
 
-def _parse_toml_lock(text: str, relative: str) -> List[Dict[str, Any]]:
+def _parse_toml_lock(text: str, relative: str) -> list[dict[str, Any]]:
     data = tomllib.loads(text)
     ecosystem = "cargo" if Path(relative).name.lower() == "cargo.lock" else "python"
     return [
@@ -312,7 +312,7 @@ def _parse_toml_lock(text: str, relative: str) -> List[Dict[str, Any]]:
     ]
 
 
-def _parse_package_json(text: str, relative: str) -> List[Dict[str, Any]]:
+def _parse_package_json(text: str, relative: str) -> list[dict[str, Any]]:
     data = json.loads(text)
     values = []
     groups = {
@@ -325,7 +325,7 @@ def _parse_package_json(text: str, relative: str) -> List[Dict[str, Any]]:
     return values
 
 
-def _parse_package_lock(text: str, relative: str) -> List[Dict[str, Any]]:
+def _parse_package_lock(text: str, relative: str) -> list[dict[str, Any]]:
     data = json.loads(text)
     values = []
     packages = dict(data.get("packages", {}) or {})
@@ -341,7 +341,7 @@ def _parse_package_lock(text: str, relative: str) -> List[Dict[str, Any]]:
     return values
 
 
-def _parse_go_mod(text: str, relative: str) -> List[Dict[str, Any]]:
+def _parse_go_mod(text: str, relative: str) -> list[dict[str, Any]]:
     values = []
     in_block = False
     for line_number, raw in enumerate(text.splitlines(), 1):
@@ -362,7 +362,7 @@ def _parse_go_mod(text: str, relative: str) -> List[Dict[str, Any]]:
     return values
 
 
-def _parse_go_sum(text: str, relative: str) -> List[Dict[str, Any]]:
+def _parse_go_sum(text: str, relative: str) -> list[dict[str, Any]]:
     values = []
     for line_number, line in enumerate(text.splitlines(), 1):
         parts = line.split()
@@ -371,7 +371,7 @@ def _parse_go_sum(text: str, relative: str) -> List[Dict[str, Any]]:
     return values
 
 
-def _parse_pom(text: str, relative: str) -> List[Dict[str, Any]]:
+def _parse_pom(text: str, relative: str) -> list[dict[str, Any]]:
     root = ET.fromstring(text)
     properties = {}
     for node in root.iter():
@@ -393,7 +393,7 @@ def _parse_pom(text: str, relative: str) -> List[Dict[str, Any]]:
     return values
 
 
-def _parse_gradle(text: str, relative: str) -> List[Dict[str, Any]]:
+def _parse_gradle(text: str, relative: str) -> list[dict[str, Any]]:
     pattern = re.compile(
         r"^\s*(implementation|api|compileOnly|runtimeOnly|testImplementation|testRuntimeOnly)\s*"
         r"(?:\(\s*)?['\"]([^:'\"]+):([^:'\"]+):([^'\"]+)['\"]",
@@ -405,7 +405,7 @@ def _parse_gradle(text: str, relative: str) -> List[Dict[str, Any]]:
     ]
 
 
-def _parse_gradle_lock(text: str, relative: str) -> List[Dict[str, Any]]:
+def _parse_gradle_lock(text: str, relative: str) -> list[dict[str, Any]]:
     values = []
     for line_number, raw in enumerate(text.splitlines(), 1):
         item = raw.split("=", 1)[0].strip()
@@ -415,7 +415,7 @@ def _parse_gradle_lock(text: str, relative: str) -> List[Dict[str, Any]]:
     return values
 
 
-def _parse_cargo(text: str, relative: str) -> List[Dict[str, Any]]:
+def _parse_cargo(text: str, relative: str) -> list[dict[str, Any]]:
     data = tomllib.loads(text)
     values = []
     groups = {"dependencies": "direct", "dev-dependencies": "dev", "build-dependencies": "build"}
@@ -435,7 +435,7 @@ def _normalized_name(name: str, ecosystem: str) -> str:
     return re.sub(r"[-_.]+", "-", lowered) if ecosystem == "python" else lowered
 
 
-def _deduplicate(values: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def _deduplicate(values: list[dict[str, Any]]) -> list[dict[str, Any]]:
     seen = set()
     output = []
     for item in values:

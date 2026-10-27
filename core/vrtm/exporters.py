@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Dict
+from typing import Any
 
 
-def export_vrtm(result: Dict[str, Any], format_type: str) -> str:
+def export_vrtm(result: dict[str, Any], format_type: str) -> str:
     if format_type == "json":
         return json.dumps(result, ensure_ascii=False, indent=2, default=str)
     if format_type == "markdown":
@@ -16,7 +16,7 @@ def export_vrtm(result: Dict[str, Any], format_type: str) -> str:
     raise ValueError(f"unsupported VRTM export format: {format_type}")
 
 
-def _markdown(result: Dict[str, Any]) -> str:
+def _markdown(result: dict[str, Any]) -> str:
     graph = result.get("graph", {})
     coverage = graph.get("metadata", {}).get("coverage", {})
     threat = result.get("threat_model", {})
@@ -73,7 +73,7 @@ def _markdown(result: Dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-def _dot(result: Dict[str, Any]) -> str:
+def _dot(result: dict[str, Any]) -> str:
     graph = result.get("graph", {})
     hypotheses = result.get("threat_model", {}).get("hypotheses", [])
     risky_nodes = {

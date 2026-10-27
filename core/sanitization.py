@@ -7,8 +7,7 @@ import re
 from datetime import date, datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict
-
+from typing import Any
 
 SENSITIVE_KEY_PARTS = (
     "api_key", "apikey", "access_key", "token", "password", "passwd",
@@ -79,7 +78,7 @@ def sanitize_for_persistence(value: Any) -> Any:
     if isinstance(value, Path):
         return str(value)
     if isinstance(value, dict):
-        sanitized: Dict[str, Any] = {}
+        sanitized: dict[str, Any] = {}
         for key, item in value.items():
             normalized_key = str(key)
             lowered = normalized_key.lower()

@@ -5,9 +5,10 @@ from __future__ import annotations
 import ast
 import json
 import re
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any
 
 try:
     import esprima
@@ -69,9 +70,9 @@ class ProtocolSignal:
     confidence: float
     statically_confirmable: bool
     analyzer: str
-    details: Dict[str, Any] = field(default_factory=dict)
+    details: dict[str, Any] = field(default_factory=dict)
 
-    def to_evidence(self) -> Dict[str, Any]:
+    def to_evidence(self) -> dict[str, Any]:
         return {
             "type": "protocol_signal",
             "analyzer": self.analyzer,
@@ -82,7 +83,7 @@ class ProtocolSignal:
         }
 
 
-def analyze_protocol_file(project_root: str, file_path: str) -> List[ProtocolSignal]:
+def analyze_protocol_file(project_root: str, file_path: str) -> list[ProtocolSignal]:
     root = Path(project_root).resolve()
     target = (root / file_path).resolve()
     target.relative_to(root)
@@ -90,7 +91,7 @@ def analyze_protocol_file(project_root: str, file_path: str) -> List[ProtocolSig
         return []
     relative = target.relative_to(root).as_posix()
     content = target.read_text(encoding="utf-8", errors="ignore")
-    signals: List[ProtocolSignal] = []
+    signals: list[ProtocolSignal] = []
     if target.suffix.lower() == ".py":
         signals.extend(_analyze_mcp_python(relative, content))
     if target.suffix.lower() in {".js", ".jsx", ".mjs", ".cjs"}:
@@ -133,8 +134,8 @@ def iter_protocol_signals(project_root: str, *, lane: str) -> Iterable[ProtocolS
 
 def find_matching_protocol_signal(
     project_root: str,
-    finding: Dict[str, Any],
-) -> Optional[ProtocolSignal]:
+    finding: dict[str, Any],
+) -> ProtocolSignal | None:
     file_path = str(finding.get("file_path", ""))
     vulnerability_type = str(finding.get("vulnerability_type", "")).lower()
     line_start = int(finding.get("line_start", 0) or 0)
@@ -151,12 +152,12 @@ def find_matching_protocol_signal(
     return best
 
 
-def _analyze_mcp_python(file_path: str, content: str) -> List[ProtocolSignal]:
+def _analyze_mcp_python(file_path: str, content: str) -> list[ProtocolSignal]:
     try:
         tree = ast.parse(content)
     except SyntaxError:
         return []
-    signals: List[ProtocolSignal] = []
+    signals: list[ProtocolSignal] = []
     for node in ast.walk(tree):
         if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             continue
@@ -222,14 +223,14 @@ def _analyze_mcp_python(file_path: str, content: str) -> List[ProtocolSignal]:
     return signals
 
 
-def _analyze_mcp_javascript(file_path: str, content: str) -> List[ProtocolSignal]:
+def _analyze_mcp_javascript(file_path: str, content: str) -> list[ProtocolSignal]:
     if esprima is None or not _looks_like_mcp_javascript(content):
         return []
     try:
         tree = esprima.parseModule(content, {"loc": True, "tolerant": True, "jsx": True}).toDict()
     except Exception:
         return []
-    signals: List[ProtocolSignal] = []
+    signals: list[ProtocolSignal] = []
     registration_names = {"tool", "registerTool", "resource", "registerResource"}
     for node in _walk_javascript_nodes(tree):
         if node.get("type") != "CallExpression":
@@ -332,7 +333,7 @@ def _analyze_mcp_javascript(file_path: str, content: str) -> List[ProtocolSignal
     return signals
 
 
-def _analyze_mcp_typescript(file_path: str, content: str) -> List[ProtocolSignal]:
+def _analyze_mcp_typescript(file_path: str, content: str) -> list[ProtocolSignal]:
     if get_parser is None or not _looks_like_mcp_javascript(content):
         return []
     source = content.encode("utf-8", errors="replace")
@@ -343,7 +344,7 @@ def _analyze_mcp_typescript(file_path: str, content: str) -> List[ProtocolSignal
         return []
     tree = parser.parse(source)
     registration_names = {"tool", "registerTool", "resource", "registerResource"}
-    signals: List[ProtocolSignal] = []
+    signals: list[ProtocolSignal] = []
     for node in _walk_tree_sitter_nodes(tree.root_node):
         if node.type != "call_expression":
             continue
@@ -446,14 +447,14 @@ def _analyze_mcp_typescript(file_path: str, content: str) -> List[ProtocolSignal
     return signals
 
 
-def _analyze_mcp_config(file_path: str, content: str, suffix: str) -> List[ProtocolSignal]:
+def _analyze_mcp_config(file_path: str, content: str, suffix: str) -> list[ProtocolSignal]:
     if not _looks_like_mcp_config(file_path, content):
         return []
     try:
         payload = json.loads(content) if suffix == ".json" else _load_yaml(content)
     except (ValueError, json.JSONDecodeError):
         return []
-    signals: List[ProtocolSignal] = []
+    signals: list[ProtocolSignal] = []
     if isinstance(payload, dict):
         servers = payload.get("mcpServers") or payload.get("mcp_servers")
         if isinstance(servers, dict):
@@ -517,14 +518,14 @@ def _analyze_mcp_config(file_path: str, content: str, suffix: str) -> List[Proto
     return signals
 
 
-def _analyze_github_workflow(file_path: str, content: str) -> List[ProtocolSignal]:
+def _analyze_github_workflow(file_path: str, content: str) -> list[ProtocolSignal]:
     try:
         payload = _load_yaml(content)
     except ValueError:
         return []
     if not isinstance(payload, dict) or not isinstance(payload.get("jobs"), dict):
         return []
-    signals: List[ProtocolSignal] = []
+    signals: list[ProtocolSignal] = []
     for job_name, job in payload["jobs"].items():
         if not isinstance(job, dict) or not isinstance(job.get("steps"), list):
             continue
@@ -611,7 +612,7 @@ def _looks_like_mcp_javascript(content: str) -> bool:
     ))
 
 
-def _walk_javascript_nodes(value: Any) -> Iterable[Dict[str, Any]]:
+def _walk_javascript_nodes(value: Any) -> Iterable[dict[str, Any]]:
     if isinstance(value, dict):
         if value.get("type"):
             yield value
@@ -623,7 +624,7 @@ def _walk_javascript_nodes(value: Any) -> Iterable[Dict[str, Any]]:
             yield from _walk_javascript_nodes(nested)
 
 
-def _javascript_expression_name(node: Dict[str, Any]) -> str:
+def _javascript_expression_name(node: dict[str, Any]) -> str:
     node_type = node.get("type")
     if node_type == "Identifier":
         return str(node.get("name", ""))
@@ -644,7 +645,7 @@ def _javascript_literal(node: Any) -> str:
     return ""
 
 
-def _javascript_property_literals(node: Any, property_name: str) -> List[str]:
+def _javascript_property_literals(node: Any, property_name: str) -> list[str]:
     values = []
     if isinstance(node, list):
         for nested in node:
@@ -663,7 +664,7 @@ def _javascript_property_literals(node: Any, property_name: str) -> List[str]:
     return values
 
 
-def _javascript_lines(node: Dict[str, Any]) -> tuple[int, int]:
+def _javascript_lines(node: dict[str, Any]) -> tuple[int, int]:
     location = dict(node.get("loc", {}) or {})
     start = int(dict(location.get("start", {}) or {}).get("line", 1) or 1)
     end = int(dict(location.get("end", {}) or {}).get("line", start) or start)
@@ -707,7 +708,7 @@ def _tree_sitter_property_strings(
     content: bytes,
     node: Any,
     property_name: str,
-) -> List[str]:
+) -> list[str]:
     values = []
     for child in _walk_tree_sitter_nodes(node):
         if child.type not in {"pair", "property_signature"}:

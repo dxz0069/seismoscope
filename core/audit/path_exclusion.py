@@ -7,9 +7,9 @@
 "全排除"攻击对使用者可见。
 """
 
+from collections.abc import Iterable
 from fnmatch import fnmatch
 from pathlib import Path
-from typing import Iterable, List, Optional
 
 DEFAULT_EXCLUDES = [
     "**/*.min.js",
@@ -19,7 +19,7 @@ DEFAULT_EXCLUDES = [
 ]
 
 
-def load_ignore_file(project_path: str) -> List[str]:
+def load_ignore_file(project_path: str) -> list[str]:
     path = Path(project_path) / ".vibe-secignore"
     if not path.is_file():
         return []
@@ -27,9 +27,9 @@ def load_ignore_file(project_path: str) -> List[str]:
     return [ln for ln in lines if ln and not ln.startswith("#")]
 
 
-def resolve_excludes(project_path: str, extra: Optional[Iterable[str]] = None) -> List[str]:
+def resolve_excludes(project_path: str, extra: Iterable[str] | None = None) -> list[str]:
     """合并默认排除、.vibe-secignore 与显式附加模式，保持顺序去重。"""
-    merged: List[str] = []
+    merged: list[str] = []
     for pattern in [*DEFAULT_EXCLUDES, *load_ignore_file(project_path), *(extra or [])]:
         text = str(pattern).strip().replace("\\", "/")
         if text and text not in merged:

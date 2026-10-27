@@ -5,11 +5,10 @@ Vibe Sec Platform — 工具基类
 所有工具都需要继承 AgentTool 并实现必要的方法。
 """
 
+import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
-import logging
-
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +21,7 @@ class ToolParameter:
     description: str
     required: bool = True
     default: Any = None
-    enum: Optional[List[Any]] = None
+    enum: list[Any] | None = None
 
 
 @dataclass
@@ -30,11 +29,11 @@ class ToolDefinition:
     """工具定义"""
     name: str
     description: str
-    parameters: List[ToolParameter] = field(default_factory=list)
-    returns: Optional[str] = None
-    examples: List[Dict[str, Any]] = field(default_factory=list)
+    parameters: list[ToolParameter] = field(default_factory=list)
+    returns: str | None = None
+    examples: list[dict[str, Any]] = field(default_factory=list)
 
-    def to_openai_format(self) -> Dict[str, Any]:
+    def to_openai_format(self) -> dict[str, Any]:
         """转换为 OpenAI function calling 格式"""
         properties = {}
         required = []
@@ -111,7 +110,7 @@ class AgentTool(ABC):
         return self.definition.description
 
     @abstractmethod
-    async def execute(self, **kwargs) -> Dict[str, Any]:
+    async def execute(self, **kwargs) -> dict[str, Any]:
         """
         执行工具
 
@@ -147,7 +146,7 @@ class AgentTool(ABC):
 
         return True
 
-    async def safe_execute(self, **kwargs) -> Dict[str, Any]:
+    async def safe_execute(self, **kwargs) -> dict[str, Any]:
         """
         安全执行工具（包含参数验证）
 
@@ -200,7 +199,7 @@ class ToolRegistry:
     """
 
     def __init__(self):
-        self._tools: Dict[str, AgentTool] = {}
+        self._tools: dict[str, AgentTool] = {}
 
     def register(self, tool: AgentTool) -> None:
         """
@@ -226,7 +225,7 @@ class ToolRegistry:
             del self._tools[tool_name]
             logger.info(f"Unregistered tool: {tool_name}")
 
-    def get_tool(self, name: str) -> Optional[AgentTool]:
+    def get_tool(self, name: str) -> AgentTool | None:
         """
         获取工具
 
@@ -238,7 +237,7 @@ class ToolRegistry:
         """
         return self._tools.get(name)
 
-    def list_tools(self) -> List[str]:
+    def list_tools(self) -> list[str]:
         """
         列出所有工具名称
 
@@ -247,7 +246,7 @@ class ToolRegistry:
         """
         return list(self._tools.keys())
 
-    def get_tool_definitions(self) -> List[ToolDefinition]:
+    def get_tool_definitions(self) -> list[ToolDefinition]:
         """
         获取所有工具定义
 
@@ -256,7 +255,7 @@ class ToolRegistry:
         """
         return [tool.definition for tool in self._tools.values()]
 
-    def get_openai_tool_definitions(self) -> List[Dict[str, Any]]:
+    def get_openai_tool_definitions(self) -> list[dict[str, Any]]:
         """
         获取 OpenAI 格式的工具定义
 
@@ -268,7 +267,7 @@ class ToolRegistry:
             for tool in self._tools.values()
         ]
 
-    async def execute(self, tool_name: str, **kwargs) -> Dict[str, Any]:
+    async def execute(self, tool_name: str, **kwargs) -> dict[str, Any]:
         """
         执行工具
 
@@ -325,10 +324,10 @@ class ReadFileTool(AgentTool):
             )
         )
 
-    async def execute(self, file_path: str, encoding: str = "utf-8") -> Dict[str, Any]:
+    async def execute(self, file_path: str, encoding: str = "utf-8") -> dict[str, Any]:
         """执行读取文件"""
         try:
-            with open(file_path, 'r', encoding=encoding) as f:
+            with open(file_path, encoding=encoding) as f:
                 content = f.read()
 
             return {
@@ -371,7 +370,7 @@ class WriteFileTool(AgentTool):
             )
         )
 
-    async def execute(self, file_path: str, content: str, encoding: str = "utf-8") -> Dict[str, Any]:
+    async def execute(self, file_path: str, content: str, encoding: str = "utf-8") -> dict[str, Any]:
         """执行写入文件"""
         try:
             with open(file_path, 'w', encoding=encoding) as f:
@@ -412,7 +411,7 @@ class ListDirectoryTool(AgentTool):
             )
         )
 
-    async def execute(self, directory_path: str, recursive: bool = False) -> Dict[str, Any]:
+    async def execute(self, directory_path: str, recursive: bool = False) -> dict[str, Any]:
         """执行列出目录"""
         import os
 

@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, Iterable, List, Mapping, Optional
 
 try:
     import yaml
@@ -17,10 +17,10 @@ except ImportError:  # pragma: no cover - declared dependency
 class TriggerDecision:
     should_audit: bool
     mode: str
-    reasons: List[str] = field(default_factory=list)
-    matched_paths: List[str] = field(default_factory=list)
+    reasons: list[str] = field(default_factory=list)
+    matched_paths: list[str] = field(default_factory=list)
     risk_score: int = 0
-    matched_rules: Dict[str, List[str]] = field(default_factory=dict)
+    matched_rules: dict[str, list[str]] = field(default_factory=dict)
 
     def to_dict(self):
         return {
@@ -86,9 +86,9 @@ class TriggerPolicy:
 
     def __init__(
         self,
-        project_path: Optional[str] = None,
+        project_path: str | None = None,
         *,
-        config_path: Optional[str] = None,
+        config_path: str | None = None,
     ) -> None:
         self.threshold = 3
         self.path_weights = dict(self.PATH_WEIGHTS)
@@ -105,8 +105,8 @@ class TriggerPolicy:
         changed_paths: Iterable[str],
         *,
         explicit: bool = False,
-        diffs: Optional[Mapping[str, str]] = None,
-        changed_content: Optional[Mapping[str, str]] = None,
+        diffs: Mapping[str, str] | None = None,
+        changed_content: Mapping[str, str] | None = None,
     ) -> TriggerDecision:
         paths = list(dict.fromkeys(str(path) for path in changed_paths))
         content_by_path = {
@@ -114,8 +114,8 @@ class TriggerPolicy:
             for source in (diffs or {}, changed_content or {})
             for path, content in source.items()
         }
-        scores: Dict[str, int] = {}
-        matched_rules: Dict[str, List[str]] = {}
+        scores: dict[str, int] = {}
+        matched_rules: dict[str, list[str]] = {}
 
         for path in paths:
             normalized = self._normalize_path(path)

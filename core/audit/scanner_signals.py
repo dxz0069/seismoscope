@@ -6,28 +6,28 @@ import asyncio
 import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from ..runtime.permission_policy import PermissionPolicy
 from ..tool_fabric import (
     ArtifactStore,
     ContainerProfile,
+    OsvVulnerabilityAdapter,
     ToolGateway,
     ToolRegistry,
     ToolRequest,
-    OsvVulnerabilityAdapter,
     register_container_scanners,
 )
 
 
 @dataclass
 class ScannerCollectionResult:
-    signals: List[Dict[str, Any]] = field(default_factory=list)
-    executions: List[Dict[str, Any]] = field(default_factory=list)
-    artifact_refs: List[str] = field(default_factory=list)
-    gaps: List[str] = field(default_factory=list)
+    signals: list[dict[str, Any]] = field(default_factory=list)
+    executions: list[dict[str, Any]] = field(default_factory=list)
+    artifact_refs: list[str] = field(default_factory=list)
+    gaps: list[str] = field(default_factory=list)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "signal_count": len(self.signals),
             "signals": self.signals,
@@ -44,7 +44,7 @@ class ContainerScannerCollector:
         *,
         image: str = "vibe-sec-tools:latest",
         runner=None,
-        artifact_root: Optional[str] = None,
+        artifact_root: str | None = None,
     ):
         self.project_root = Path(project_path).resolve()
         registry = ToolRegistry()
@@ -120,8 +120,8 @@ class DependencyVulnerabilityCollector:
         self,
         project_path: str,
         *,
-        artifact_root: Optional[str] = None,
-        adapter: Optional[OsvVulnerabilityAdapter] = None,
+        artifact_root: str | None = None,
+        adapter: OsvVulnerabilityAdapter | None = None,
     ):
         self.project_root = Path(project_path).resolve()
         registry = ToolRegistry()

@@ -1,29 +1,29 @@
 """Stable contracts shared by audit, verification, remediation, and reports."""
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 
 def _now() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 @dataclass
 class EvidenceBundle:
     """Evidence collected for one finding, including explicit gaps."""
 
-    items: List[Dict[str, Any]] = field(default_factory=list)
-    gaps: List[str] = field(default_factory=list)
+    items: list[dict[str, Any]] = field(default_factory=list)
+    gaps: list[str] = field(default_factory=list)
     level: int = 1
-    artifact_refs: List[str] = field(default_factory=list)
+    artifact_refs: list[str] = field(default_factory=list)
 
-    def add(self, evidence: Dict[str, Any]) -> None:
+    def add(self, evidence: dict[str, Any]) -> None:
         self.items.append(evidence)
         evidence_type = evidence.get("evidence_type", evidence.get("type", "static"))
         self.level = max(self.level, {"static": 1, "surface": 2, "dynamic": 3, "fuzzing": 3, "browser": 4}.get(evidence_type, 1))
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "items": self.items,
             "gaps": self.gaps,
@@ -45,16 +45,16 @@ class Finding:
     line_start: int = 0
     line_end: int = 0
     description: str = ""
-    evidence: List[Dict[str, Any]] = field(default_factory=list)
+    evidence: list[dict[str, Any]] = field(default_factory=list)
     evidence_bundle: EvidenceBundle = field(default_factory=EvidenceBundle)
-    risk_chain: Optional[Dict[str, Any]] = None
-    surface_node_ids: List[str] = field(default_factory=list)
+    risk_chain: dict[str, Any] | None = None
+    surface_node_ids: list[str] = field(default_factory=list)
     lane: str = "web_audit"
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
     created_at: str = field(default_factory=_now)
 
     @classmethod
-    def from_dict(cls, value: Dict[str, Any], index: int = 1) -> "Finding":
+    def from_dict(cls, value: dict[str, Any], index: int = 1) -> "Finding":
         finding_id = value.get("id") or f"FINDING-{index:03d}"
         raw_bundle = value.get("evidence_bundle") or {}
         raw_bundle = raw_bundle if isinstance(raw_bundle, dict) else {}
@@ -88,7 +88,7 @@ class Finding:
             created_at=value.get("created_at", _now()),
         )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         value = {
             "id": self.id,
             "title": self.title,
@@ -121,9 +121,9 @@ class ValidationSession:
     method: str
     status: str = "needs_evidence"
     evidence: EvidenceBundle = field(default_factory=EvidenceBundle)
-    notes: List[str] = field(default_factory=list)
+    notes: list[str] = field(default_factory=list)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "finding_id": self.finding_id,
             "method": self.method,
@@ -133,7 +133,7 @@ class ValidationSession:
         }
 
 
-def normalize_finding(value: Dict[str, Any], index: int = 1) -> Dict[str, Any]:
+def normalize_finding(value: dict[str, Any], index: int = 1) -> dict[str, Any]:
     """Return a stable dict without discarding legacy agent-specific fields."""
 
     finding = Finding.from_dict(value, index=index)

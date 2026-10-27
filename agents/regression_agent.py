@@ -9,15 +9,15 @@ import os
 import shutil
 import subprocess
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from core.agents.base import AgentConfig, AgentPattern, AgentResult, AgentType, BaseAgent
 from core.remediation.skill_relay import RelayState, SkillRelayPackage
 from core.remediation.tree_snapshot import diff_tree_snapshot, load_snapshot_ref
-from core.sanitization import redact_sensitive_text
 from core.runtime.docker_executor import DockerExecutor
+from core.sanitization import redact_sensitive_text
 
 
 @dataclass
@@ -27,10 +27,10 @@ class RegressionTestResult:
     test_type: str
     status: str
     message: str
-    details: Dict[str, Any] = field(default_factory=dict)
-    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    details: dict[str, Any] = field(default_factory=dict)
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "test_id": self.test_id,
             "test_name": self.test_name,
@@ -50,13 +50,13 @@ class RegressionReport:
     tests_run: int
     tests_passed: int
     tests_failed: int
-    test_results: List[RegressionTestResult]
+    test_results: list[RegressionTestResult]
     summary: str
-    recommendations: List[str]
+    recommendations: list[str]
     tests_skipped: int = 0
-    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "package_id": self.package_id,
             "finding_id": self.finding_id,
@@ -85,7 +85,7 @@ class RegressionAgent(BaseAgent):
         )
         super().__init__(config=config, llm_service=llm_service, tools=tools, event_emitter=event_emitter)
 
-    async def run(self, payload: Dict[str, Any]) -> AgentResult:
+    async def run(self, payload: dict[str, Any]) -> AgentResult:
         packages = list(payload.get("completed_packages", []) or [])
         if not packages:
             return AgentResult.success_result(data={"regression_reports": [], "summary": {"total_reports": 0}})
@@ -121,10 +121,10 @@ class RegressionAgent(BaseAgent):
         self,
         package: SkillRelayPackage,
         *,
-        project_path: Optional[str],
+        project_path: str | None,
         run_project_tests: bool,
         test_command: Any = None,
-        baseline_ref: Optional[str] = None,
+        baseline_ref: str | None = None,
     ) -> RegressionReport:
         results = [
             self._test_retest_controls(package),
@@ -184,7 +184,7 @@ class RegressionAgent(BaseAgent):
         )
 
     @staticmethod
-    def _has_evidence_provenance(record: Dict[str, Any]) -> bool:
+    def _has_evidence_provenance(record: dict[str, Any]) -> bool:
         if not str(record.get("predicate", "")).strip():
             return False
         return any(
@@ -202,7 +202,7 @@ class RegressionAgent(BaseAgent):
     async def _test_functionality(
         self,
         package: SkillRelayPackage,
-        project_path: Optional[str],
+        project_path: str | None,
         enabled: bool,
         requested_command: Any,
     ) -> RegressionTestResult:
@@ -265,8 +265,8 @@ class RegressionAgent(BaseAgent):
     async def _test_changed_tree(
         self,
         package: SkillRelayPackage,
-        project_path: Optional[str],
-        baseline_ref: Optional[str],
+        project_path: str | None,
+        baseline_ref: str | None,
     ) -> RegressionTestResult:
         fix_result = dict(package.fix_result or {})
         changed = list(fix_result.get("changed_files", []) or [])
@@ -274,7 +274,7 @@ class RegressionAgent(BaseAgent):
         if not changed and project_path and baseline_ref:
             changed = await self._git_changed_files(project_path, baseline_ref)
             changed_source = "git_baseline" if changed else ""
-        snapshot_details: Dict[str, Any] = {}
+        snapshot_details: dict[str, Any] = {}
         snapshot_ref = dict(package.metadata.get("baseline_snapshot_ref") or {})
         if not changed and project_path and snapshot_ref:
             try:
@@ -340,7 +340,7 @@ class RegressionAgent(BaseAgent):
         )
 
     @classmethod
-    def _normalize_test_command(cls, value: Any) -> Optional[List[str]]:
+    def _normalize_test_command(cls, value: Any) -> list[str] | None:
         command = list(value) if isinstance(value, (list, tuple)) else []
         if not command or not all(isinstance(item, str) and "\x00" not in item for item in command):
             return None
@@ -350,7 +350,7 @@ class RegressionAgent(BaseAgent):
         return command
 
     @classmethod
-    def _detect_test_command(cls, root: Path) -> Optional[List[str]]:
+    def _detect_test_command(cls, root: Path) -> list[str] | None:
         candidates = []
         if any((root / name).exists() for name in ("pyproject.toml", "pytest.ini", "setup.cfg", "tox.ini")) or (root / "tests").is_dir():
             candidates.append(["python", "-m", "pytest", "-q", "-p", "no:cacheprovider"])
@@ -368,7 +368,7 @@ class RegressionAgent(BaseAgent):
         return next((item for item in candidates if shutil.which(item[0]) or Path(item[0]).is_file()), None)
 
     @staticmethod
-    def _test_image(command: List[str]) -> Optional[str]:
+    def _test_image(command: list[str]) -> str | None:
         executable = Path(command[0]).name.lower()
         python_image = os.getenv("VIBE_SEC_PYTHON_TEST_IMAGE", "").strip() or "python:3.12-slim"
         node_image = os.getenv("VIBE_SEC_NODE_TEST_IMAGE", "").strip() or "node:22-bookworm-slim"
@@ -388,7 +388,7 @@ class RegressionAgent(BaseAgent):
         return images.get(executable)
 
     @staticmethod
-    async def _git_changed_files(project_path: str, baseline_ref: str) -> List[str]:
+    async def _git_changed_files(project_path: str, baseline_ref: str) -> list[str]:
         try:
             completed = await asyncio.to_thread(
                 subprocess.run,
@@ -404,7 +404,7 @@ class RegressionAgent(BaseAgent):
         return [line.strip() for line in completed.stdout.splitlines() if completed.returncode == 0 and line.strip()]
 
     @staticmethod
-    def _recommendations(results: List[RegressionTestResult]) -> List[str]:
+    def _recommendations(results: list[RegressionTestResult]) -> list[str]:
         return [
             ("Investigate" if item.status == "failed" else "Collect evidence for")
             + f" {item.test_type}: {item.message}"
@@ -412,7 +412,7 @@ class RegressionAgent(BaseAgent):
         ] or ["All configured regression predicates passed"]
 
     @staticmethod
-    def _generate_summary(reports: List[RegressionReport]) -> Dict[str, Any]:
+    def _generate_summary(reports: list[RegressionReport]) -> dict[str, Any]:
         total = sum(item.tests_run for item in reports)
         skipped = sum(item.tests_skipped for item in reports)
         passed = sum(item.tests_passed for item in reports)
@@ -428,7 +428,7 @@ class RegressionAgent(BaseAgent):
         }
 
     @staticmethod
-    def _dict_to_package(data: Dict[str, Any]) -> SkillRelayPackage:
+    def _dict_to_package(data: dict[str, Any]) -> SkillRelayPackage:
         try:
             state = RelayState(data.get("state", RelayState.DRAFT.value))
         except ValueError:

@@ -7,10 +7,9 @@ import hmac
 import json
 import os
 import secrets
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, Optional
-
+from typing import Any
 
 APPROVAL_SCHEMA = "vibe-sec.remediation-approval.v1"
 
@@ -22,10 +21,10 @@ def issue_remediation_approval(
     package_id: str,
     reason: str,
     approved_by: str = "local_operator",
-    output_path: Optional[str] = None,
+    output_path: str | None = None,
     ttl_minutes: int = 480,
-    state_root: Optional[str] = None,
-) -> Dict[str, Any]:
+    state_root: str | None = None,
+) -> dict[str, Any]:
     """Issue a project/session/package-bound local operator confirmation."""
     project = Path(project_path).resolve()
     if not project.is_dir():
@@ -39,9 +38,9 @@ def issue_remediation_approval(
 
     root = _state_root(state_root)
     root.mkdir(parents=True, exist_ok=True)
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     approval_id = f"approval-{secrets.token_hex(12)}"
-    payload: Dict[str, Any] = {
+    payload: dict[str, Any] = {
         "schema": APPROVAL_SCHEMA,
         "approval_id": approval_id,
         "project_root": str(project),
@@ -82,9 +81,9 @@ def load_remediation_approval(
     *,
     session_id: str,
     package_id: str,
-    state_root: Optional[str] = None,
-    now: Optional[datetime] = None,
-) -> Dict[str, Any]:
+    state_root: str | None = None,
+    now: datetime | None = None,
+) -> dict[str, Any]:
     """Validate a confirmation without exposing the signature to the session."""
     project = Path(project_path).resolve()
     source = Path(approval_path).resolve()
@@ -111,8 +110,8 @@ def load_remediation_approval(
     except ValueError as exc:
         raise ValueError("Remediation approval expiry is invalid") from exc
     if expires_at.tzinfo is None:
-        expires_at = expires_at.replace(tzinfo=timezone.utc)
-    if (now or datetime.now(timezone.utc)) >= expires_at:
+        expires_at = expires_at.replace(tzinfo=UTC)
+    if (now or datetime.now(UTC)) >= expires_at:
         raise ValueError("Remediation approval has expired")
     return {
         "approval_id": str(payload.get("approval_id", "")),
@@ -125,7 +124,7 @@ def load_remediation_approval(
     }
 
 
-def _state_root(value: Optional[str]) -> Path:
+def _state_root(value: str | None) -> Path:
     if value:
         return Path(value).resolve()
     configured = os.getenv("VIBE_SEC_STATE_HOME")
@@ -149,7 +148,7 @@ def _load_or_create_key(root: Path, *, create: bool = True) -> bytes:
     return key
 
 
-def _sign(payload: Dict[str, Any], key: bytes) -> str:
+def _sign(payload: dict[str, Any], key: bytes) -> str:
     unsigned = {name: value for name, value in payload.items() if name != "signature"}
     data = json.dumps(unsigned, sort_keys=True, separators=(",", ":"), ensure_ascii=True).encode("utf-8")
     return hmac.new(key, data, hashlib.sha256).hexdigest()

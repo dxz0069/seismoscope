@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
 
 from ..agent_runtime import (
     AgentTask,
@@ -18,7 +19,6 @@ from ..agent_runtime.guard import AgentGuard
 from ..llm_service import LLMMessage
 from ..reasoning.reasoning_guard import ReasoningGuard
 from .react_review import AuditEvidenceTools
-
 
 LANE_GUIDANCE = {
     "web_audit": [
@@ -47,12 +47,12 @@ LANE_GUIDANCE = {
 @dataclass
 class DiscoveryResult:
     status: str
-    candidates: List[Dict[str, Any]] = field(default_factory=list)
-    coverage: Dict[str, Any] = field(default_factory=dict)
+    candidates: list[dict[str, Any]] = field(default_factory=list)
+    coverage: dict[str, Any] = field(default_factory=dict)
     summary: str = ""
-    task: Optional[AgentTask] = None
-    tool_records: List[Dict[str, Any]] = field(default_factory=list)
-    error: Optional[str] = None
+    task: AgentTask | None = None
+    tool_records: list[dict[str, Any]] = field(default_factory=list)
+    error: str | None = None
 
 
 class ReActAuditDiscovery:
@@ -62,13 +62,13 @@ class ReActAuditDiscovery:
         *,
         project_path: str,
         lane: str,
-        surface_graph: Optional[Dict[str, Any]] = None,
-        threat_model: Optional[Dict[str, Any]] = None,
-        target: Optional[Dict[str, Any]] = None,
+        surface_graph: dict[str, Any] | None = None,
+        threat_model: dict[str, Any] | None = None,
+        target: dict[str, Any] | None = None,
         max_turns: int = 14,
         timeout_seconds: int = 300,
-        checkpoint_sink: Optional[Callable[..., Any]] = None,
-        transition_sink: Optional[Callable[..., Any]] = None,
+        checkpoint_sink: Callable[..., Any] | None = None,
+        transition_sink: Callable[..., Any] | None = None,
         enable_container_tools: bool = False,
         allow_dependency_network: bool = False,
     ):
@@ -92,8 +92,8 @@ class ReActAuditDiscovery:
     async def discover(
         self,
         *,
-        project_profile: Optional[Dict[str, Any]] = None,
-        existing_candidates: Optional[List[Dict[str, Any]]] = None,
+        project_profile: dict[str, Any] | None = None,
+        existing_candidates: list[dict[str, Any]] | None = None,
     ) -> DiscoveryResult:
         task = AgentTask(
             agent_name=f"{self.lane}_discovery",
@@ -152,10 +152,10 @@ class ReActAuditDiscovery:
     def _bind_result(
         self,
         runtime_status: str,
-        output: Dict[str, Any],
+        output: dict[str, Any],
         task: AgentTask,
-        records: List[Dict[str, Any]],
-        error: Optional[str],
+        records: list[dict[str, Any]],
+        error: str | None,
     ) -> DiscoveryResult:
         successful = [
             record for record in records
@@ -309,8 +309,8 @@ class ReActAuditDiscovery:
         )
 
     @staticmethod
-    def _examined_files(records: List[Dict[str, Any]]) -> List[str]:
-        files: List[str] = []
+    def _examined_files(records: list[dict[str, Any]]) -> list[str]:
+        files: list[str] = []
 
         def collect(value: Any) -> None:
             if isinstance(value, dict):
@@ -334,8 +334,8 @@ class ReActAuditDiscovery:
         self,
         raw: Any,
         index: int,
-        records: List[Dict[str, Any]],
-    ) -> Optional[Dict[str, Any]]:
+        records: list[dict[str, Any]],
+    ) -> dict[str, Any] | None:
         if not isinstance(raw, dict):
             return None
         relative = str(raw.get("file_path", "")).replace("\\", "/").lstrip("/")
@@ -433,7 +433,7 @@ class ReActAuditDiscovery:
             },
         }
 
-    def _prompt(self, project_profile: Dict[str, Any], existing: List[Dict[str, Any]]) -> str:
+    def _prompt(self, project_profile: dict[str, Any], existing: list[dict[str, Any]]) -> str:
         return json.dumps({
             "task": "Perform an exploratory security source audit for one lane.",
             "lane": self.lane,
@@ -460,7 +460,7 @@ class ReActAuditDiscovery:
         }, ensure_ascii=False, default=str)
 
     @staticmethod
-    def _finalize_schema() -> Dict[str, Any]:
+    def _finalize_schema() -> dict[str, Any]:
         candidate = {
             "type": "object",
             "properties": {

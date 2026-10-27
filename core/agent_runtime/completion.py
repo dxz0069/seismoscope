@@ -2,20 +2,20 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, Iterable, List, Optional
+from typing import Any
 
-
-Predicate = Callable[[Dict[str, Any]], bool]
+Predicate = Callable[[dict[str, Any]], bool]
 
 
 @dataclass
 class CompletionValidationResult:
     valid: bool
-    missing_fields: List[str] = field(default_factory=list)
-    unresolved_gaps: List[str] = field(default_factory=list)
-    errors: List[str] = field(default_factory=list)
-    details: Dict[str, Any] = field(default_factory=dict)
+    missing_fields: list[str] = field(default_factory=list)
+    unresolved_gaps: list[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
+    details: dict[str, Any] = field(default_factory=dict)
 
     @property
     def feedback(self) -> str:
@@ -35,13 +35,13 @@ class CompletionContract:
     evidence_required: bool = False
     minimum_evidence: int = 1
     allow_unresolved_gaps: bool = False
-    predicate: Optional[Predicate] = None
+    predicate: Predicate | None = None
 
     def validate(
         self,
-        payload: Dict[str, Any],
+        payload: dict[str, Any],
         *,
-        evidence_refs: Optional[Iterable[str]] = None,
+        evidence_refs: Iterable[str] | None = None,
     ) -> CompletionValidationResult:
         payload = dict(payload or {})
         missing = [
@@ -89,7 +89,7 @@ class CompletionContract:
             },
         )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "name": self.name,
             "required_fields": list(self.required_fields),
@@ -134,7 +134,7 @@ class FinalizeFindingContract(CompletionContract):
         )
 
     @staticmethod
-    def _finding_verdict_is_supported(payload: Dict[str, Any]) -> bool:
+    def _finding_verdict_is_supported(payload: dict[str, Any]) -> bool:
         verdict = str(payload.get("verdict", "")).lower()
         if verdict not in {"confirmed", "verified", "potential", "unconfirmed"}:
             return False
@@ -161,7 +161,7 @@ class FinalizeVerificationContract(CompletionContract):
         )
 
     @staticmethod
-    def _verification_is_supported(payload: Dict[str, Any]) -> bool:
+    def _verification_is_supported(payload: dict[str, Any]) -> bool:
         status = str(payload.get("verification_status", "")).lower()
         if status not in {"verified", "rejected", "needs_evidence"}:
             return False
@@ -183,7 +183,7 @@ class FinalizeAuditDiscoveryContract(CompletionContract):
         )
 
     @staticmethod
-    def _discovery_payload_is_valid(payload: Dict[str, Any]) -> bool:
+    def _discovery_payload_is_valid(payload: dict[str, Any]) -> bool:
         coverage = payload.get("coverage")
         candidates = payload.get("candidates")
         if not isinstance(coverage, dict) or not isinstance(candidates, list):
@@ -215,10 +215,10 @@ class CompletionValidator:
 
     def validate(
         self,
-        contract: CompletionContract | Dict[str, Any] | None,
-        payload: Dict[str, Any],
+        contract: CompletionContract | dict[str, Any] | None,
+        payload: dict[str, Any],
         *,
-        evidence_refs: Optional[Iterable[str]] = None,
+        evidence_refs: Iterable[str] | None = None,
     ) -> CompletionValidationResult:
         if contract is None:
             return CompletionValidationResult(valid=True, details={"contract": "none"})

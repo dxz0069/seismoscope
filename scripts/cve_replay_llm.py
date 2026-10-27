@@ -24,8 +24,9 @@ import shutil
 import sys
 import tempfile
 import time
+from datetime import UTC
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -35,7 +36,7 @@ FIXTURES = ROOT / "tests" / "regression_fixtures" / "cve_replay"
 MANIFEST_PATH = FIXTURES / "manifest.json"
 
 
-def load_targets(only: List[str] | None = None) -> List[Dict[str, Any]]:
+def load_targets(only: list[str] | None = None) -> list[dict[str, Any]]:
     manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
     targets = manifest["targets"]
     if only:
@@ -43,7 +44,7 @@ def load_targets(only: List[str] | None = None) -> List[Dict[str, Any]]:
     return targets
 
 
-def line_hits(findings: List[Dict[str, Any]], target: Dict[str, Any]) -> List[Dict[str, Any]]:
+def line_hits(findings: list[dict[str, Any]], target: dict[str, Any]) -> list[dict[str, Any]]:
     """行级命中：expected_types 出现在修复文件 hunk ±8 行内（与静态回放同标准）。"""
     hits = []
     for fix in target["fix_files"]:
@@ -65,7 +66,7 @@ def line_hits(findings: List[Dict[str, Any]], target: Dict[str, Any]) -> List[Di
 STATIC_CONTROL_TARGETS = {"mistune", "launch-editor", "systeminformation", "serialize-javascript"}
 
 
-async def run_target(target: Dict[str, Any], *, use_llm: bool, api_key: str | None) -> Dict[str, Any]:
+async def run_target(target: dict[str, Any], *, use_llm: bool, api_key: str | None) -> dict[str, Any]:
     from main import run_audit
 
     started = time.time()
@@ -92,7 +93,7 @@ async def run_target(target: Dict[str, Any], *, use_llm: bool, api_key: str | No
     }
 
 
-def summarize(report: List[Dict[str, Any]]) -> Dict[str, Any]:
+def summarize(report: list[dict[str, Any]]) -> dict[str, Any]:
     controls = [r for r in report if r["target"] in STATIC_CONTROL_TARGETS]
     controls_ok = bool(controls) and all(r["hit"] for r in controls)
     semantic = [r for r in report if r["target"] not in STATIC_CONTROL_TARGETS]
@@ -144,7 +145,7 @@ def main() -> int:
         print("没有匹配的目标。", file=sys.stderr)
         return 2
 
-    report: List[Dict[str, Any]] = []
+    report: list[dict[str, Any]] = []
     for target in targets:
         print(f"[llm] {target['target']}（{target['cwe']}）运行中…", flush=True)
         try:
@@ -163,11 +164,11 @@ def main() -> int:
             entry["target"] = entry["target"] + " [static]"
             report.append(entry)
 
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     document = {
         "contract_version": "seismoscope.cve-replay-llm.v1",
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "generated_at": datetime.now(UTC).isoformat(),
         "results": report,
         "summary": summarize([r for r in report if r.get("mode") == "llm"]),
     }

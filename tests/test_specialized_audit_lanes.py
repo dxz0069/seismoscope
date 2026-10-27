@@ -2,7 +2,6 @@ import asyncio
 import json
 
 import pytest
-
 from conftest import tree_sitter_ready
 
 from agents.audit_agent import AuditAgent

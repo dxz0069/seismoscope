@@ -11,12 +11,11 @@ import urllib.error
 import urllib.request
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Any
 from uuid import uuid4
 
 from ..sanitization import redact_sensitive_text
 from ..tool_fabric.container import ContainerProfile, ContainerRunResult, ContainerToolRunner
-
 
 _SHELLS = {"sh", "bash", "cmd", "cmd.exe", "powershell", "pwsh", "wsl"}
 
@@ -25,12 +24,12 @@ _SHELLS = {"sh", "bash", "cmd", "cmd.exe", "powershell", "pwsh", "wsl"}
 class EnvironmentServiceSpec:
     name: str
     image: str
-    command: List[str]
+    command: list[str]
     container_port: int = 0
     health_path: str = "/"
-    health_command: List[str] = field(default_factory=list)
-    environment: Dict[str, str] = field(default_factory=dict)
-    depends_on: List[str] = field(default_factory=list)
+    health_command: list[str] = field(default_factory=list)
+    environment: dict[str, str] = field(default_factory=dict)
+    depends_on: list[str] = field(default_factory=list)
     publish: bool = False
 
     def __post_init__(self) -> None:
@@ -50,7 +49,7 @@ class EnvironmentServiceSpec:
             raise ValueError(f"Service {self.name} health_path must be an absolute path")
 
     @classmethod
-    def from_dict(cls, value: Dict[str, Any]) -> "EnvironmentServiceSpec":
+    def from_dict(cls, value: dict[str, Any]) -> EnvironmentServiceSpec:
         return cls(
             name=str(value.get("name", "")),
             image=str(value.get("image", "")),
@@ -66,7 +65,7 @@ class EnvironmentServiceSpec:
 
 @dataclass(frozen=True)
 class ReproductionEnvironmentPlan:
-    services: List[EnvironmentServiceSpec]
+    services: list[EnvironmentServiceSpec]
     target_service: str
     startup_timeout_seconds: float = 45.0
     internal_network: bool = True
@@ -95,7 +94,7 @@ class ReproductionEnvironmentPlan:
         self.ordered_services()
 
     @classmethod
-    def from_dict(cls, value: Dict[str, Any]) -> "ReproductionEnvironmentPlan":
+    def from_dict(cls, value: dict[str, Any]) -> ReproductionEnvironmentPlan:
         return cls(
             services=[EnvironmentServiceSpec.from_dict(item) for item in value.get("services", []) or []],
             target_service=str(value.get("target_service", "")),
@@ -103,10 +102,10 @@ class ReproductionEnvironmentPlan:
             internal_network=bool(value.get("internal_network", True)),
         )
 
-    def ordered_services(self) -> List[EnvironmentServiceSpec]:
+    def ordered_services(self) -> list[EnvironmentServiceSpec]:
         by_name = {item.name: item for item in self.services}
         remaining = set(by_name)
-        ordered: List[EnvironmentServiceSpec] = []
+        ordered: list[EnvironmentServiceSpec] = []
         while remaining:
             ready = sorted(
                 name for name in remaining
@@ -124,11 +123,11 @@ class ReproductionEnvironmentPlan:
 class ReproductionEnvironmentHandle:
     status: str
     network_name: str = ""
-    containers: Dict[str, str] = field(default_factory=dict)
+    containers: dict[str, str] = field(default_factory=dict)
     base_url: str = ""
     health_url: str = ""
-    error: Optional[str] = None
-    service_logs: Dict[str, str] = field(default_factory=dict)
+    error: str | None = None
+    service_logs: dict[str, str] = field(default_factory=dict)
 
     @property
     def ready(self) -> bool:
@@ -145,7 +144,7 @@ class ContainerEnvironmentRunner:
         "vibe-sec-tools:latest",
     }
 
-    def __init__(self, *, docker_binary: str = "docker", allowed_images: Optional[Set[str]] = None):
+    def __init__(self, *, docker_binary: str = "docker", allowed_images: set[str] | None = None):
         self.docker_binary = docker_binary
         self.allowed_images = set(allowed_images or self.DEFAULT_ALLOWED_IMAGES)
         self.command_builder = ContainerToolRunner(docker_binary=docker_binary)
@@ -234,7 +233,7 @@ class ContainerEnvironmentRunner:
     async def run_control(
         self,
         handle: ReproductionEnvironmentHandle,
-        command: List[str],
+        command: list[str],
         *,
         project_root: str,
         image: str = "python:3.12-slim",
@@ -259,8 +258,8 @@ class ContainerEnvironmentRunner:
             timeout_seconds=timeout_seconds,
         )
 
-    async def _collect_logs(self, handle: ReproductionEnvironmentHandle) -> Dict[str, str]:
-        logs: Dict[str, str] = {}
+    async def _collect_logs(self, handle: ReproductionEnvironmentHandle) -> dict[str, str]:
+        logs: dict[str, str] = {}
         for service, container_name in handle.containers.items():
             _, stdout, stderr = await self._run(
                 [self.docker_binary, "logs", "--tail", "200", container_name], timeout=10,
@@ -312,7 +311,7 @@ class ContainerEnvironmentRunner:
             return int(sock.getsockname()[1])
 
     @staticmethod
-    async def _run(command: List[str], *, timeout: float) -> tuple[int, str, str]:
+    async def _run(command: list[str], *, timeout: float) -> tuple[int, str, str]:
         try:
             process = await asyncio.create_subprocess_exec(
                 *command,
@@ -326,5 +325,5 @@ class ContainerEnvironmentRunner:
                 stdout.decode("utf-8", errors="replace")[-16_000:],
                 stderr.decode("utf-8", errors="replace")[-16_000:],
             )
-        except (OSError, asyncio.TimeoutError) as exc:
+        except (TimeoutError, OSError) as exc:
             return -1, "", str(exc)

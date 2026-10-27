@@ -2,18 +2,19 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
-from hashlib import sha256
 import json
+from collections.abc import Iterable
+from datetime import UTC, datetime
+from hashlib import sha256
 from pathlib import Path
-from typing import Any, Dict, Iterable, Optional
+from typing import Any
 
 from ..harness.models import RuntimeSurfaceGraph
 from ..surface.runtime_surface import RuntimeSurfaceBuilder
 from ..surface.threat_model import (
-    RuntimeThreatModelAnalyzer,
     TECHNIQUE_CATALOG_VERSION,
     VRTM_METHOD_VERSION,
+    RuntimeThreatModelAnalyzer,
 )
 from .declaration import VRTMDeclaration
 from .lifecycle import analyze_graph_changes, bind_hypothesis_statuses, compare_threat_models
@@ -22,7 +23,7 @@ from .store import VRTMModelStore
 
 
 class VRTMService:
-    def __init__(self, project_path: str, *, store_root: Optional[str] = None):
+    def __init__(self, project_path: str, *, store_root: str | None = None):
         self.project_path = Path(project_path).resolve()
         if not self.project_path.is_dir():
             raise ValueError(f"project_path must be an existing directory: {project_path}")
@@ -31,14 +32,14 @@ class VRTMService:
     async def build(
         self,
         *,
-        declaration_path: Optional[str] = None,
-        observations: Optional[Iterable[Dict[str, Any]]] = None,
-        trusted_observations: Optional[Iterable[Dict[str, Any]]] = None,
-        trusted_findings: Optional[Iterable[Dict[str, Any]]] = None,
-        previous_result: Optional[Dict[str, Any]] = None,
+        declaration_path: str | None = None,
+        observations: Iterable[dict[str, Any]] | None = None,
+        trusted_observations: Iterable[dict[str, Any]] | None = None,
+        trusted_findings: Iterable[dict[str, Any]] | None = None,
+        previous_result: dict[str, Any] | None = None,
         persist: bool = True,
-        recon_data: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        recon_data: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         # Callers may provide generators. Materialize them once so evidence counts
         # and the subsequent verification-observation pass see the same inputs.
         trusted_finding_values = [
@@ -64,7 +65,7 @@ class VRTMService:
         external_observations = _classify_observations(observations, "external")
         harness_observations = _classify_observations(trusted_observations, "harness")
         incoming_observations = [*external_observations, *harness_observations]
-        previous_observations: list[Dict[str, Any]] = []
+        previous_observations: list[dict[str, Any]] = []
         invalidated_observation_count = 0
         if previous:
             previous_graph_data = previous.get("graph") or previous.get("runtime_surface_graph") or {}
@@ -87,7 +88,7 @@ class VRTMService:
 
         threat_model = RuntimeThreatModelAnalyzer(surface, graph).analyze()
         retest_observation_application = None
-        retest_diagnostics: list[Dict[str, Any]] = []
+        retest_diagnostics: list[dict[str, Any]] = []
         if trusted_finding_values:
             retest_observations, retest_diagnostics = observations_from_verification(
                 trusted_finding_values,
@@ -179,7 +180,7 @@ class VRTMService:
             "method": "VRTM",
             "method_version": VRTM_METHOD_VERSION,
             "technique_catalog_version": TECHNIQUE_CATALOG_VERSION,
-            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "generated_at": datetime.now(UTC).isoformat(),
             "project_path": str(self.project_path),
             "model_id": model_fingerprint[:16],
             "graph_fingerprint": graph_fingerprint,
@@ -222,11 +223,11 @@ class VRTMService:
 
 
 def _quality_report(
-    graph: Dict[str, Any],
-    threat_model: Dict[str, Any],
-    surface_metadata: Dict[str, Any],
-    declaration_application: Optional[Dict[str, Any]],
-) -> Dict[str, Any]:
+    graph: dict[str, Any],
+    threat_model: dict[str, Any],
+    surface_metadata: dict[str, Any],
+    declaration_application: dict[str, Any] | None,
+) -> dict[str, Any]:
     nodes = list(graph.get("nodes", []))
     edges = list(graph.get("edges", []))
     node_ids = [str(item.get("id")) for item in nodes]
@@ -289,7 +290,7 @@ def _quality_report(
     }
 
 
-def _empty_change_analysis() -> Dict[str, Any]:
+def _empty_change_analysis() -> dict[str, Any]:
     return {
         "schema": "vibe-sec.vrtm.security-change-analysis.v1",
         "authority_expansion": [],
@@ -304,8 +305,8 @@ def _empty_change_analysis() -> Dict[str, Any]:
     }
 
 
-def _stored_observations(graph: Dict[str, Any]) -> list[Dict[str, Any]]:
-    values: Dict[str, Dict[str, Any]] = {}
+def _stored_observations(graph: dict[str, Any]) -> list[dict[str, Any]]:
+    values: dict[str, dict[str, Any]] = {}
     for target in [*graph.get("nodes", []), *graph.get("edges", [])]:
         for observation in target.get("attributes", {}).get("observations", []) or []:
             if isinstance(observation, dict) and observation.get("id"):
@@ -314,8 +315,8 @@ def _stored_observations(graph: Dict[str, Any]) -> list[Dict[str, Any]]:
 
 
 def _classify_observations(
-    observations: Optional[Iterable[Dict[str, Any]]], trust_class: str,
-) -> list[Dict[str, Any]]:
+    observations: Iterable[dict[str, Any]] | None, trust_class: str,
+) -> list[dict[str, Any]]:
     values = []
     for raw in observations or []:
         if not isinstance(raw, dict):
@@ -328,7 +329,7 @@ def _classify_observations(
 
 
 def _model_fingerprint(
-    *, graph_fingerprint: str, threat_model: Dict[str, Any], declaration: Optional[VRTMDeclaration],
+    *, graph_fingerprint: str, threat_model: dict[str, Any], declaration: VRTMDeclaration | None,
 ) -> str:
     payload = {
         "graph_fingerprint": graph_fingerprint,

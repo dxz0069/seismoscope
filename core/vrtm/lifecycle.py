@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, Iterable, List
+from collections.abc import Iterable
+from typing import Any
 
 from ..harness.models import RuntimeGraphObservation, stable_id
 
 
-def bind_hypothesis_statuses(threat_model: Any, observations: Iterable[Dict[str, Any]]) -> None:
+def bind_hypothesis_statuses(threat_model: Any, observations: Iterable[dict[str, Any]]) -> None:
     """Bind explicit audit/verification outcomes without treating model prose as proof.
 
     Only observations with trust_class == 'harness' (produced by the verification
@@ -16,7 +17,7 @@ def bind_hypothesis_statuses(threat_model: Any, observations: Iterable[Dict[str,
     """
     from ..surface.threat_model import HypothesisStatus
 
-    outcomes_by_id: Dict[str, set[str]] = {}
+    outcomes_by_id: dict[str, set[str]] = {}
     for raw in observations:
         try:
             observation = RuntimeGraphObservation.from_dict(raw)
@@ -48,7 +49,7 @@ def bind_hypothesis_statuses(threat_model: Any, observations: Iterable[Dict[str,
             hypothesis.status = HypothesisStatus.REFUTED
 
 
-def compare_threat_models(current: Dict[str, Any], previous: Dict[str, Any]) -> Dict[str, Any]:
+def compare_threat_models(current: dict[str, Any], previous: dict[str, Any]) -> dict[str, Any]:
     """Diff two threat model snapshots and classify every change.
 
     A hypothesis that existed in *previous* but is absent from *current* can
@@ -83,8 +84,8 @@ def compare_threat_models(current: Dict[str, Any], previous: Dict[str, Any]) -> 
 
     disappeared_ids = sorted(set(previous_items) - set(current_items))
     _resolved_statuses = {"mitigated", "refuted"}
-    resolved_ids: List[str] = []
-    graph_rebuild_loss_ids: List[str] = []
+    resolved_ids: list[str] = []
+    graph_rebuild_loss_ids: list[str] = []
     for hyp_id in disappeared_ids:
         prev_status = str(previous_items[hyp_id].get("status", "open"))
         if prev_status in _resolved_statuses:
@@ -109,7 +110,7 @@ def compare_threat_models(current: Dict[str, Any], previous: Dict[str, Any]) -> 
     }
 
 
-def analyze_graph_changes(current: Dict[str, Any], previous: Dict[str, Any]) -> Dict[str, Any]:
+def analyze_graph_changes(current: dict[str, Any], previous: dict[str, Any]) -> dict[str, Any]:
     current_nodes = {str(item.get("id")): item for item in current.get("nodes", [])}
     previous_nodes = {str(item.get("id")): item for item in previous.get("nodes", [])}
     current_edges = {_edge_id(item): item for item in current.get("edges", [])}
@@ -147,7 +148,7 @@ def analyze_graph_changes(current: Dict[str, Any], previous: Dict[str, Any]) -> 
     # Detect security control nodes that vanished between snapshots.
     # A disappearing trust_boundary or security_control is a potential coverage
     # regression, not an improvement, and must be surfaced for review.
-    removed_control_nodes: List[Dict[str, Any]] = [
+    removed_control_nodes: list[dict[str, Any]] = [
         _security_change(
             "CONTROL_NODE_REMOVED",
             "node",
@@ -160,8 +161,8 @@ def analyze_graph_changes(current: Dict[str, Any], previous: Dict[str, Any]) -> 
         if previous_nodes[node_id].get("type") in _CONTROL_NODE_TYPES
     ]
 
-    control_regressions: List[Dict[str, Any]] = []
-    control_improvements: List[Dict[str, Any]] = []
+    control_regressions: list[dict[str, Any]] = []
+    control_improvements: list[dict[str, Any]] = []
     strength = {"missing": 0, "unknown": 1, "partial": 2, "implemented": 3, "strong": 4}
     for node_id in sorted(shared_node_ids):
         before = previous_nodes[node_id].get("attributes", {}).get("control", {})
@@ -176,7 +177,7 @@ def analyze_graph_changes(current: Dict[str, Any], previous: Dict[str, Any]) -> 
         elif strength.get(after_state, 1) > strength.get(before_state, 1):
             control_improvements.append(change)
 
-    security_attribute_changes: List[Dict[str, Any]] = list(removed_control_nodes)
+    security_attribute_changes: list[dict[str, Any]] = list(removed_control_nodes)
     for edge_id in sorted(shared_edge_ids):
         before_edge = previous_edges[edge_id]
         after_edge = current_edges[edge_id]
@@ -299,11 +300,11 @@ def analyze_graph_changes(current: Dict[str, Any], previous: Dict[str, Any]) -> 
     }
 
 
-def _edge_id(edge: Dict[str, Any]) -> str:
+def _edge_id(edge: dict[str, Any]) -> str:
     return stable_id("edge", edge.get("source"), edge.get("target"), edge.get("relation"))
 
 
-def _edge_summary(edge_id: str, edge: Dict[str, Any]) -> Dict[str, Any]:
+def _edge_summary(edge_id: str, edge: dict[str, Any]) -> dict[str, Any]:
     return {
         "edge_id": edge_id,
         "source": edge.get("source"),
@@ -318,7 +319,7 @@ def _edge_summary(edge_id: str, edge: Dict[str, Any]) -> Dict[str, Any]:
 def _security_change(
     reason_code: str, subject_kind: str, subject_id: str, attribute: str,
     before: Any, after: Any,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     return {
         "reason_code": reason_code,
         "subject_kind": subject_kind,
@@ -359,7 +360,7 @@ def _permission_expansion(before: Any, after: Any) -> str:
     return ""
 
 
-def _environment(attributes: Dict[str, Any]) -> str:
+def _environment(attributes: dict[str, Any]) -> str:
     scope = attributes.get("scope") if isinstance(attributes.get("scope"), dict) else {}
     return str(attributes.get("environment") or scope.get("environment") or attributes.get("deployment_environment") or "")
 
@@ -374,7 +375,7 @@ def _environment_rank(value: str) -> int:
     }.get(normalized, -1)
 
 
-def _classification(attributes: Dict[str, Any]) -> str:
+def _classification(attributes: dict[str, Any]) -> str:
     return str(
         attributes.get("data_classification")
         or attributes.get("classification")
@@ -390,12 +391,12 @@ def _classification_rank(value: str) -> int:
     }.get(str(value).strip().lower().replace(" ", "_"), -1)
 
 
-def _evidence_level(value: Dict[str, Any]) -> str:
+def _evidence_level(value: dict[str, Any]) -> str:
     evidence = dict(value.get("evidence", {}) or {})
     return str(evidence.get("level") or value.get("attributes", {}).get("evidence_level") or "unknown")
 
 
-def _evidence_rank(value: Dict[str, Any]) -> int:
+def _evidence_rank(value: dict[str, Any]) -> int:
     return {
         "unknown": 0, "inferred": 1, "declared": 2,
         "static_observed": 3, "runtime_observed": 4, "verified": 5,

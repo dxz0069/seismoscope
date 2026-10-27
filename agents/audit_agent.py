@@ -11,22 +11,15 @@ Vibe Sec Platform — Audit Agent
 import ast
 import asyncio
 import hashlib
-import os
-import re
 import json
 import logging
-from typing import Any, Dict, List, Optional
+import os
+import re
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
+from typing import Any
 
-from core.audit.path_exclusion import is_excluded, resolve_excludes
-from core.audit.escape_semantics import find_lookahead_bypasses
-from core.audit.rules_registry import as_agent_rule_map, load_pattern_rules
-
-
-# 泛化 JS exec/execSync 汇点模式（区分于 launch-editor 的精确模式，需模板插值污点门控）
-_JS_EXEC_SINK_PATTERN = r'(?:^|[^\w$.])exec(?:Sync)?\s*\('
 from core.agents.base import (
     AgentConfig,
     AgentPattern,
@@ -35,17 +28,22 @@ from core.agents.base import (
     BaseAgent,
     Severity,
 )
-from core.audit.lanes import group_findings_by_lane
 from core.audit.candidate_cluster import cluster_candidates
+from core.audit.escape_semantics import find_lookahead_bypasses
+from core.audit.lanes import group_findings_by_lane
 from core.audit.models import EvidenceBundle
+from core.audit.path_exclusion import is_excluded, resolve_excludes
 from core.audit.protocol_analysis import iter_protocol_signals
 from core.audit.react_discovery import ReActAuditDiscovery
 from core.audit.react_review import ReActFindingReviewer
-from core.llm_errors import classify_llm_failure
+from core.audit.rules_registry import as_agent_rule_map, load_pattern_rules
 from core.audit.scanner_signals import ContainerScannerCollector, DependencyVulnerabilityCollector
 from core.audit.target_planner import AuditTargetPlanner
+from core.llm_errors import classify_llm_failure
 from core.sanitization import redact_sensitive_text
 
+# 泛化 JS exec/execSync 汇点模式（区分于 launch-editor 的精确模式，需模板插值污点门控）
+_JS_EXEC_SINK_PATTERN = r'(?:^|[^\w$.])exec(?:Sync)?\s*\('
 
 logger = logging.getLogger(__name__)
 
@@ -90,7 +88,7 @@ class CandidateCase:
     line_start: int
     line_end: int
     description: str
-    evidence: List[Dict[str, Any]] = field(default_factory=list)
+    evidence: list[dict[str, Any]] = field(default_factory=list)
     confidence: float = 0.5
     status: str = CandidateStatus.OPEN.value
 
@@ -103,9 +101,9 @@ class CandidateCase:
 class AuditState:
     """审计状态"""
     phase: AuditPhase = AuditPhase.EVIDENCE_COLLECTION
-    candidates: List[CandidateCase] = field(default_factory=list)
-    confirmed_findings: List[Dict[str, Any]] = field(default_factory=list)
-    rejected_candidates: List[Dict[str, Any]] = field(default_factory=list)
+    candidates: list[CandidateCase] = field(default_factory=list)
+    confirmed_findings: list[dict[str, Any]] = field(default_factory=list)
+    rejected_candidates: list[dict[str, Any]] = field(default_factory=list)
 
 
 class AuditAgent(BaseAgent):
@@ -130,11 +128,11 @@ class AuditAgent(BaseAgent):
         })
     """
 
-    _exclude_patterns: List[str] = []
+    _exclude_patterns: list[str] = []
 
     def __init__(
         self,
-        config: Optional[AgentConfig] = None,
+        config: AgentConfig | None = None,
         llm_service=None,
         tools=None,
         event_emitter=None,
@@ -373,7 +371,7 @@ class AuditAgent(BaseAgent):
         """Classify provider failures without retaining provider response text."""
         return classify_llm_failure(error)
 
-    async def run(self, payload: Dict[str, Any]) -> AgentResult:
+    async def run(self, payload: dict[str, Any]) -> AgentResult:
         """
         执行漏洞审计
 
@@ -559,7 +557,7 @@ class AuditAgent(BaseAgent):
             logger.error(f"Audit failed: {e}", exc_info=True)
             return AgentResult.failure_result(f"Audit failed: {str(e)}")
 
-    async def _react_discover_candidates(self, project_path: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def _react_discover_candidates(self, project_path: str, payload: dict[str, Any]) -> dict[str, Any]:
         lane = str(payload.get("audit_lane", "web_audit"))
         raw_discovery_limit = payload.get("discovery_target_limit", 3)
         discovery_limit = int(3 if raw_discovery_limit is None else raw_discovery_limit)
@@ -706,7 +704,7 @@ class AuditAgent(BaseAgent):
             "errors": [classify_llm_failure(result.error) for result in results if result.error],
         }
 
-    async def _react_review_candidates(self, project_path: str, payload: Dict[str, Any]) -> Dict[str, int]:
+    async def _react_review_candidates(self, project_path: str, payload: dict[str, Any]) -> dict[str, int]:
         """Review candidates through observe -> tools -> evidence -> FinalizeFinding."""
         graph = payload.get("runtime_surface_graph", {})
         threat_model = payload.get("threat_model", {})
@@ -855,7 +853,7 @@ class AuditAgent(BaseAgent):
             })
         return stats
 
-    def _ingest_scanner_signals(self, signals: List[Dict[str, Any]]) -> None:
+    def _ingest_scanner_signals(self, signals: list[dict[str, Any]]) -> None:
         for signal in signals:
             file_path = str(signal.get("file_path") or "")
             line_start = int(signal.get("line_start") or 1)
@@ -960,7 +958,7 @@ class AuditAgent(BaseAgent):
                 logger.debug(f"Scanning file: {file_path}")
 
                 try:
-                    with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                    with open(file_path, encoding='utf-8', errors='ignore') as f:
                         content = f.read()
                     executable_call_offsets = (
                         self._python_dangerous_call_offsets(content)
@@ -1080,7 +1078,7 @@ class AuditAgent(BaseAgent):
                     continue
 
                 try:
-                    with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                    with open(file_path, encoding='utf-8', errors='ignore') as f:
                         content = f.read()
 
                     for secret_type, secret_info in self.secret_patterns.items():
@@ -1120,7 +1118,7 @@ class AuditAgent(BaseAgent):
     async def _scan_agent_vulnerabilities(
         self,
         project_path: str,
-        vulnerability_types: Optional[set[str]] = None,
+        vulnerability_types: set[str] | None = None,
     ) -> None:
         """扫描智能体漏洞（增强版）"""
         logger.info("Scanning agent vulnerabilities")
@@ -1149,7 +1147,7 @@ class AuditAgent(BaseAgent):
                     continue
 
                 try:
-                    with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                    with open(file_path, encoding='utf-8', errors='ignore') as f:
                         content = f.read()
 
                     # 扫描 Agent 特有漏洞模式
@@ -1283,7 +1281,7 @@ class AuditAgent(BaseAgent):
         return False
 
     @staticmethod
-    def _python_dangerous_call_offsets(content: str) -> Dict[str, set[int]]:
+    def _python_dangerous_call_offsets(content: str) -> dict[str, set[int]]:
         """Return source offsets for executable dynamic-code or process calls."""
         try:
             tree = ast.parse(content)
@@ -1293,7 +1291,7 @@ class AuditAgent(BaseAgent):
         line_offsets = [0]
         for line in content.splitlines(keepends=True):
             line_offsets.append(line_offsets[-1] + len(line))
-        offsets: Dict[str, set[int]] = {
+        offsets: dict[str, set[int]] = {
             "command_injection": set(),
             "code_injection": set(),
         }
@@ -1420,7 +1418,7 @@ class AuditAgent(BaseAgent):
                 confidence=signal.confidence,
             ))
 
-    async def _llm_deep_analysis(self, project_path: str, payload: Dict[str, Any]) -> None:
+    async def _llm_deep_analysis(self, project_path: str, payload: dict[str, Any]) -> None:
         """使用 LLM 进行深度分析"""
         logger.info("Performing LLM deep analysis")
 
@@ -1443,7 +1441,7 @@ class AuditAgent(BaseAgent):
                 # 读取相关代码片段
                 file_path = os.path.join(project_path, candidate.file_path)
                 try:
-                    with open(file_path, 'r', encoding='utf-8') as f:
+                    with open(file_path, encoding='utf-8') as f:
                         lines = f.readlines()
                         start = max(0, candidate.line_start - 5)
                         end = min(len(lines), candidate.line_end + 5)
@@ -1496,7 +1494,7 @@ class AuditAgent(BaseAgent):
         except Exception as e:
             logger.warning("LLM deep analysis degraded: %s", self._llm_failure_category(e))
 
-    async def _generate_findings(self) -> List[Dict[str, Any]]:
+    async def _generate_findings(self) -> list[dict[str, Any]]:
         """Generate reportable findings while preserving review state and gaps."""
         findings = []
 
@@ -1542,8 +1540,8 @@ class AuditAgent(BaseAgent):
         return findings
 
     @classmethod
-    def _collect_artifact_refs(cls, value: Any) -> List[str]:
-        refs: List[str] = []
+    def _collect_artifact_refs(cls, value: Any) -> list[str]:
+        refs: list[str] = []
 
         def visit(item: Any) -> None:
             if isinstance(item, dict):
@@ -1566,7 +1564,7 @@ class AuditAgent(BaseAgent):
         visit(value)
         return list(dict.fromkeys(refs))
 
-    def _count_by_severity(self, findings: List[Dict[str, Any]]) -> Dict[str, int]:
+    def _count_by_severity(self, findings: list[dict[str, Any]]) -> dict[str, int]:
         """按严重性统计"""
         counts = {}
         for finding in findings:
