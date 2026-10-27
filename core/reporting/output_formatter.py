@@ -206,6 +206,60 @@ class OutputFormatter:
                 sarif_result["partialFingerprints"] = {"seismoscopeFindingId/v1": str(finding["id"])}
             results.append(sarif_result)
 
+        # VRTM 风险假设以 note 级 informational result 进入 SARIF：威胁建模
+        # 与标准告警管道汇流（区分于 finding 级 error/warning）。
+        graph_nodes = {
+            str(node.get("id")): (node.get("attributes") or {})
+            for node in (result.get("runtime_surface_graph") or {}).get("nodes", [])
+            if isinstance(node, dict)
+        }
+        for hypothesis in (result.get("threat_model") or {}).get("hypotheses", []):
+            technique_id = str(hypothesis.get("technique_id") or "VRTM-HYPOTHESIS")
+            description = str(hypothesis.get("title") or technique_id)
+            if technique_id not in rules:
+                hypothesis_standards = (hypothesis.get("standards") or {})
+                rule = {
+                    "id": technique_id,
+                    "shortDescription": {"text": description},
+                    "properties": {
+                        "tags": ["security", "vibe-coding", "vrtm-hypothesis", *hypothesis_standards.get("tags", [])]
+                    },
+                }
+                if hypothesis_standards.get("help_uri"):
+                    rule["helpUri"] = hypothesis_standards["help_uri"]
+                rules[technique_id] = rule
+            message = f"[VRTM hypothesis/{hypothesis.get('status', 'open')}] {description}"
+            standards_note = (hypothesis.get("standards") or {}).get("id")
+            if standards_note:
+                message += f" ({standards_note})"
+            location_node = None
+            for node_id in [*hypothesis.get("source_node_ids", []), *hypothesis.get("attack_path", [])]:
+                attributes = graph_nodes.get(str(node_id)) or {}
+                if attributes.get("file_path"):
+                    location_node = attributes
+                    break
+            sarif_result = {
+                "ruleId": technique_id,
+                "level": "note",
+                "message": {"text": message},
+                "properties": {
+                    "vrtm_status": hypothesis.get("status", "open"),
+                    "confidence": hypothesis.get("confidence"),
+                    "kind": "vrtm-hypothesis",
+                },
+            }
+            if location_node:
+                sarif_result["locations"] = [{
+                    "physicalLocation": {
+                        "artifactLocation": {
+                            "uri": str(location_node.get("file_path")).replace("\\", "/"),
+                            "uriBaseId": "%SRCROOT%",
+                        },
+                        "region": {"startLine": int(location_node.get("line_start") or 1)},
+                    }
+                }]
+            results.append(sarif_result)
+
         sarif = {
             "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
             "version": "2.1.0",

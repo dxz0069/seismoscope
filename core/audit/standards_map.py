@@ -54,6 +54,38 @@ VULNERABILITY_STANDARDS: dict[str, tuple] = {
 }
 
 
+#: VRTM 威胁技术 -> 标准映射（technique id 取自 threat_model.py 目录，勿凭空添加）
+TECHNIQUE_STANDARDS: dict[str, tuple] = {
+    "T-PROMPT-INJECTION": (None, ["owasp-llm01-prompt-injection"]),
+    "T-INDIRECT-PROMPT-INJECTION": (None, ["owasp-llm01-prompt-injection"]),
+    "T-RETRIEVAL-INJECTION": (None, ["owasp-llm01-prompt-injection"]),
+    "T-MCP-DESCRIPTION-INJECTION": (None, ["mcp", "tool-poisoning", "owasp-llm01-prompt-injection"]),
+    "T-EXCESSIVE-AGENCY": (None, ["owasp-llm06-excessive-agency"]),
+    "T-UNPROTECTED-ENTRY": ("CWE-306", []),
+    "T-MCP-AUTHORIZATION": ("CWE-862", ["mcp"]),
+    "T-BROWSER-SINK-INJECTION": ("CWE-79", []),
+    "T-WORKFLOW-PRIVILEGE": ("CWE-78", ["supply-chain"]),
+    "T-SENSITIVE-STORAGE-ACCESS": ("CWE-312", []),
+    "T-MEMORY-POISONING": (None, ["owasp-llm02-sensitive-information-disclosure"]),
+    "T-SECRET-DELEGATION": ("CWE-798", []),
+    "T-DEPLOYMENT-TAMPERING": ("CWE-494", ["supply-chain"]),
+    "T-SERVICE-IDENTITY-OVERPRIVILEGE": ("CWE-250", []),
+}
+
+
+def technique_standards(technique_id: str) -> dict[str, Any] | None:
+    """VRTM 技术的标准关联；未映射技术返回 None。"""
+    entry = TECHNIQUE_STANDARDS.get(str(technique_id).strip().upper())
+    if entry is None:
+        return None
+    cwe, extra_tags = entry
+    tags = list(extra_tags)
+    if cwe:
+        tags.insert(0, cwe.lower())
+        return {"id": cwe, "tags": tags, "help_uri": f"{_CWE_BASE}{cwe.split('-')[1]}.html"}
+    return {"id": None, "tags": tags, "help_uri": _OwASP_LLM}
+
+
 def standards_for(vulnerability_type: str) -> dict[str, Any] | None:
     """返回 {"id", "tags", "help_uri"}；未映射类型返回 None。"""
     entry = VULNERABILITY_STANDARDS.get(str(vulnerability_type).strip().lower())
