@@ -4,6 +4,13 @@
 
 ## [Unreleased]
 
+## [0.18.0] — 2026-10-26
+
+### 新增
+
+- **检测规则外置**：默认规则 `core/audit/rules/patterns.yml` 随包分发；`VIBE_SEC_RULES_PATH` 指向自定义文件即可增删规则（规则级校验：type/severity/patterns），无需改代码。规则文件缺失/损坏回落内置、审计不中断；golden 测试强制默认文件与内置字典逐条同步（漂移即 CI 失败）
+- 打包配置补 package-data，YAML 规则文件随 wheel 分发
+
 ## [0.17.0] — 2026-10-26
 
 ### 新增

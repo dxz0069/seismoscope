@@ -80,6 +80,10 @@ python scripts/benchmark_recall.py --project /path/to/VAmPI --label vampi --expe
 
 Current baseline: **100% recall on all built-in fixture sets, zero false positives on the safe fixture**. A real-CVE replay baseline (`tests/test_cve_replay.py`) pins line-level hits on all five vendored targets — mistune (CWE-22), launch-editor (CWE-78), systeminformation (CWE-78), and both serialize-javascript snapshots (CWE-79; both escaping-bypass shapes — lookahead without end anchor, and complete-tag-only branches — are caught deterministically by the `escape_semantics` analyzer). The LLM semantic-lane acceptance tool uses statically-hittable targets as controls. On the real [VAmPI](https://github.com/erev0s/VAmPI) benchmark (11 Python files), all 4 statically-mappable vulnerability types are detected with zero false positives; semantic types (IDOR, debug-endpoint exposure) are the LLM lane's responsibility. CI re-runs the gate on every PR.
 
+### Custom detection rules
+
+Default rules live in `core/audit/rules/patterns.yml` (kept in sync with the built-ins by a golden test). Copy the file, add or remove rules, and point `VIBE_SEC_RULES_PATH` at it — no code changes required. A missing or malformed file falls back to built-in rules; invalid entries are skipped with a warning.
+
 ## Audit Scope
 
 - Traditional web vulnerabilities: SQL injection, XSS, command/code injection, path traversal, SSRF, unsafe deserialization, secrets
