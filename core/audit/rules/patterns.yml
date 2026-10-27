@@ -1,0 +1,126 @@
+schema: seismoscope.pattern-rules.v1
+note: 默认检测规则（与 core 内置保持同步，golden 测试强制）。社区自定义规则：复制本文件、增删规则后设置 VIBE_SEC_RULES_PATH 指向它。
+web_vulnerability_patterns:
+- vulnerability_type: sql_injection
+  severity: high
+  description: 可能的 SQL 注入：用户输入直接拼接到查询中
+  patterns:
+  - execute\(.*?\+.*?\)
+  - query\(.*?\+.*?\)
+  - raw\(.*?%.*?\)
+  - f".*?SELECT.*?\{.*?\}.*?"
+  - f'.*?SELECT.*?\{.*?\}.*?'
+  - execute\(.*?["\']%\w+["\']
+  - \b(?:SELECT|INSERT|UPDATE|DELETE|DROP)\b[^"\'\n]*["\']{1,2}\s*\+\s*[\w.\[\](]
+  - \+\s*["\']{1,2}[^"\'\n]*\b(?:SELECT|INSERT|UPDATE|DELETE|DROP)\b
+  - \b(?:SELECT|INSERT|UPDATE|DELETE|DROP)\b[^"\'\n]*["\']{1,2}\s*%\s*[\w(\[]
+- vulnerability_type: mass_assignment
+  severity: high
+  description: 可能的特权字段自赋值：请求数据未经允许清单直接写入 admin/role 等特权字段
+  patterns:
+  - \b(?:admin|is_admin|is_superuser|is_staff|role)\s*=\s*[\w.]*\.get\(
+  - \b(?:admin|is_admin|is_superuser|is_staff|role)\s*=\s*(?:request|payload|body|form|args|params|json|data)\b
+  - '["\''](?:admin|is_admin|is_superuser|is_staff|role)["\'']\s+in\s+[\w.]*(?:request|payload|body|form|args|params|json|data)\b'
+  - \b(?:request|payload|body|form|args|params|json|data)[\w.]*\[[\'"](?:admin|is_admin|is_superuser|is_staff|role)[\'"]\]
+- vulnerability_type: plaintext_password_comparison
+  severity: medium
+  description: 可能的明文密码比较：疑似未哈希存储的密码被直接比对
+  patterns:
+  - \.\s*password\s*==
+  - ==\s*\w+\.\s*password\b
+- vulnerability_type: xss
+  severity: medium
+  description: 可能的 XSS：未转义的内容渲染
+  patterns:
+  - innerHTML\s*=
+  - document\.write\(
+  - \{\{.*?\|safe.*?\}\}
+  - dangerouslySetInnerHTML
+  - \.html\(.*?\+
+  - \.html\(\$\(.*?\)
+  - f["\'][^"\n]*<[a-zA-Z][^>\n]*>[^"\n]*\{
+- vulnerability_type: command_injection
+  severity: critical
+  description: 可能的命令注入：用户输入被用于系统命令执行
+  patterns:
+  - os\.system\(
+  - subprocess\.call\(.*shell=True
+  - subprocess\.Popen\(.*shell=True
+  - childProcess\.exec(?:Sync)?\(
+  - child_process\.exec(?:Sync)?\(
+  - (?:^|[^\w$.])exec(?:Sync)?\s*\(
+  - replace\(/\(\[&\|<>,;=\^\]\)/g,\s*[\'"]\^\$1[\'"]\)
+- vulnerability_type: code_injection
+  severity: critical
+  description: 可能的代码注入：用户输入被用于动态代码执行
+  patterns:
+  - (?<![\w$.])eval\s*\(
+  - (?<![\w$.])(?-i:Function)\s*\([^\n]*(?:request|req\.|body|query|input|payload|params?)
+  - \bvm\.runIn(?:Context|NewContext|ThisContext)\s*\(\s*[\'\"][^\'\"]*(?:(?<![\w$.])eval|safeEval|(?-i:Function))\s*\(
+- vulnerability_type: path_traversal
+  severity: high
+  description: 可能的路径遍历：用户输入被用于文件路径
+  patterns:
+  - (?:os\.path\.join|path\.(?:join|resolve)|Path)\s*\(
+  - (?:open|send_file|send_from_directory|read_text|read_bytes|readFile(?:Sync)?|createReadStream|sendFile)\s*\([^\n)]*(?:request\.|req\.)
+agent_vulnerability_patterns:
+- vulnerability_type: prompt_injection
+  severity: high
+  description: 可能的提示词注入风险：用户输入被拼接到提示词中
+  patterns:
+  - (user_input|user_message|query).*?\.format\(
+  - (prompt|message)\s*\+\s*(user|input|query)
+  - f["\'].*?(user_input|query|message).*?["\']
+  - (?<!ignore\s)(?<!do\snot\sfollow).*system.*prompt
+  - (\w+)\s*\+\s*(user|input|query|message)
+- vulnerability_type: mcp_insecurity
+  severity: high
+  description: MCP 工具安全风险：缺少安全控制机制
+  patterns:
+  - (tool|function)\s*=.*\{.*?["\']description["\'].*?(ignore|override|forget|disregard)
+  - (tool|function).*(execute|delete|remove|drop|update).*?(?!confirm)
+  - '["\'']?(?:permissions|access)["\'']?\s*[:=]\s*["\''][^"\'']*\*[^"\'']*["\'']'
+  - tool.*\(\s*\)\s*.*(?:while\s+True|for\s+\w+\s+in\s+range\(.*\))
+- vulnerability_type: excessive_agency
+  severity: high
+  description: 过度代理风险：智能体被授予过多权限或缺少人工监督
+  patterns:
+  - (autonomous|auto|auto_?decide|self_?determine)
+  - (no_?human|without_?approval|skip.*check|bypass)
+  - (tool|action).*(write|delete|execute|send|modify).*?(?!confirm)
+  - (permissions|role)\s*=\s*["\']admin["\']
+workflow_vulnerability_patterns:
+- vulnerability_type: ssrf
+  severity: high
+  description: 可能的 SSRF：外部输入控制服务端网络目标
+  patterns:
+  - (?:requests\.(?:get|post)|httpx\.(?:get|post)|fetch)\s*\([^\n]*(?:request|user|input|url)
+  - urllib\.request\.urlopen\s*\([^\n]*(?:request|user|input|url)
+- vulnerability_type: unsafe_deserialization
+  severity: high
+  description: 可能的不安全反序列化：不可信数据进入对象反序列化器
+  patterns:
+  - pickle\.loads?\s*\(
+  - yaml\.load\s*\([^\n]*(?!SafeLoader)
+  - ObjectInputStream\s*\(
+- vulnerability_type: workflow_insecurity
+  severity: high
+  description: 可能的工作流注入：外部事件数据进入命令或代码执行节点
+  patterns:
+  - run:\s*[^\n]*\$\{\{\s*github\.event\.
+  - (?:exec|eval|os\.system|subprocess\.(?:run|Popen))\s*\([^\n]*(?:workflow|event|payload|input)
+secret_patterns:
+- vulnerability_type: hardcoded_password
+  severity: high
+  description: 硬编码的密码
+  patterns:
+  - password\s*=\s*["\'][^"\']+["\']
+  - passwd\s*=\s*["\'][^"\']+["\']
+  - pwd\s*=\s*["\'][^"\']+["\']
+- vulnerability_type: api_key
+  severity: high
+  description: 硬编码的 API Key 或密钥
+  patterns:
+  - api_key\s*[=:]\s*["\'][A-Za-z0-9+/_-]{16,}["\']
+  - secret_key\s*[=:]\s*["\'][^"\']+["\']
+  - '["\''](?:api_key|secret_key)["\'']\]\s*=\s*["\''][^"\'']+["\'']'
