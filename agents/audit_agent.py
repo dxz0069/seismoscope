@@ -225,6 +225,7 @@ class AuditAgent(BaseAgent):
                     r'os\.system\(',
                     r'subprocess\.call\(.*shell=True',
                     r'subprocess\.Popen\(.*shell=True',
+                    r'subprocess\.run\(.*shell=True',
                     # JS：child_process.exec 单串参数经 shell 解释（真实 CVE 形态：launch-editor）
                     r'childProcess\.exec(?:Sync)?\(',
                     r'child_process\.exec(?:Sync)?\(',
@@ -1255,13 +1256,15 @@ class AuditAgent(BaseAgent):
         ):
             return False
         identifier = re.search(
-            r"\b(\w*(?:id|title|slug|uuid|key|pk)\w*)\s*=\s*(?:str\()?[A-Za-z_]\w*\)?\s*[,)]",
+            r"\b(\w*(?:id|title|slug|uuid|key|pk)\w*)\s*=\s*(?:str\()?([A-Za-z_]\w*)\)?\s*[,)]",
             call_args,
             re.IGNORECASE,
         )
         if identifier is None:
             return False
-        if not re.search(rf"\bdef\s+\w+\s*\([^)]*\b{re.escape(identifier.group(1))}\b", window):
+        # kwarg 名或其值 token 出现在函数签名即视为外部可控（路由参数）
+        signature_pattern = rf"\bdef\s+\w+\s*\([^)]*\b(?:{re.escape(identifier.group(1))}|{re.escape(identifier.group(2))})\b"
+        if not re.search(signature_pattern, window):
             return False
         if not re.search(r"token|auth|jwt|login_required|current_user|session\[|authorization", window, re.IGNORECASE):
             return False
@@ -1384,7 +1387,7 @@ class AuditAgent(BaseAgent):
             elif function_name == "os.system":
                 offsets["command_injection"].add(offset)
             elif (
-                function_name in {"subprocess.call", "subprocess.Popen"}
+                function_name in {"subprocess.call", "subprocess.run", "subprocess.Popen"}
                 and any(
                     keyword.arg == "shell"
                     and isinstance(keyword.value, ast.Constant)
