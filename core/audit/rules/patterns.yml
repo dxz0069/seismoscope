@@ -51,6 +51,7 @@ web_vulnerability_patterns:
   - os\.system\(
   - subprocess\.call\(.*shell=True
   - subprocess\.Popen\(.*shell=True
+  - subprocess\.run\(.*shell=True
   - childProcess\.exec(?:Sync)?\(
   - child_process\.exec(?:Sync)?\(
   - (?:execFile|execFileSync|spawnSync|spawn)\s*\([^)\n]*\.split\(
