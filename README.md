@@ -234,6 +234,22 @@ Codex 使用 `-Agent codex`；项目级安装使用 `-Agent project`。安装器
 用户: 请对这个 Flask 应用进行安全审查
 ```
 
+#### LLM 提供方（CLI）
+
+```bash
+# 缺省：DeepSeek 环境变量模式（VIBE_SEC_DEEPSEEK_API_KEY / DEEPSEEK_API_KEY + --api-key）
+vibe-sec audit ./my-project --use-llm
+
+# 指定提供方（与 API/UI 的 provider 契约一致）
+vibe-sec audit ./my-project --llm-provider anthropic --llm-model claude-x --api-key sk-...
+vibe-sec audit ./my-project --llm-provider openai --llm-model gpt-x --api-key sk-...
+# OpenAI 兼容端点（自建/网关，openai_compatible 与 auto 需给 Base URL）
+vibe-sec audit ./my-project --llm-provider openai_compatible \
+  --llm-model qwen-max --llm-api-base http://localhost:8000/v1 --api-key sk-...
+```
+
+`--llm-provider` 隐含启用 LLM 通道（无需再叠 `--use-llm`）；校验前置到参数层：缺模型/凭据/Base URL 直接报可操作的错误。
+
 #### 作为 Python 库使用
 
 ```python

@@ -125,6 +125,37 @@ def setup_agent_registry(llm_service=None, event_emitter=None) -> AgentRegistry:
     return registry
 
 
+def _cli_llm_config(args) -> dict[str, Any] | None:
+    """把 --llm-provider/--llm-model/--llm-api-base 组装成 run_audit 的 llm_config。
+
+    库层（run_audit → create_configured_llm_service）早已支持多提供方，
+    CLI 此前只有 DeepSeek 环境变量一条路。校验前置到参数解析层，报错
+    可操作；None 表示沿用旧路径（--api-key 或 DeepSeek 环境变量）。
+    """
+    provider = getattr(args, "llm_provider", None)
+    if not provider:
+        if getattr(args, "llm_model", None) or getattr(args, "llm_api_base", None):
+            raise ValueError("--llm-model/--llm-api-base 需要与 --llm-provider 同时使用")
+        return None
+    model = args.llm_model
+    if not model:
+        raise ValueError("--llm-provider 需要同时指定 --llm-model")
+    api_key = args.api_key or os.getenv("VIBE_SEC_DEEPSEEK_API_KEY") or os.getenv("DEEPSEEK_API_KEY")
+    if not api_key:
+        raise ValueError(
+            "--llm-provider 需要凭据：--api-key、VIBE_SEC_DEEPSEEK_API_KEY 或 DEEPSEEK_API_KEY"
+        )
+    api_base = args.llm_api_base
+    if provider in {"openai_compatible", "auto"} and not api_base:
+        raise ValueError(f"--llm-provider {provider} 需要 --llm-api-base 指向 OpenAI 兼容端点")
+    return {
+        "provider": provider,
+        "api_key": api_key,
+        "model_name": model,
+        "api_base": api_base,
+    }
+
+
 async def run_audit(
     project_path: str,
     *,
@@ -1234,6 +1265,16 @@ def main():
     audit_parser.add_argument("--output", "-o", help="输出文件路径")
     audit_parser.add_argument("--use-llm", action="store_true", help="使用 LLM 增强分析")
     audit_parser.add_argument("--api-key", help="LLM API Key")
+    audit_parser.add_argument(
+        "--llm-provider",
+        choices=["openai", "openai_compatible", "anthropic", "auto"],
+        help="LLM 提供方；缺省回退 DeepSeek 环境变量模式。指定后须同时给 --llm-model 与 --api-key",
+    )
+    audit_parser.add_argument("--llm-model", help="LLM 模型名（与 --llm-provider 搭配）")
+    audit_parser.add_argument(
+        "--llm-api-base",
+        help="OpenAI 兼容端点 Base URL（openai_compatible/auto 必填）",
+    )
     audit_parser.add_argument("--session-dir", help="保存 JSONL 会话快照的目录")
     audit_parser.add_argument(
         "--container-tools",
@@ -1447,12 +1488,15 @@ def main():
                 verification_authorization = load_verification_authorization(
                     args.authorization, args.project_path,
                 )
+            llm_config = _cli_llm_config(args)
             result = asyncio.run(
                 run_audit(
                     args.project_path,
                     output_format=args.format,
-                    use_llm=args.use_llm,
+                    # --llm-provider 本身就是明确的启用意图，不要求再叠 --use-llm
+                    use_llm=args.use_llm or llm_config is not None,
                     api_key=args.api_key,
+                    llm_config=llm_config,
                     verbose=args.verbose,
                     session_dir=args.session_dir,
                     enable_container_tools=args.container_tools,
