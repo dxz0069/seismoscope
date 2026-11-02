@@ -23,6 +23,16 @@ from ..tool_fabric.image_preflight import (
 )
 
 
+def _credential_vault_status() -> dict:
+    """模型凭据静态加密状态（不触发密钥生成、不读取密钥内容）。"""
+    try:
+        from ..policy.credential_vault import CredentialVault
+
+        return CredentialVault().status()
+    except Exception as exc:  # pragma: no cover - 防御性兜底
+        return {"enabled": False, "reason": type(exc).__name__}
+
+
 class DeploymentManager:
     def __init__(
         self,
@@ -97,6 +107,7 @@ class DeploymentManager:
                 "credential_values_exposed": False,
             },
             "tree_sitter": ts,
+            "credential_vault": _credential_vault_status(),
             "required_gaps": required_gaps,
             "optional_gaps": optional_gaps,
             "workspace": {

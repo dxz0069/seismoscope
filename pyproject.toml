@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "seismoscope"
-version = "0.24.1"
+version = "0.25.0"
 description = "Seismoscope (候风) — security audit & verification platform for the Vibe Coding era"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -37,6 +37,7 @@ dependencies = [
     "PyYAML>=6.0.0",
     "esprima>=4.0.1",
     "tree-sitter-language-pack==1.13.3",
+    "cryptography>=42.0.0",
 ]
 
 [project.scripts]
