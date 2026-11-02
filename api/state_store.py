@@ -9,14 +9,22 @@ from collections.abc import Iterable, Mapping
 from pathlib import Path
 from typing import Any
 
+from core.policy.credential_vault import CredentialVault, default_vault
+
 
 class ApiStateStore:
-    """A small SQLite repository that keeps API payloads durable across restarts."""
+    """A small SQLite repository that keeps API payloads durable across restarts.
 
-    def __init__(self, database_path: str | Path):
+    ``model_configs`` 的 ``api_key`` 字段经 CredentialVault 静态加密落盘；
+    读取时旧明文自动迁移为密文（migrate 标记驱动一次回写）。
+    """
+
+    def __init__(self, database_path: str | Path, vault: CredentialVault | None = None):
         self.path = Path(database_path).expanduser().resolve()
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self._lock = threading.RLock()
+        self._vault = vault or default_vault()
+        self._pending_migrations: list[dict[str, Any]] = []
         self._connection = sqlite3.connect(str(self.path), check_same_thread=False)
         self._connection.row_factory = sqlite3.Row
         self._connection.execute("PRAGMA busy_timeout = 5000")
@@ -121,8 +129,15 @@ class ApiStateStore:
             self._upsert_task(payload, serialized)
 
     def save_model_config(self, config: Any) -> None:
-        """Persist an API-local model configuration, including its credential."""
+        """Persist an API-local model configuration, including its credential.
+
+        ``api_key`` 以密文落盘（enc:v1: 前缀），SQLite 文件单独泄露时
+        凭据不可读；密钥文件位于用户本地状态目录（见 credential_vault）。
+        """
         payload, serialized = self._as_payload(config)
+        if payload.get("api_key"):
+            payload["api_key"] = self._vault.encrypt(str(payload["api_key"]))
+            serialized = json.dumps(payload, ensure_ascii=False, default=str)
         with self._lock, self._connection:
             self._connection.execute(
                 """
@@ -133,6 +148,17 @@ class ApiStateStore:
                 """,
                 (payload["id"], serialized, self._updated_at(payload)),
             )
+
+    def _decrypt_model_config(self, payload: dict[str, Any]) -> dict[str, Any]:
+        """解密单个模型配置；旧明文登记待迁移（load_state 收尾统一回写）。"""
+        raw = payload.get("api_key")
+        if not raw:
+            return payload
+        plaintext, needs_migration = self._vault.decrypt(str(raw))
+        payload["api_key"] = plaintext
+        if needs_migration:
+            self._pending_migrations.append(payload)
+        return payload
 
     def delete_model_config(self, config_id: str) -> None:
         with self._lock, self._connection:
@@ -182,7 +208,7 @@ class ApiStateStore:
                 "SELECT payload FROM model_configs ORDER BY updated_at, id"
             ).fetchall()
 
-        return {
+        result = {
             "projects": [self._decode(row["payload"]) for row in projects],
             "audit_tasks": [self._decode(row["payload"]) for row in tasks],
             "findings": [
@@ -193,8 +219,29 @@ class ApiStateStore:
                 {"task_id": row["task_id"], "payload": self._decode(row["payload"])}
                 for row in remediations
             ],
-            "model_configs": [self._decode(row["payload"]) for row in model_configs],
+            "model_configs": [
+                self._decrypt_model_config(self._decode(row["payload"]))
+                for row in model_configs
+            ],
         }
+        # 旧明文凭据读取成功后立即加密回写（透明迁移，一次完成）
+        if self._pending_migrations:
+            with self._lock, self._connection:
+                for payload in self._pending_migrations:
+                    encrypted = dict(payload)
+                    encrypted["api_key"] = self._vault.encrypt(str(payload["api_key"]))
+                    serialized = json.dumps(encrypted, ensure_ascii=False, default=str)
+                    self._connection.execute(
+                        """
+                        INSERT INTO model_configs(id, payload, updated_at) VALUES (?, ?, ?)
+                        ON CONFLICT(id) DO UPDATE SET
+                            payload = excluded.payload,
+                            updated_at = excluded.updated_at
+                        """,
+                        (encrypted["id"], serialized, self._updated_at(encrypted)),
+                    )
+            self._pending_migrations.clear()
+        return result
 
     def clear(self) -> None:
         """Clear persisted records while retaining the database and schema."""

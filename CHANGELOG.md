@@ -4,6 +4,13 @@
 
 ## [Unreleased]
 
+## [0.25.0] — 2026-10-31
+
+### 新增
+
+- **模型凭据静态加密**：`model_configs` 的 API key 以 Fernet 加密落盘（`enc:v1:` 前缀），密钥文件位于用户本地状态目录（`VIBE_SEC_STATE_HOME` 或 `~/.vibe-sec/secret.key`，0600）；读取时旧明文**自动迁移**；密钥不匹配时按凭据缺失处理不崩溃。防 SQLite 状态文件单独泄露（备份/同步/误提交），诚实边界：不防已控制整机的攻击者
+- `doctor` 新增 `credential_vault` 段（密钥文件存在性/路径/边界说明，不读内容）；SECURITY.md 同步；新增依赖 `cryptography`
+
 ## [0.24.1] — 2026-10-27
 
 ### 修复
