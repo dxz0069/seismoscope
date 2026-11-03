@@ -10,6 +10,7 @@ REST API 服务
 """
 
 import asyncio
+import json
 import os
 import secrets
 import uuid
@@ -1194,6 +1195,31 @@ async def health_check():
         "version": "0.5.0",
         "timestamp": datetime.now().isoformat(),
     }
+
+
+@app.get("/api/knowledge")
+async def get_knowledge():
+    """知识库目录（来自 skill/references，供 KnowledgeView 真数据接入）。"""
+    from pathlib import Path as _Path
+
+    catalog_path = _Path(__file__).resolve().parents[1] / "skill" / "references" / "catalog.json"
+    try:
+        catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise HTTPException(status_code=503, detail=f"Knowledge catalog unavailable: {exc}")
+
+    items = []
+    for category_id, category in (catalog.get("categories") or {}).items():
+        for vuln_id, vuln in (category.get("vulnerabilities") or {}).items():
+            items.append({
+                "id": f"{category_id}/{vuln_id}",
+                "category": category.get("name", category_id),
+                "severity": vuln.get("severity", "unknown"),
+                "name": vuln.get("name", vuln_id),
+                "description": vuln.get("description", ""),
+                "reference_count": len(vuln.get("references", [])),
+            })
+    return {"version": catalog.get("version"), "total": len(items), "items": items}
 
 
 @app.get("/api/stats")
