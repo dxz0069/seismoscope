@@ -1,0 +1,20 @@
+# build outputs
+/dist/*
+/build/*
+/lib/PyYAML.egg-info/*
+/lib3/PyYAML.egg-info/*
+/wheelhouse/*
+/yaml/_yaml.c
+MANIFEST
+**/*.so
+**/*.dylib
+**/*.pyd
+
+
+# cached Python binaries
+*.py[cdo]
+_pycache_/*
+
+# local IDE state
+/.idea/*
+

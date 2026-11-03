@@ -4,6 +4,15 @@
 
 ## [Unreleased]
 
+## [Unreleased]
+
+## [0.27.0 — CVE 回放靶场 12 目标]
+
+### 新增
+
+- **CVE 回放靶场 10 → 12 目标**：pyyaml-fullloader（CVE-2020-1747，FullConstructor 注册危险构造器的库内部结构性缺陷）与 underscore-template（CVE-2021-23358，`_.template` variable 注入——与 lodash-template 同类，交叉库佐证为系统性设计模式）；均以诚实 xfail 记录能力边界
+- 跨语言覆盖：Python（pyyaml/mistune）+ JavaScript（serialize-javascript/launch-editor/systeminformation/lodash/underscore）+ TypeScript（demo）
+
 ## [0.26.0] — 2026-10-31
 
 ### 修复

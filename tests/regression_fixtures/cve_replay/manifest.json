@@ -198,6 +198,46 @@
      ]
     }
    ]
+  },
+  {
+   "target": "pyyaml-fullloader",
+   "cwe": "CWE-502",
+   "expected_types": [
+    "unsafe_deserialization"
+   ],
+   "parent_commit": "fe150624146e",
+   "advisory": "GHSA-8q59-q68h-6hv4 / CVE-2020-1747（修复 a001f278）",
+   "note": "FullConstructor 注册 python/object:、python/object/new:、python/module: 危险构造器——用户以 FullLoader 调 yaml.load 仍可实例化任意对象。库内部结构性缺陷（修复=移除注册），应用级静态模式不可见，xfail 诚实记录",
+   "fix_files": [
+    {
+     "file": "lib/yaml/constructor.py",
+     "hunk_lines": [
+      721,
+      725,
+      729,
+      733
+     ]
+    }
+   ]
+  },
+  {
+   "target": "underscore-template",
+   "cwe": "CWE-94",
+   "expected_types": [
+    "code_injection"
+   ],
+   "parent_commit": "ef646ccbbbd9",
+   "advisory": "GHSA-cf4h-3jhx-xvhq / CVE-2021-23358（修复 4c73526d）",
+   "note": "_.template 的 variable 选项未做裸标识符校验即传入 new Function()——与 lodash-template（CVE-2021-23337）同类缺席型语义缺陷，交叉库佐证该类为系统性设计模式",
+   "fix_files": [
+    {
+     "file": "modules/template.js",
+     "hunk_lines": [
+      67,
+      72
+     ]
+    }
+   ]
   }
  ]
 }

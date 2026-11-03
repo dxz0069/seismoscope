@@ -26,6 +26,8 @@ MANIFEST = json.loads((FIXTURES / "manifest.json").read_text(encoding="utf-8"))
 SEMANTIC_ONLY_TARGETS = {
     "lodash-template": "variable 选项未校验即入 Function 头——缺席型语义缺陷",
     "lodash-zipobject": "__proto__ 路径原型污染——路径语义缺陷",
+    "underscore-template": "variable 选项未校验即入 new Function——与 lodash 同类",
+    "pyyaml-fullloader": "FullConstructor 注册危险构造器——库内部结构性缺陷",
 }
 
 
