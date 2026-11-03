@@ -4,6 +4,13 @@
 
 ## [Unreleased]
 
+## [0.26.0] — 2026-10-31
+
+### 修复
+
+- **知识库页面真数据接入**：新增 `/api/knowledge` 端点服务 `skill/references/catalog.json`（19 项漏洞知识，分类/严重级/描述/引用计数）——KnowledgeView 不再永远回退"演示数据"；前端 `api.getKnowledge()` 同步补齐
+- `api/server.py` 补缺失的 `import json`
+
 ## [0.25.0] — 2026-10-31
 
 ### 新增
