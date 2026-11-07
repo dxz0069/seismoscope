@@ -57,6 +57,17 @@ app.add_middleware(
 )
 
 
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request, exc):
+    """未处理异常统一 JSON 响应——不泄漏堆栈到客户端。"""
+    from fastapi.responses import JSONResponse
+
+    return JSONResponse(
+        status_code=500,
+        content={"detail": f"Internal server error: {type(exc).__name__}"},
+    )
+
+
 # ========== 数据模型 ==========
 
 class AuditScope(BaseModel):

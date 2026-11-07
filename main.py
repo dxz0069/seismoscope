@@ -22,7 +22,7 @@ from core.session.models import RunSession
 from core.session.store import SessionStore
 
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.WARNING,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
 
@@ -175,6 +175,9 @@ async def run_audit(
 
     if verbose:
         logging.getLogger().setLevel(logging.DEBUG)
+    else:
+        # 默认安静模式：仅 WARNING 以上，审计过程由进度条替代日志
+        logging.getLogger().setLevel(logging.WARNING)
 
     # 设置 LLM 服务
     llm_service = None
@@ -1440,6 +1443,8 @@ def main():
             print(f"Error: 项目路径不存在: {args.project_path}")
             sys.exit(1)
 
+        _audit_start = __import__("time").time()
+
         try:
             verification_authorization = None
             if args.authorization:
@@ -1447,6 +1452,8 @@ def main():
                 verification_authorization = load_verification_authorization(
                     args.authorization, args.project_path,
                 )
+            if not args.verbose:
+                print(f"候风 Seismoscope | 审计 {args.project_path}", flush=True)
             result = asyncio.run(
                 run_audit(
                     args.project_path,
@@ -1465,6 +1472,19 @@ def main():
         except (OSError, RuntimeError, ValueError) as exc:
             print(f"Error: {exc}")
             sys.exit(1)
+
+        # 审计完成摘要（安静模式下唯一的进度输出）
+        if not args.verbose:
+            _elapsed = __import__("time").time() - _audit_start
+            _phases = result.get("phases_completed", [])
+            _findings = len(result.get("findings", []))
+            _bundles = len(result.get("remediation_bundles", []))
+            _lanes = result.get("audit_lanes", {})
+            _lane_summary = " · ".join(f"{k.replace('_audit','')}: {v}" for k, v in _lanes.items()) or "-"
+            print(
+                f"  检出 {_findings} 项发现 · {_bundles} 个整改包 · {_lane_summary} · {_elapsed:.1f}s",
+                flush=True,
+            )
 
         if args.format == "markdown":
             output = format_result(result, "markdown")
